@@ -2,6 +2,7 @@
 **/*.idea/
 **/.history/
 **/*.env
+!**/.github/workflow.env
 !**/*.md
 **/*.dist
 **/*.cache
