@@ -1,0 +1,35 @@
+name: Callable — Release Please
+
+on:
+  workflow_call:
+    inputs:
+      release_branch:
+        type: string
+        required: true
+      release_type:
+        type: string
+        required: true
+      package_name:
+        type: string
+        required: false
+        default: ''
+    secrets:
+      inherit: true
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+          target-branch: ${{ inputs.release_branch }}
+          release-type: ${{ inputs.release_type }}
+          package-name: ${{ inputs.package_name }}
