@@ -1,0 +1,125 @@
+name: Callable — Sync to Monorepo
+
+on:
+  workflow_call:
+    inputs:
+      monorepo_repo:
+        type: string
+        required: true
+      monorepo_package:
+        type: string
+        required: true
+      release_branch:
+        type: string
+        required: true
+      backport_files:
+        type: string
+        required: true
+      release_type:
+        type: string
+        required: true
+      project_type:
+        type: string
+        required: true
+    secrets:
+      inherit: true
+
+jobs:
+  generate-readme:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.release_branch }}
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        run: |
+          echo "version=$(node -p "require('./.release-please-manifest.json')['.']")" >> $GITHUB_OUTPUT
+
+      - name: Generate README
+        uses: edotz/generate-readme-action@v1
+        with:
+          project-type: ${{ inputs.project_type }}
+          version: v${{ steps.version.outputs.version }}
+          force: 'false'
+
+      - name: Create README PR on childrepo
+        id: pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+          base: ${{ inputs.release_branch }}
+          branch: chore/update-readme-${{ steps.version.outputs.version }}
+          title: 'chore(docs): update generated README for v${{ steps.version.outputs.version }}'
+          body: |
+            Automated README update after release v${{ steps.version.outputs.version }}.
+          commit-message: 'chore(docs): update generated README for v${{ steps.version.outputs.version }}'
+          delete-branch: true
+          update-branch: true
+
+      - name: Enable auto-merge
+        if: steps.pr.outputs.pull-request-number
+        run: gh pr merge --auto --merge ${{ steps.pr.outputs.pull-request-number }}
+        env:
+          GH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+
+  sync-to-monorepo:
+    needs: generate-readme
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout childrepo release branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.release_branch }}
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        run: |
+          echo "version=$(node -p "require('./.release-please-manifest.json')['.']")" >> $GITHUB_OUTPUT
+
+      - name: Checkout monorepo
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ inputs.monorepo_repo }}
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+          path: _monorepo
+          fetch-depth: 0
+
+      - name: Copy release files into monorepo package
+        run: |
+          mkdir -p _monorepo/packages/${{ inputs.monorepo_package }}
+          for f in ${{ inputs.backport_files }}; do
+            cp "$f" "_monorepo/packages/${{ inputs.monorepo_package }}/$f"
+          done
+
+      - name: Create sync PR in monorepo
+        id: pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+          path: _monorepo
+          base: master
+          branch: backport/sync-${{ inputs.monorepo_package }}-${{ steps.version.outputs.version }}
+          title: 'chore(backport): sync ${{ inputs.monorepo_package }} v${{ steps.version.outputs.version }} from ${{ inputs.release_branch }}'
+          body: |
+            Automated sync of `${{ inputs.monorepo_package }}` release v${{ steps.version.outputs.version }} from `${{ inputs.release_branch }}`.
+
+            **Files:** `${{ inputs.backport_files }}`
+          commit-message: 'chore(backport): sync ${{ inputs.monorepo_package }} release artifacts from ${{ inputs.release_branch }}'
+          delete-branch: true
+          update-branch: true
+
+      - name: Enable auto-merge
+        if: steps.pr.outputs.pull-request-number
+        run: gh pr merge --auto --squash ${{ steps.pr.outputs.pull-request-number }}
+        env:
+          GH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
