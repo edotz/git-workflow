@@ -1,0 +1,36 @@
+# ide
+**/*.idea/
+**/.history/
+**/*.env
+!**/*.md
+**/*.dist
+**/*.cache
+**/._*
+**/sys.*
+**/.DS_Store
+**/.git/
+
+# php applicationn
+.DS_Store
+*.gz
+debug.log*
+
+# app
+**/session
+**/vendor
+**/var
+**/CLAUDE.local.md
+.hooks/
+.php-cs-fixer.cache
+
+# .claude runtime dirs (contain secrets/state, never commit)
+.claude/backups/
+.claude/plugins/
+.claude/projects/
+.claude/session-env/
+.claude/templates/
+
+# --- Git Workflow Control ---
+# Temporary file to bypass lint hooks
+.nolint
+
