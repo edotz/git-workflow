@@ -1,0 +1,69 @@
+name: Callable — Status Checks
+
+on:
+  workflow_call:
+    inputs:
+      enable_commit_lint:
+        type: boolean
+        default: false
+      enable_biome:
+        type: boolean
+        default: false
+      enable_php_cs_fixer:
+        type: boolean
+        default: false
+      enable_shellcheck:
+        type: boolean
+        default: false
+
+jobs:
+  commit-lint:
+    name: Validate Conventional Commits
+    if: inputs.enable_commit_lint
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v6
+        with:
+          configFile: commitlint.config.mjs
+          commitDepth: 1
+
+  biome:
+    name: Biome Code Quality
+    if: inputs.enable_biome
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: biomejs/setup-biome@v2
+      - name: Run Biome
+        run: biome ci .
+
+  php-cs-fixer:
+    name: PHP-CS-Fixer
+    if: inputs.enable_php_cs_fixer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: cs2pr
+      - name: Install PHP-CS-Fixer
+        run: composer global require friendsofphp/php-cs-fixer --no-progress --no-interaction
+      - name: Run PHP-CS-Fixer
+        run: php-cs-fixer fix --dry-run --diff --format=checkstyle | cs2pr
+
+  shellcheck:
+    name: ShellCheck
+    if: inputs.enable_shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          severity: warning
