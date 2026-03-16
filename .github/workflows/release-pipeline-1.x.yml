@@ -1,0 +1,35 @@
+# GENERATED — do not edit manually. Source: .github/workflow.env
+name: Release Pipeline (1.x)
+
+on:
+  pull_request:
+    branches:
+      - '1.x'
+    types:
+      - closed
+  workflow_dispatch:
+    inputs:
+      skip_release_please:
+        description: 'Skip release-please and only run post-release steps'
+        type: boolean
+        default: false
+
+jobs:
+  release-please:
+    if: >
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.merged == true) ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: googleapis/release-please-action@v4
+        if: ${{ github.event_name != 'workflow_dispatch' || !inputs.skip_release_please }}
+        with:
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+          target-branch: 1.x
