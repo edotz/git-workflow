@@ -1,0 +1,35 @@
+name: Callable — Merge Split Repo
+
+on:
+  workflow_call:
+    inputs:
+      packages:
+        type: string
+        required: true
+      branch:
+        type: string
+        required: true
+      organization:
+        type: string
+        required: true
+    secrets:
+      inherit: true
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJson(inputs.packages) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: edotz/monorepo-split-action@v1
+        with:
+          local_path: ${{ matrix.package.local_path }}
+          split_repository: ${{ matrix.package.split_repository }}
+          organization: ${{ inputs.organization }}
+          branch: ${{ inputs.branch }}
