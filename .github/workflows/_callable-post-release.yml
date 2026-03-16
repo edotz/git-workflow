@@ -1,0 +1,122 @@
+name: Callable — Post Release
+
+on:
+  workflow_call:
+    inputs:
+      release_branch:
+        type: string
+        required: true
+      backport_to:
+        type: string
+        required: true
+      backport_files:
+        type: string
+        required: true
+      release_type:
+        type: string
+        required: true
+      project_type:
+        type: string
+        required: true
+      version:
+        type: string
+        required: false
+        default: ''
+      force_readme:
+        type: boolean
+        required: false
+        default: false
+    secrets:
+      inherit: true
+
+jobs:
+  post-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.release_branch }}
+          fetch-depth: 0
+
+      - name: Resolve and validate version
+        id: version
+        run: |
+          if [ "${{ inputs.release_type }}" = "node" ]; then
+            MANIFEST_VERSION=$(node -p "require('./.release-please-manifest.json')['.']")
+          elif [ "${{ inputs.release_type }}" = "php" ]; then
+            MANIFEST_VERSION=$(node -p "require('./.release-please-manifest.json')['.']")
+          else
+            MANIFEST_VERSION=$(node -p "require('./.release-please-manifest.json')['.']")
+          fi
+
+          if [ -n "${{ inputs.version }}" ]; then
+            if [ "$MANIFEST_VERSION" != "${{ inputs.version }}" ]; then
+              echo "::error::Version mismatch — manifest has $MANIFEST_VERSION but input is ${{ inputs.version }}"
+              exit 1
+            fi
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=$MANIFEST_VERSION" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate README
+        uses: edotz/generate-readme-action@v1
+        with:
+          project-type: ${{ inputs.project_type }}
+          version: v${{ steps.version.outputs.version }}
+          force: ${{ inputs.force_readme }}
+
+      - name: Stash generated README
+        run: cp README.md /tmp/generated-readme.md
+
+      - name: Check for potential conflicts
+        id: conflict_check
+        run: |
+          git fetch origin ${{ inputs.backport_to }}
+          DIFF=$(git diff origin/${{ inputs.backport_to }}..HEAD -- ${{ inputs.backport_files }} 2>/dev/null || true)
+          if [ -n "$DIFF" ]; then
+            echo "has_conflicts=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_conflicts=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout backport target
+        run: git checkout ${{ inputs.backport_to }}
+
+      - name: Copy release files from release branch
+        run: |
+          for f in ${{ inputs.backport_files }}; do
+            git checkout origin/${{ inputs.release_branch }} -- "$f"
+          done
+
+      - name: Restore generated README
+        run: cp /tmp/generated-readme.md README.md
+
+      - name: Create backport PR
+        id: pr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.NPM_AUTH_TOKEN }}
+          base: ${{ inputs.backport_to }}
+          branch: backport/release-to-${{ inputs.backport_to }}-${{ steps.version.outputs.version }}
+          title: 'chore(backport): sync release v${{ steps.version.outputs.version }} from ${{ inputs.release_branch }}'
+          body: |
+            Automated backport of release v${{ steps.version.outputs.version }} from `${{ inputs.release_branch }}` to `${{ inputs.backport_to }}`.
+
+            **Files:** `${{ inputs.backport_files }}`
+            ${{ steps.conflict_check.outputs.has_conflicts == 'true' && '
+            > [!WARNING]
+            > Potential conflicts detected between branches. Review carefully before merging.' || '' }}
+          commit-message: 'chore(backport): sync release v${{ steps.version.outputs.version }} from ${{ inputs.release_branch }}'
+          delete-branch: true
+          update-branch: true
+
+      - name: Enable auto-merge
+        if: steps.pr.outputs.pull-request-number
+        run: gh pr merge --auto --merge ${{ steps.pr.outputs.pull-request-number }}
+        env:
+          GH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
