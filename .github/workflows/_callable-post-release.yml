@@ -37,7 +37,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout release branch
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.release_branch }}
           fetch-depth: 0

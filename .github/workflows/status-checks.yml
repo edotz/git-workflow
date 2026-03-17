@@ -1,0 +1,32 @@
+# GENERATED — do not edit manually. Source: .github/workflow.env
+name: Status Checks
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  commit-lint:
+    name: Validate Conventional Commits
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: wagoid/commitlint-github-action@v6
+        with:
+          configFile: commitlint.config.mjs
+          commitDepth: 1
+  stage-guard:
+    name: Stage Guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block direct PRs targeting release branch
+        if: github.base_ref == '1.x' && !startsWith(github.head_ref, 'release-please--')
+        run: |
+          echo "::error::Direct PRs to 1.x are blocked. Use /git:promote."
+          exit 1
