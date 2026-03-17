@@ -12,7 +12,6 @@ on:
       organization:
         type: string
         required: true
-    secrets: inherit
 
 jobs:
   split:

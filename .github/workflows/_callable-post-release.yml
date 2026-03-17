@@ -26,7 +26,6 @@ on:
         type: boolean
         required: false
         default: false
-    secrets: inherit
 
 jobs:
   post-release:
