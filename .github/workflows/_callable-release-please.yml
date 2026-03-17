@@ -13,8 +13,7 @@ on:
         type: string
         required: false
         default: ''
-    secrets:
-      inherit: true
+    secrets: inherit
 
 jobs:
   release-please:
