@@ -21,6 +21,9 @@ on:
       project_type:
         type: string
         required: true
+    secrets:
+      NPM_AUTH_TOKEN:
+        required: true
 
 jobs:
   generate-readme:

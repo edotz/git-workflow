@@ -26,6 +26,9 @@ on:
         type: boolean
         required: false
         default: false
+    secrets:
+      NPM_AUTH_TOKEN:
+        required: true
 
 jobs:
   post-release:
