@@ -21,7 +21,6 @@ on:
       project_type:
         type: string
         required: true
-    secrets: inherit
 
 jobs:
   generate-readme:
