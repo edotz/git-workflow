@@ -1,0 +1,83 @@
+# GENERATED — do not edit manually. Source: .github/workflow.env
+repositories:
+  - owner: edotz
+    name: git-workflow
+    repository:
+      allow_auto_merge: true
+      allow_update_branch: true
+      delete_branch_on_merge: true
+      allow_merge_commit: true
+      allow_squash_merge: false
+      allow_rebase_merge: false
+    branches:
+      - pattern: "*"
+        protection:
+          required_status_checks: null
+          required_pull_request_reviews: null
+          enforce_admins: false
+          required_linear_history: false
+          allow_force_pushes: false
+          allow_deletions: false
+          required_conversation_resolution: false
+          lock_branch: false
+          restrictions: null
+      - pattern: "master"
+        protection:
+          required_status_checks:
+            strict: true
+            contexts:
+              - "Validate Conventional Commits"
+              - "Stage Guard"
+          required_pull_request_reviews:
+            dismiss_stale_reviews: false
+            require_code_owner_reviews: false
+            required_approving_review_count: 0
+            bypass_pull_request_allowances:
+              users: ["ohoeft"]
+          enforce_admins: false
+          required_linear_history: false
+          allow_force_pushes: false
+          allow_deletions: false
+          required_conversation_resolution: false
+          lock_branch: false
+          restrictions:
+            users: ["ohoeft"]
+            teams: []
+      - pattern: "1.x"
+        protection:
+          required_status_checks:
+            strict: true
+            contexts: []
+          required_pull_request_reviews:
+            dismiss_stale_reviews: false
+            require_code_owner_reviews: false
+            required_approving_review_count: 0
+            bypass_pull_request_allowances:
+              users: ["ohoeft"]
+          enforce_admins: false
+          required_linear_history: false
+          allow_force_pushes: false
+          allow_deletions: false
+          required_conversation_resolution: false
+          lock_branch: false
+          restrictions:
+            users: ["ohoeft"]
+            teams: []
+
+backup:
+  enabled: true
+  storage:
+    global:
+      path: var/.github
+      enabled: true
+  retention:
+    keep_last: 10
+    keep_days: 90
+    auto_cleanup: true
+  verify_backup_before_apply: true
+  backup_in_dry_run: false
+
+settings:
+  dry_run: false
+  verbose: true
+  gh_host: "github.com"
