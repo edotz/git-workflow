@@ -13,6 +13,10 @@ on:
         type: string
         required: false
         default: ''
+      bootstrap_sha:
+        type: string
+        required: false
+        default: ''
     secrets:
       NPM_AUTH_TOKEN:
         required: true
@@ -36,3 +40,4 @@ jobs:
           target-branch: ${{ inputs.release_branch }}
           release-type: ${{ inputs.release_type }}
           package-name: ${{ inputs.package_name }}
+          bootstrap-sha: ${{ inputs.bootstrap_sha }}
