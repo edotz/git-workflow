@@ -25,7 +25,7 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: wagoid/commitlint-github-action@v6
@@ -38,7 +38,7 @@ jobs:
     if: inputs.enable_biome
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: biomejs/setup-biome@v2
       - name: Run Biome
         run: biome ci .
@@ -48,7 +48,7 @@ jobs:
     if: inputs.enable_php_cs_fixer
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
@@ -63,7 +63,7 @@ jobs:
     if: inputs.enable_shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ludeeus/action-shellcheck@2.0.0
         with:
           severity: warning
