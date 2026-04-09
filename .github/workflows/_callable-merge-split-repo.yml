@@ -25,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: edotz/monorepo-split-action@v1
+      - uses: edotz/monorepo-split-action@1.x
         with:
           local_path: ${{ matrix.package.local_path }}
           split_repository: ${{ matrix.package.split_repository }}
