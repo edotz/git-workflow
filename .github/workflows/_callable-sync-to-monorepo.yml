@@ -43,7 +43,7 @@ jobs:
           echo "version=$(node -p "require('./.release-please-manifest.json')['.']")" >> $GITHUB_OUTPUT
 
       - name: Generate README
-        uses: edotz/generate-readme-action@v1
+        uses: edotz/generate-readme-action@1.x
         with:
           project-type: ${{ inputs.project_type }}
           version: v${{ steps.version.outputs.version }}
