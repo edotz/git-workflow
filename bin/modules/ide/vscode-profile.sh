@@ -13,7 +13,6 @@ set -euo pipefail
 source "${BU_ROOT}/lib/core.sh"
 source "${BU_LIB}/json.sh"
 source "${BU_LIB}/cli.sh"
-source "${BU_LIB}/paths.sh"
 
 cli_set_spec \
   name        "ide vscode-profile" \
@@ -28,20 +27,11 @@ cli_register_subcommand "compose"   "cmd_compose"   "Build .code-profile from so
 cli_register_subcommand "list"      "cmd_list"      "List all profiles with compose status"
 
 # ============================================
-# Locate <provider config dir>/profiles/ directory
+# Locate the profiles directory
 # ============================================
 
 _resolve_profiles_root() {
-  local root="${VSCODE_PROFILES_DIR:-}"
-  if [[ -z "$root" ]]; then
-    if [[ -n "${PROJECT_ROOT:-}" ]] && [[ -d "$(paths_provider_config)" ]]; then
-      root="$(paths_provider_config)/profiles"
-    elif [[ -d "${BU_ROOT}/../${PROVIDER_CONFIG_DIR}" ]]; then
-      root="$(realpath "${BU_ROOT}/../${PROVIDER_CONFIG_DIR}/profiles")"
-    fi
-  fi
-  [[ -n "$root" ]] || die "vscode-profile: cannot locate the provider config directory (set VSCODE_PROFILES_DIR)"
-  echo "$root"  # out:return
+  echo "${PLUGIN_EDOTZ_GIT_WORKFLOW_VSCODE_PROFILES_DIR:-${PLUGIN_ROOT}/ide/profiles}"  # out:return
 }
 
 # ============================================
