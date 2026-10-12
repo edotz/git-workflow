@@ -59,6 +59,10 @@ between `master`, the release branch and legacy branches. The toolchain ships in
 - Git is a hook host like a provider. The registry (`bin/hooks/hooks.yaml`) and the mapping
   (`adapters/git/hooks/hooks.yaml`) are both here; a plugin hook with the same event and name as a hook of a lower
   tier fails with exit 3.
+- Every project that uses the plugin defines `MAIN_BRANCH` and `RELEASE_BRANCH`. The fallbacks are the keys
+  `PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH` and `..._RELEASE_BRANCH` in `bin/config/env.defaults`, together with
+  `..._STALE_DAYS`. There is no release strategy yet: every change goes to the main branch (`master`), so the release
+  branch defaults to the main branch too.
 - One source of commit validation: `commitlint.config.mjs` of this plugin. No second copy in a consuming project.
 - No hardcoded framework layout: a path comes from `PLUGIN_ROOT`, `BU_ROOT` or a framework function.
 - Direction, once the redesign lands: the workflow runs on the developer machine, an async cloud job never decides a

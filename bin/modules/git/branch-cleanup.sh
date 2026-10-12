@@ -17,9 +17,9 @@ source "${BU_LIB}/json.sh"
 # ============================================
 # Configuration
 # ============================================
-readonly MAIN_BRANCH="${MAIN_BRANCH:-master}"
-readonly RELEASE_BRANCH="${RELEASE_BRANCH:-0.x}"
-readonly STALE_DAYS="${STALE_DAYS:-30}"
+readonly MAIN_BRANCH="${PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH}"
+readonly RELEASE_BRANCH="${PLUGIN_EDOTZ_GIT_WORKFLOW_RELEASE_BRANCH}"
+readonly STALE_DAYS="${PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS}"
 
 # ============================================
 # CLI Specification

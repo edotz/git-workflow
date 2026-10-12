@@ -21,8 +21,8 @@ WORKFLOW_ENV_FILE="${PROJECT_ROOT}/.github/workflow.env"
 # ============================================
 # Configuration
 # ============================================
-readonly MAIN_BRANCH="${MAIN_BRANCH:-master}"
-readonly RELEASE_BRANCH="${RELEASE_BRANCH:-0.x}"
+readonly MAIN_BRANCH="${PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH}"
+readonly RELEASE_BRANCH="${PLUGIN_EDOTZ_GIT_WORKFLOW_RELEASE_BRANCH}"
 readonly PACKAGE_FILE="${PACKAGE_FILE:-package.json}"
 
 # ============================================
