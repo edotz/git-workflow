@@ -1,0 +1,18 @@
+[
+  "alefragnani.project-manager",
+  "anthropic.claude-code",
+  "bierner.markdown-mermaid",
+  "davidanson.vscode-markdownlint",
+  "editorconfig.editorconfig",
+  "esbenp.prettier-vscode",
+  "github.copilot-chat",
+  "github.vscode-github-actions",
+  "google.gemini-cli-vscode-ide-companion",
+  "streetsidesoftware.code-spell-checker",
+  "tombonnike.vscode-status-bar-format-toggle",
+  "waderyan.gitblame",
+  "wk-j.save-and-run",
+  "xyz.local-history",
+  "zokugun.cron-tasks",
+  "zokugun.sync-settings"
+]

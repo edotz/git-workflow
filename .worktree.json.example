@@ -1,0 +1,24 @@
+{
+  "worktree_root": "../../worktrees/edotz.claude-code",
+  "copy_files": [
+    ".env"
+  ],
+  "exclude_files": [
+    ".vscode/settings.json",
+    "temp/*",
+    "dist/*"
+  ],
+  "post_create_command": "npm install --prefer-offline",
+  "post_create_async": true,
+  "vscode": {
+    "open": true,
+    "colors": {
+      "feat":    "#1e415e",
+      "bugfix":  "#a20000",
+      "hotfix":  "#a20000",
+      "chore":   "#2d5a27",
+      "release": "#6b3fa0"
+    },
+    "titleBar": true
+  }
+}

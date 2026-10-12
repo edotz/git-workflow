@@ -1,0 +1,9 @@
+[
+  "biomejs.biome",
+  "dbaeumer.vscode-eslint",
+  "humao.rest-client",
+  "ms-azuretools.vscode-docker",
+  "orta.vscode-jest",
+  "pflannery.vscode-versionlens",
+  "yoavbls.pretty-ts-errors"
+]

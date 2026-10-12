@@ -1,0 +1,8 @@
+{
+  "[groovy]": {
+    "editor.defaultFormatter": "NicolasVuillamy.vscode-groovy-lint"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  }
+}

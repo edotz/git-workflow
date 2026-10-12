@@ -1,0 +1,10 @@
+{
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+  },
+  "[php]": {
+    "editor.defaultFormatter": "junstyle.php-cs-fixer"
+  },
+  "intelephense.environment.phpVersion": "8.2",
+  "php.validate.executablePath": ""
+}

@@ -1,0 +1,16 @@
+[
+  "biomejs.biome",
+  "bmewburn.vscode-intelephense-client",
+  "dbaeumer.vscode-eslint",
+  "glenn2223.live-sass",
+  "humao.rest-client",
+  "junstyle.php-cs-fixer",
+  "mehedidracula.php-namespace-resolver",
+  "ms-azuretools.vscode-docker",
+  "neilbrayfield.php-docblocker",
+  "orta.vscode-jest",
+  "pflannery.vscode-versionlens",
+  "vue.volar",
+  "xdebug.php-debug",
+  "yoavbls.pretty-ts-errors"
+]
