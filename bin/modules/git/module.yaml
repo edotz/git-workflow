@@ -1,0 +1,21 @@
+domain: git
+description: "Utilities for managing git repositories."
+requires: [git]
+
+commands:
+  - name: "branch-cleanup"
+    description: "Identify merged, stale and safe-to-delete branches."
+  - name: "branch-protection"
+    requires: [git, gh]
+    description: "Manage GitHub branch protection rules from declarative YAML."
+  - name: "run-status"
+    requires: [gh]
+    description: "Fetch recent GitHub Actions workflow runs as JSON."
+  - name: "workflow-setup"
+    requires: [git, gh, envsubst]
+    description: "Validate .github/workflow.env and resolve the workflow configuration."
+  - name: "workflow-status"
+    requires: [git, gh]
+    description: "Collect structured status data for the trunk-based workflow."
+  - name: "worktree"
+    description: "Manage git worktrees for isolated feature development."

@@ -1,0 +1,27 @@
+version: "1.0"
+
+# Mapping of the hook keys to git, a host with a fixed vocabulary and no payload on stdin. The framework
+# owns it: `git` is a host like a provider, so the pipeline treats it the same way. A hook fires through the
+# script that `compile hooks` writes into git's hooks directory; a failing hook blocks with its own exit code.
+# Fields per key: targets[] {event} (the git hook name), blocks, block-exit (hook: the exit code of the failing
+# hook, git reads it; absent: the exit code a provider reads as a block), payload, arg (where the first argument
+# of a hook comes from: payload.<field> or argv.<n>).
+
+hooks:
+
+  - name: pre-commit
+    targets: [{ event: pre-commit }]
+    blocks: true
+    block-exit: hook
+    payload: false
+  - name: commit-msg
+    targets: [{ event: commit-msg }]
+    blocks: true
+    block-exit: hook
+    payload: false
+    arg: argv.1
+  - name: pre-push
+    targets: [{ event: pre-push }]
+    blocks: true
+    block-exit: hook
+    payload: false

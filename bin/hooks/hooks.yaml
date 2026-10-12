@@ -1,0 +1,16 @@
+version: "1.0"
+
+# Hook keys the plugin registers: the git events, provider-agnostic. The host mapping (how git fires them) is
+# adapters/git/hooks/hooks.yaml of this plugin. Schema per key as in the framework registry.
+
+hooks:
+
+  - name: pre-commit
+    type: guard
+    description: Git is about to create a commit.
+  - name: commit-msg
+    type: guard
+    description: Git validates a commit message; receives the message file.
+  - name: pre-push
+    type: guard
+    description: Git is about to push.

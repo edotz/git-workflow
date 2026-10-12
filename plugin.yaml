@@ -7,7 +7,7 @@ requires:
 
 # Surfaces the plugin ships; each must exist on disk (agents, skills, commands: <plugin>/<name>;
 # hooks, modules: <plugin>/bin/<name>).
-provides: []
+provides: [modules, hooks]
 
 # Provider ids the plugin supports (adapters/<provider>/).
 adapters: [claude]

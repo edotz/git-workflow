@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# aos-hook: output=none advisory=false default=on
+set -euo pipefail
+source "${BU_ROOT}/lib/errors.sh"
+commit_msg_file="${1:-}"
+[[ -n "$commit_msg_file" ]] || die_with "$BU_EXIT_USAGE" "no commit message file"
+exec bash "${BU_ROOT}/app" lint commit "$commit_msg_file"
