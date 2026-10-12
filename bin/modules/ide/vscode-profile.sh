@@ -31,7 +31,7 @@ cli_register_subcommand "list"      "cmd_list"      "List all profiles with comp
 # ============================================
 
 _resolve_profiles_root() {
-  echo "${PLUGIN_EDOTZ_GIT_WORKFLOW_VSCODE_PROFILES_DIR:-${PLUGIN_ROOT}/ide/profiles}"  # out:return
+  echo "${PLUGIN_EDOTZ_GIT_WORKFLOW_VSCODE_PROFILES_DIR:-${PLUGIN_ROOT}/.vscode/profiles}"  # out:return
 }
 
 # ============================================
