@@ -1,0 +1,20 @@
+domain: ide
+description: "IDE integration utilities for worktree-based development workflows."
+
+commands:
+  - name: "vscode-setup"
+    description: "Configure VS Code for a worktree: title bar color, Project Manager entry, auto-open."
+    examples:
+      - "bash $BU_ROOT/app ide vscode-setup --path /path/to/worktree --type feat --repo my-repo --config /path/to/worktree.json"
+
+  - name: "vscode-teardown"
+    description: "Remove VS Code Project Manager entry for a worktree on removal."
+    examples:
+      - "bash $BU_ROOT/app ide vscode-teardown --path /path/to/worktree"
+
+  - name: "vscode-profile"
+    description: "Compose and decompose VS Code .code-profile files for per-environment profile management."
+    examples:
+      - "bash $BU_ROOT/app ide vscode-profile --decompose Testprofile.code-profile --out base"
+      - "bash $BU_ROOT/app ide vscode-profile --compose --profile bash"
+      - "bash $BU_ROOT/app ide vscode-profile --list"
