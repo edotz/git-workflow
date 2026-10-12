@@ -1,0 +1,6 @@
+version: "1.0"
+
+# Project registration of hooks: name, type, description only. Provider fields live in
+# hooks.<provider>.yaml, enable/disable in hooks.json. `bash bin/app tiers registration-dir hooks`
+# prints where a new registration is written.
+hooks: []

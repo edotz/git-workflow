@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "shared": [
+    {
+      "name": "init",
+      "enabled": true,
+      "description": "Invoke ONLY when user types /aos:init (the slash command, not the bash commands app runtime init or agentic-init) to capture the project context."
+    },
+    {
+      "name": "handoff",
+      "enabled": true,
+      "description": "Invoke ONLY when user types /aos:handoff to close the session with a reviewed handoff, project ledger lines, roadmap changes and scope memory proposals."
+    },
+    {
+      "name": "dynamic-workflow",
+      "enabled": true,
+      "description": "Invoke ONLY when user types /aos:dynamic-workflow with a free-form request that should be decomposed and run as a parallel multi-agent workflow."
+    },
+    {
+      "name": "dynamic-authoring",
+      "enabled": true,
+      "description": "Invoke ONLY when user types /aos:dynamic-authoring"
+    },
+    {
+      "name": "config",
+      "enabled": true,
+      "description": "Re-render provider configuration for the active session. Use after editing adapter templates, hooks.json, or agents/skills without restarting; give a template name to re-render only that template."
+    },
+    {
+      "name": "compile",
+      "enabled": true,
+      "description": "Compile capability artifacts (agents, skills, commands) from source into provider config dir. Run after modifying agents, skills, or commands."
+    }
+  ],
+  "claude": []
+}

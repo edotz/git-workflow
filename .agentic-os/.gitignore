@@ -1,0 +1,11 @@
+# Rendered at session start — machine-specific, never commit
+graphify-out/
+snapshots/
+.backlog/
+# Rebuilt on demand from project.yaml and the plugin.yaml files — per machine, never commit
+plugins.json
+plugins.env
+# Resolved hook mappings for the dispatcher, rebuilt when a hooks.yaml changes — per machine, never commit
+hooks.map.*.json
+# Held while a compile runs, so two compiles of one project never write at the same time
+compile.lock

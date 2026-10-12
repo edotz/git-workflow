@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "templates": [
+    {
+      "name": "claude-local",
+      "trigger": "startup",
+      "enabled": true,
+      "source": "${AOS_ROOT}/adapters/claude/templates/CLAUDE.local.md",
+      "target": "${PROJECT_ROOT}/CLAUDE.local.md",
+      "mode": "env",
+      "description": "Session settings with resolved environment paths",
+      "required_vars": [
+        "SESSION_DIR",
+        "SESSION_NAME",
+        "SESSION_ID",
+        "BU_ROOT",
+        "PROJECT_ROOT"
+      ]
+    },
+    {
+      "name": "session-settings",
+      "trigger": "startup",
+      "enabled": true,
+      "source": "${AOS_ROOT}/adapters/claude/templates/settings.local.json",
+      "target": "${PROJECT_ROOT}/.claude/settings.local.json",
+      "mode": "env",
+      "description": "Session settings with resolved environment paths",
+      "required_vars": [
+        "SESSION_DIR",
+        "SESSION_NAME",
+        "SESSION_ID"
+      ]
+    }
+  ]
+}

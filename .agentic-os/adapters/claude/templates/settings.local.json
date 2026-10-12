@@ -1,0 +1,25 @@
+{
+  "env": {
+    "CLAUDE_CODE_SUBAGENT_MODEL": "claude-haiku-5-5"
+  },
+  "claudeMdExcludes": [
+    "${PROJECT_ROOT}/CLAUDE.md"
+  ],
+  "outputStyle": "caveman",
+  "model": "claude-sonnet-5-5",
+  "permissions": {
+    "deny": [
+      "EnterPlanMode"
+    ],
+    "ask": [
+      "Agent(claude)",
+      "Agent(Explore)",
+      "Agent(general-purpose)",
+      "Agent(Plan)"
+    ],
+    "allow": [
+      "Agent(evolve)",
+      "Agent(claude-code-guide)"
+    ]
+  }
+}

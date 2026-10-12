@@ -1,0 +1,13 @@
+# What this plugin tells its host (schema: bin/config/schema/plugin.yaml in the framework).
+name: edotz.git-workflow
+version: "0.1.0"
+
+requires:
+  agentic-os: ">=0.9.1"
+
+# Surfaces the plugin ships; each must exist on disk (agents, skills, commands: <plugin>/<name>;
+# hooks, modules: <plugin>/bin/<name>).
+provides: []
+
+# Provider ids the plugin supports (adapters/<provider>/).
+adapters: [claude]

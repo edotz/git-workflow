@@ -1,0 +1,81 @@
+{
+  "version": "1.0",
+  "shared": [
+    {
+      "name": "using-agentic-os",
+      "enabled": true,
+      "description": "Use at the start of any conversation. Establishes how to discover and invoke skills, agents, and commands; covers the four capability actions (override, toggle, write-new, configure-provider), and what session-start hooks already inject so context is not duplicated."
+    },
+    {
+      "name": "template-authoring",
+      "enabled": true,
+      "description": "Use when a dynamic-<pillar> orchestrator must judge whether an existing template type fits a capability's actual purpose before delegating to a creator, or when no existing type fits and a new one must be authored. Covers the conceptual purpose of templates, the fit-judgment procedure, and the consumer-project mechanics of authoring or overriding one."
+    },
+    {
+      "name": "skill-authoring",
+      "enabled": true,
+      "description": "Use when creating, wiring, or editing a skill — covers scope choice, blueprint tier placement, override manifest, compile verification, CSO description format, TDD pressure-scenario testing, and framework/project split."
+    },
+    {
+      "name": "session-lifecycle",
+      "enabled": true,
+      "description": "Use when working on session init, startup hooks, the handoff or the session-end steps; debugging tasks.json, meta.json, or plans.json; understanding what runs at SessionStart, SessionEnd, or PreCompact; or tracing why a session artifact is missing or malformed. Covers the three-phase pipeline including the config-root redirect, template render, and native settings/CLAUDE.md merge that happen before any hook fires."
+    },
+    {
+      "name": "hook-wiring",
+      "enabled": true,
+      "description": "Use when adding a new hook, mapping an event key onto a Claude Code event, changing the generated settings wiring, or debugging why a hook is not firing. Covers the event key → directory → hook-dispatch invariant, the settings files and which one holds the generated hooks block, the hooks.json field schema, and the Claude Code event mapping."
+    },
+    {
+      "name": "hook-authoring",
+      "enabled": true,
+      "description": "Use when writing a new hook script, registering a hook in hooks.json, or wiring a project-level hook override in .agentic-os/hooks/hooks.json."
+    },
+    {
+      "name": "fan-out-aggregate",
+      "enabled": true,
+      "description": "Use when acting as a dynamic-<pillar> orchestrator agent that decomposes a request into subtasks and spawns child subagents via the Agent tool. Covers workflow_id registration per child and aggregating from Agent() return payloads, including synthesizing an error-status object for a failed or malformed child result."
+    },
+    {
+      "name": "context-evaluation-framework",
+      "enabled": true,
+      "description": "Use when classifying context inputs, performing gap analysis on agent/skill/command definitions, or evaluating artifact distribution across Push, Genuine Agent Context, Shared Infrastructure, and Task Payloads."
+    },
+    {
+      "name": "command-authoring",
+      "enabled": true,
+      "description": "Use when registering a new slash command, choosing between dispatch, bash-delegate, or agent-delegate type, writing trigger-guard blueprints, wiring the override manifest, or verifying a compiled command body is clean."
+    },
+    {
+      "name": "claude-memory",
+      "enabled": true,
+      "description": "Use when creating, editing, or reading CLAUDE.md, CLAUDE.local.md, or any .claude/rules/*.md file — in this project or a project consuming this framework. Covers the CLAUDE_CONFIG_DIR redirect that makes .claude/config/ play the role of the operator's real ~/.claude/, which of the CLAUDE.md/rules files are framework-owned versus project-owned, and load-order precedence between the two scopes."
+    },
+    {
+      "name": "claude-config",
+      "enabled": true,
+      "description": "Use when deciding the Claude Code fields of an agent, skill or command: model, tools, skills, memory, allowed-tools, paths. Covers the frontmatter keys per capability class, tool names and permission-rule syntax, and where settings, rules, memory and MCP configuration live, with pointers to the adapter docs and the Claude Code docs."
+    },
+    {
+      "name": "blueprint-authoring",
+      "enabled": true,
+      "description": "Use when creating or editing blueprint files in bin/skills/blueprints/, bin/agents/blueprints/, the skills/blueprints/ of an adapter (bin/adapters/<provider>/ or .agentic-os/adapters/<provider>/), or .agentic-os/skills/blueprints/ — covers tier placement, placeholder contracts, resolver chain, and blueprint lookup."
+    },
+    {
+      "name": "bash-utility",
+      "enabled": true,
+      "description": "Use when writing or reviewing any bash script in this project — covers set -euo pipefail crash patterns, source load order, logging API and configuration (LOG_LEVEL, LOG_HANDLERS, formatters), environment variable processing (.env priority chain, env_parse_file, naming rules), and runtime flags (BU_NO_HOOKS, VERBOSE)."
+    },
+    {
+      "name": "bash-framework",
+      "enabled": true,
+      "description": "Use when authoring a bash library, module command, hook script, or provider adapter — in the framework (bin/lib, bin/modules, bin/hooks, bin/adapters) or in a project (.agentic-os/bin) — covers module anatomy, library-first rules, hook patterns, adapter seam, naming conventions, and framework-specific anti-patterns."
+    },
+    {
+      "name": "agent-authoring",
+      "enabled": true,
+      "description": "Use when registering a new agent, writing agent blueprint content, wiring the override manifest, or verifying a compiled agent body is clean."
+    }
+  ],
+  "claude": []
+}

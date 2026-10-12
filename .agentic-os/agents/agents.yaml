@@ -1,0 +1,6 @@
+version: "1.0"
+
+# Project registration of agents: name, type, description only. Provider fields live in
+# agents.<provider>.yaml, enable/disable in agents.json. `bash bin/app tiers registration-dir agents`
+# prints where a new registration is written.
+agents: []

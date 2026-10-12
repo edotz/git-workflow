@@ -1,0 +1,70 @@
+{
+  "version": "1.0",
+  "shared": [
+    {
+      "name": "commit-msg/conventional",
+      "enabled": true
+    },
+    {
+      "name": "cwd-changed/set-env",
+      "enabled": true
+    },
+    {
+      "name": "pre-compact/session-snapshot",
+      "enabled": true
+    },
+    {
+      "name": "pre-tool-use-websearch/append-year",
+      "enabled": true
+    },
+    {
+      "name": "session-end/session-enrich",
+      "enabled": true
+    },
+    {
+      "name": "session-end/transcript-saver",
+      "enabled": true
+    },
+    {
+      "name": "session-start/check-memory-bounds",
+      "enabled": true
+    },
+    {
+      "name": "session-start/inject-env",
+      "enabled": true
+    },
+    {
+      "name": "session-start/inject-handoff",
+      "enabled": true
+    },
+    {
+      "name": "session-start/inject-memory",
+      "enabled": true
+    },
+    {
+      "name": "session-start/inject-plan",
+      "enabled": true
+    },
+    {
+      "name": "session-start/inject-roadmap",
+      "enabled": true
+    },
+    {
+      "name": "session-start/scope-state",
+      "enabled": true
+    },
+    {
+      "name": "session-start/session-audit",
+      "enabled": true
+    },
+    {
+      "name": "session-start/session-id-sync",
+      "enabled": true
+    },
+    {
+      "name": "stop-failure/error-logger",
+      "enabled": true
+    }
+  ],
+  "claude": []
+}

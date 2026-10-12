@@ -1,0 +1,6 @@
+version: "1.0"
+
+# Project registration of commands: name, type, description only. Provider fields live in
+# commands.<provider>.yaml, enable/disable in commands.json. `bash bin/app tiers registration-dir commands`
+# prints where a new registration is written.
+commands: []

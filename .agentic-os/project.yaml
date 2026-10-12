@@ -1,0 +1,30 @@
+version: "1.0"
+
+# Technology — what the project is built with. /aos:discover proposes entries.
+# id:    short identifier
+# label: human-readable description
+# root:  path relative to PROJECT_ROOT where this technology lives
+technology: []
+#  - id: example
+#    label: "Human-readable description"
+#    root: "src/example"
+
+# Toolchain — commands that verify work; the planner reads them from this file.
+# Empty string = step is skipped.
+toolchain:
+  lint:  ""
+  test:  ""
+  stash: ""
+
+# Plugins the project uses, in precedence order (a later entry wins over an earlier one).
+# Each plugin needs a plugin.yaml at its root. `bash bin/app plugins list` shows the registry.
+plugins: []
+#  - name: example-plugin
+#    path: "../example-plugin"   # relative to the project root, or absolute
+
+# Selectors — the axes agentic-os offers when it is called (flag or prompt). A project that declares none is never asked.
+# view: personas whose capability scope differs; declare options to offer them.
+#selectors:
+#  view:
+#    options: [developer, architect, tester]
+#    default: developer
