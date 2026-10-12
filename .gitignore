@@ -35,3 +35,6 @@ debug.log*
 # Temporary file to bypass lint hooks
 .nolint
 
+
+# node
+node_modules/

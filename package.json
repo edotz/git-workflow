@@ -1,0 +1,10 @@
+{
+  "name": "@edotz/git-workflow",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@commitlint/cli": "^20.4.1",
+    "@commitlint/config-conventional": "^20.4.1"
+  }
+}

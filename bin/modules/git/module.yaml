@@ -8,6 +8,8 @@ commands:
   - name: "branch-protection"
     requires: [git, gh]
     description: "Manage GitHub branch protection rules from declarative YAML."
+  - name: "lint-commit"
+    description: "Validate a commit message file against the conventional commit config of the plugin."
   - name: "run-status"
     requires: [gh]
     description: "Fetch recent GitHub Actions workflow runs as JSON."
