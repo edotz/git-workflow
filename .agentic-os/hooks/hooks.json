@@ -2,10 +2,6 @@
   "version": "1.0",
   "shared": [
     {
-      "name": "commit-msg/conventional",
-      "enabled": true
-    },
-    {
       "name": "cwd-changed/set-env",
       "enabled": true
     },
