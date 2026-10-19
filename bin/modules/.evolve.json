@@ -1,0 +1,10 @@
+{
+  "claude": {
+    "context_file": ".agentic-os/adapters/claude/templates/rules/bin-modules.md",
+    "purpose": "Shell command modules of the plugin: git (workflow-setup, branch protection, worktree, commit lint) and ide (vscode profiles and project setup).",
+    "scope_trigger": "bin/modules/**",
+    "checks": [
+      "shellcheck clean"
+    ]
+  }
+}

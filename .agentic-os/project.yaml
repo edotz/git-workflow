@@ -12,9 +12,7 @@ technology: []
 # Toolchain — commands that verify work; the planner reads them from this file.
 # Empty string = step is skipped.
 toolchain:
-  lint:  ""
-  test:  ""
-  stash: ""
+  lint:  ""  
 
 # Plugins the project uses, in precedence order (a later entry wins over an earlier one).
 # Each plugin needs a plugin.yaml at its root. `bash bin/app plugins list` shows the registry.
@@ -23,8 +21,12 @@ plugins: []
 #    path: "../example-plugin"   # relative to the project root, or absolute
 
 # Selectors — the axes agentic-os offers when it is called (flag or prompt). A project that declares none is never asked.
+# purpose: what the checkout is loaded for; a plugin that delivers agentic-os content declares project and deliverable.
 # view: personas whose capability scope differs; declare options to offer them.
-#selectors:
+selectors:
+  purpose:
+    options: [project, deliverable]
+    default: project
 #  view:
 #    options: [developer, architect, tester]
 #    default: developer

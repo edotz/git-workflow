@@ -1,0 +1,7 @@
+{
+  "claude": {
+    "context_file": ".agentic-os/adapters/claude/templates/rules/agentic-os-project.md",
+    "purpose": "The project's own planning data: the concepts, the plans and the project context.",
+    "scope_trigger": ".agentic-os/project/**"
+  }
+}

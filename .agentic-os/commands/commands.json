@@ -4,32 +4,56 @@
     {
       "name": "init",
       "enabled": true,
-      "description": "Invoke ONLY when user types /aos:init (the slash command, not the bash commands app runtime init or agentic-init) to capture the project context."
+      "description": "Use when the project context (product, identity, architecture, declared scopes) must be captured or completed.",
+      "origin": "framework"
     },
     {
       "name": "handoff",
       "enabled": true,
-      "description": "Invoke ONLY when user types /aos:handoff to close the session with a reviewed handoff, project ledger lines, roadmap changes and scope memory proposals."
+      "description": "Use when a session ends and its state must be handed over to the next session.",
+      "origin": "framework"
     },
     {
       "name": "dynamic-workflow",
       "enabled": true,
-      "description": "Invoke ONLY when user types /aos:dynamic-workflow with a free-form request that should be decomposed and run as a parallel multi-agent workflow."
+      "description": "Invoke ONLY when user types /aos:dynamic-workflow with a free-form request that should be decomposed and run as a parallel multi-agent workflow.",
+      "origin": "framework"
     },
     {
       "name": "dynamic-authoring",
       "enabled": true,
-      "description": "Invoke ONLY when user types /aos:dynamic-authoring"
+      "description": "Use when tasks of a plan must be authored and reviewed as a skill, agent or command through the dynamic authoring pipeline; takes plan task ids.",
+      "origin": "framework"
     },
     {
       "name": "config",
       "enabled": true,
-      "description": "Re-render provider configuration for the active session. Use after editing adapter templates, hooks.json, or agents/skills without restarting; give a template name to re-render only that template."
+      "description": "Re-render provider configuration for the active session. Use after editing adapter templates, hooks.json, or agents/skills without restarting; give a template name to re-render only that template.",
+      "origin": "framework"
     },
     {
       "name": "compile",
       "enabled": true,
-      "description": "Compile capability artifacts (agents, skills, commands) from source into provider config dir. Run after modifying agents, skills, or commands."
+      "description": "Compile capability artifacts (agents, skills, commands) and the hook wiring from source into provider config dir. Run after modifying agents, skills, commands, or hooks.",
+      "origin": "framework"
+    },
+    {
+      "name": "plan",
+      "enabled": true,
+      "description": "Use when a plan must be drafted for the backlog items of this session or the active plan must be amended; takes a backlog item id or the request to amend.",
+      "origin": "framework"
+    },
+    {
+      "name": "concept",
+      "enabled": true,
+      "description": "Use when what a piece of work has to settle before a plan exists must be captured as a concept from the developer's raw input; takes the input or the name of an existing concept to continue.",
+      "origin": "framework"
+    },
+    {
+      "name": "bash-authoring",
+      "enabled": true,
+      "description": "Use when tasks of a plan must be written and reviewed as bash code, one or a group of related ones, be it a library function, module command, hook script or adapter; takes plan task ids.",
+      "origin": "framework"
     }
   ],
   "claude": []

@@ -1,0 +1,10 @@
+{
+  "claude": {
+    "context_file": ".agentic-os/adapters/claude/templates/rules/root.md",
+    "purpose": "Container image of the git-workflow tools: node-slim base, pinned git-cliff and splitsh-lite, running as the node user, identical tool versions for all developers.",
+    "scope_trigger": "Dockerfile"
+  },
+  "agentic-os": {
+    "kind": "plugin"
+  }
+}

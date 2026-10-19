@@ -4,77 +4,116 @@
     {
       "name": "template-author",
       "enabled": true,
-      "description": "Judges whether an existing registered template type fits a capability's actual purpose, or authors a new type as a prerequisite subtask when none does."
+      "description": "Use when a creator is about to be dispatched and it is open whether an existing template type fits the capability's purpose. Read-only; never writes or authors.",
+      "origin": "framework"
     },
     {
       "name": "statusline-setup",
       "enabled": true,
-      "description": "Configures the user's Claude Code status line setting."
+      "description": "Configures the user's Claude Code status line setting.",
+      "origin": "adapter"
     },
     {
       "name": "skill-author",
       "enabled": true,
-      "description": "Creates, refactors, and verifies a single provider-portable skill against a pre-resolved template type and tier — gap analysis, blueprint content, override manifest wiring, compile verification, and pressure-testing. Terminal: never spawns further agents, never decomposes a request across capability classes, never judges template fit or tier placement (resolved upstream by template-author/blueprint-author). Use when a request needs one named skill built or fixed, not a new agent or command."
+      "description": "Use when one named skill must be built or fixed and its template type and tier are already resolved by template-author and blueprint-author. Not for an agent or a command; never spawns agents.",
+      "origin": "framework"
     },
     {
       "name": "general-purpose",
       "enabled": true,
-      "description": "General-purpose agent for researching complex questions, searching for code, and executing multi-step tasks."
+      "description": "General-purpose agent for researching complex questions, searching for code, and executing multi-step tasks.",
+      "origin": "adapter"
     },
     {
       "name": "dynamic-author",
       "enabled": true,
-      "description": "Orchestrates the dynamic authoring pipeline — resolves template fit and tier centrally, then dispatches a pre-resolved payload to the matching creator subagent."
+      "description": "Use when a skill, agent or command must be authored or refactored through the dynamic authoring pipeline, from the task payload of the dynamic authoring command. The only agent that delegates in that pipeline; it never writes.",
+      "origin": "framework"
     },
     {
       "name": "context-init",
       "enabled": true,
-      "description": "Use when a project's context must be captured for one scope (frontend, backend, CMS, or dev environment such as Docker, DDEV, devcontainer, CI), one spawn per scope, the scope named in the task payload. Read-only: reads manifests and environment files and returns one cited report of facts, decision candidates, environment facts, constraint candidates and ambiguities. Never writes, decides or spawns."
+      "description": "Use when a project's context must be captured for one scope (frontend, backend, CMS, or a dev environment such as Docker, DDEV, devcontainer or CI); one spawn per scope, the scope named in the task payload. Read-only; never writes, decides or spawns.",
+      "origin": "framework"
     },
     {
       "name": "command-author",
       "enabled": true,
-      "description": "Creates, refactors, and verifies a single provider-portable slash command against a pre-resolved template type and tier — dispatch-pattern-specific registration, blueprint content per declared placeholder, override manifest wiring, and compile verification. Terminal: never spawns further agents, never decomposes a request across capability classes, never judges template fit or tier placement (resolved upstream by template-author/blueprint-author). Use when a request needs one named command built or fixed, not a skill or agent."
+      "description": "Use when one named slash command must be built or fixed and its template type and tier are already resolved by template-author and blueprint-author. Not for a skill or an agent; never spawns agents.",
+      "origin": "framework"
     },
     {
       "name": "claude-config",
       "enabled": true,
-      "description": "Resolves the Claude Code provider config for one capability: given its goal and resolved template type, returns the concrete entry for its <type>.claude.yaml (model, tools, skills, memory, allowed-tools, paths) with a one-line reason per field. Advisory and read-only: never writes files, never spawns agents, never authors the capability. Use after the tier decision, before a creator is dispatched."
+      "description": "Resolves the Claude Code provider config for one capability: given its goal and resolved template type, returns the concrete entry for its <type>.claude.yaml (model, tools, skills, memory, allowed-tools, paths) with a one-line reason per field. Advisory and read-only: never writes files, never spawns agents, never authors the capability. Use after the tier decision, before a creator is dispatched.",
+      "origin": "adapter"
     },
     {
       "name": "claude-code-guide",
       "enabled": true,
-      "description": "Questions about Claude Code (the CLI tool), the Claude Agent SDK, the Claude API, Claude Tag (Claude in Slack), or the plugin eval framework."
+      "description": "Questions about Claude Code (the CLI tool), the Claude Agent SDK, the Claude API, Claude Tag (Claude in Slack), or the plugin eval framework.",
+      "origin": "adapter"
     },
     {
       "name": "claude",
       "enabled": true,
-      "description": "Catch-all for any task that doesn't fit a more specific agent. FleetView's default when no agent name is typed."
+      "description": "Catch-all for any task that doesn't fit a more specific agent. FleetView's default when no agent name is typed.",
+      "origin": "adapter"
     },
     {
       "name": "capability-scout",
       "enabled": true,
-      "description": "Use when a project needs to know which capabilities it is missing, or after its standing context (product, identity, architecture, memory) has changed. Read-only: reads only the paths its payload names plus the live capability inventories, and returns ranked, cited proposals as ready authoring payloads. Never writes, registers, compiles or dispatches."
+      "description": "Use when a project needs to know which capabilities it is missing, or after its standing context (product, identity, architecture, memory) has changed. Read-only; never writes, registers, compiles or dispatches.",
+      "origin": "framework"
     },
     {
       "name": "blueprint-author",
       "enabled": true,
-      "description": "Resolves tier placement, the placeholder contract, and the variable whitelist for a capability once template fit has been decided."
+      "description": "Use when the template type of a capability is settled and its tier, placeholder contract and variable whitelist are still open. Read-only; never writes.",
+      "origin": "framework"
     },
     {
       "name": "agent-author",
       "enabled": true,
-      "description": "Creates, refactors, and verifies a single provider-portable agent against a pre-resolved template type and tier — registration, Role/Context/ Process/Output blueprint content, provider manifest wiring, and compile verification. Terminal: never spawns further agents, never decomposes a request across capability classes, never judges template fit or tier placement (resolved upstream by template-author/blueprint-author). Use when a request needs one named agent built or fixed, not a skill or command."
+      "description": "Use when one named agent must be built or fixed and its template type and tier are already resolved by template-author and blueprint-author. Not for a skill or a command; never spawns agents.",
+      "origin": "framework"
     },
     {
       "name": "Plan",
       "enabled": true,
-      "description": "Software architect agent for designing implementation plans."
+      "description": "Software architect agent for designing implementation plans.",
+      "origin": "adapter"
     },
     {
       "name": "Explore",
       "enabled": true,
-      "description": "Fast read-only search agent for locating code by pattern, symbol, or keyword."
+      "description": "Fast read-only search agent for locating code by pattern, symbol, or keyword.",
+      "origin": "adapter"
+    },
+    {
+      "name": "planner",
+      "enabled": true,
+      "description": "Use when a session needs a plan drafted from the ready backlog items assigned to it, with the session and those items in the task payload. Read-only; never writes, registers, compiles, dispatches or spawns agents; hands the draft back as its report.",
+      "origin": "framework"
+    },
+    {
+      "name": "capability-reviewer",
+      "enabled": true,
+      "description": "Use when an authored skill, agent or command needs review before it lands, with its class, the files written and the author report in the task payload. Read-only; never writes, never runs a script that mutates the tree, never spawns agents.",
+      "origin": "framework"
+    },
+    {
+      "name": "bash-reviewer",
+      "enabled": true,
+      "description": "Use when a bash change needs review before it lands: a commit, a range or named files (default the last commit). Read-only; never writes, never runs a script that mutates the tree, never spawns agents.",
+      "origin": "framework"
+    },
+    {
+      "name": "bash-author",
+      "enabled": true,
+      "description": "Use when bash code must be written against a spec the caller already resolved (tier, files to write, behavior). Several may run in parallel on disjoint write lists. Never spawns agents, never decides tier or scope, does not review.",
+      "origin": "framework"
     }
   ],
   "claude": []

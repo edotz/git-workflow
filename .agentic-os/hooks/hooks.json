@@ -60,6 +60,10 @@
     {
       "name": "stop-failure/error-logger",
       "enabled": true
+    },
+    {
+      "name": "task-completed/write-back",
+      "enabled": true
     }
   ],
   "claude": []

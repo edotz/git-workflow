@@ -1,0 +1,10 @@
+{
+  "claude": {
+    "context_file": ".agentic-os/adapters/claude/templates/rules/bin-lib.md",
+    "purpose": "Plugin-local bash libraries (github.sh, worktree.sh) sourced by the git modules through PLUGIN_ROOT.",
+    "scope_trigger": "bin/lib/**",
+    "checks": [
+      "shellcheck clean"
+    ]
+  }
+}

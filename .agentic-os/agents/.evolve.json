@@ -1,0 +1,11 @@
+{
+  "claude": {
+    "context_file": ".agentic-os/adapters/claude/templates/rules/agentic-os-agents.md",
+    "purpose": "The project's own agents: registration, provider config and blueprints, authored through the pipeline",
+    "scope_trigger": ".agentic-os/agents/**",
+    "checks": [
+      "bash bin/app lint yaml changed exits 0",
+      "jq empty .agentic-os/agents/agents.json exits 0"
+    ]
+  }
+}
