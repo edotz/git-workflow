@@ -1,0 +1,537 @@
+{
+  "schema": "concept/1",
+  "id": "CONCEPT-git-workflow-plugin",
+  "goal": "Settle the conceptual approach of the agentic-os git-workflow plugin that replaces the old single-repo and monorepo workflows.",
+  "scope": "edotz.git-workflow plugin: ci, bin/modules, bin/lib and the container image, as a concept with no implementation",
+  "input": "This project is the new Agentic-os Git workflow plugin. We are developing only a conceptual approach that functions as a git-workflow plugin within agentic-os.",
+  "raw_input": "notes/raw-input.md",
+  "status": "draft",
+  "abstract": {
+    "summary": "The edotz git-workflow plugin for agentic-os replaces the old cascade of GitHub Actions with a local workflow run through `app git <command>`: PRs are checked on GitHub and squash-merged to master, each release is one atomic local commit with its tag, and a GitHub App replaces the personal token.",
+    "background": "The old single-repo and monorepo workflows rest on a chain of asynchronous Actions, backport PRs and the personal token of one developer; the plugin is the redesign that replaces them.",
+    "problem": "The old approach causes many errors: up to five chained PRs and workflows per release, asynchronous backport PRs that conflict, no way to preview or fix a release locally, and every write right tied to the personal token of ohoeft.",
+    "constraints": [
+      "This is a conceptual approach only; nothing is implemented.",
+      "The functionality ships inside agentic-os as a plugin, and the plugin neither chooses nor bundles an LLM provider."
+    ],
+    "goals": [
+      "Single repo and monorepo run start, commit, PR, promote, release (dry run and apply) and split through `app git <command>`.",
+      "Each release is one atomic release commit with its tag, made locally.",
+      "GitHub Actions only run the PR checks, and a GitHub App holds every write right.",
+      "The changelog is linear.",
+      "The process has no pitfalls, and the developer does not care how their changes are incorporated."
+    ],
+    "out_of_scope": [
+      "Any implementation.",
+      "The design of the token service.",
+      "The internals of generate-readme-action, the ide module and the vscode profiles."
+    ],
+    "audience": "The edotz developers working in agentic-os sessions; one developer is in charge today.",
+    "approach": "A local, deterministic workflow. PRs are squash-merged onto master after the GitHub checks. A promotion lands on the release branch named in RELEASE_BRANCH, where one atomic release commit with its tag is made locally and pushed by a GitHub App that is the only bypass actor. The monorepo split runs from the developer machine. How a promotion reaches the release branch is proposed (replay of the master commits onto it) and not confirmed.",
+    "measures": [
+      "Squash merge on master with a conventional PR title; linear history on master, 2.x and 1.x; no bypass on master.",
+      "Rulesets with the GitHub App as sole bypass actor on 2.x and 1.x replace the classic branch protection.",
+      "A token service gives the CLI short-lived installation tokens of the app.",
+      "`release --dry-run` previews version and changelog with git-cliff; `release --apply` writes version, CHANGELOG and README into one release commit with its tag.",
+      "The monorepo split runs locally with splitsh-lite and pushes the child repositories.",
+      "Commit message and changelog summary come from `provider_run_prompt` on the host session; the container carries only git-cliff, splitsh-lite and gh.",
+      "STAGE stays as a project-phase switch for the master ruleset, and the Stage Guard goes.",
+      "All old CI except status-checks.yml is removed.",
+      "Commands are `app git <command>`.",
+      "The release branch is read from RELEASE_BRANCH."
+    ],
+    "why": "The old chain breaks at any link and cannot be fixed locally; a local release can be previewed and corrected before GitHub sees it. A GitHub App with short-lived tokens removes the dependence on one person. Squash merge gives the linear changelog without history cleanup by the developer, and without release-please the reason for merge-commit-only history is gone.",
+    "alternatives": [
+      "Rebase merge on master: keeps every commit but makes the developer care about commit hygiene.",
+      "Merge commits on master with git-cliff skipping them: the history stays non-linear.",
+      "ohoeft as bypass actor, alone or with the app: dropped because the personal token is replaced completely.",
+      "A key in the container or SSH for the split push: rejected for a token service, so no private key reaches a developer machine.",
+      "Keeping release-please or the post-release README step: rejected with the rest of the old CI.",
+      "Bundled claude or gemini CLIs, or a local Ollama: dropped because the provider belongs to agentic-os.",
+      "LLM steps inside the container: not chosen."
+    ],
+    "risks": [
+      "A replay of master commits onto 2.x conflicts if a master commit touches files the release commit owns (proposed, not confirmed).",
+      "branch-cleanup finds no merged branches after squash merges, so its detection is carried to the plan.",
+      "The GitHub App, the token service and the local README generator have no design or code yet, and releases depend on them."
+    ],
+    "success": [
+      "A release can be previewed and corrected locally before anything reaches GitHub.",
+      "No backport PR, no personal token and no cascade of workflows remain.",
+      "The master changelog has one entry per merged PR, in order."
+    ],
+    "open": [
+      "How a promotion reaches the release branch; replay is proposed and not confirmed.",
+      "What the development phase of STAGE relaxes.",
+      "How the README is generated locally in the release commit.",
+      "The design of the token service.",
+      "Pre-release flags and the tag format for monorepo packages.",
+      "How workflow-status and branch-cleanup change after squash merge and replay.",
+      "How the rulesets replace the classic branch protection code."
+    ]
+  },
+  "sources": [
+    {
+      "ref": "260903-git-workflow.md",
+      "what": "Role new, the primary draft: local CLI, splitsh-lite split, git-cliff changelog, rulesets, atomic release commit, container image; read in full.",
+      "verified": true
+    },
+    {
+      "ref": "docs/git-workflow-monorepo/SKILL.md",
+      "what": "Role old: the monorepo workflow with split action, childrepo release train and sync-to-monorepo backport, which the plugin replaces; read in full.",
+      "verified": true
+    },
+    {
+      "ref": "docs/git-workflow-single/SKILL.md",
+      "what": "Role old: the single-repo workflow with release-please, post-release backport and STAGE split, which the plugin replaces; read in full.",
+      "verified": true
+    },
+    {
+      "ref": "docs/git-workflow",
+      "what": "Role old: the old reference docs and slash command table (commands, lifecycle, preflight, workflow-env, generated-artifacts, callable-workflows, repo-details); all seven read.",
+      "verified": true
+    },
+    {
+      "ref": ".github/workflows",
+      "what": "Role old: the old CI, named in the input as .github/workflow; all 6 files read, the callables use the personal token NPM_AUTH_TOKEN.",
+      "verified": true
+    },
+    {
+      "ref": ".claude/session/a24bcf21/260903_edotz_gitworkflow.pdf",
+      "what": "Role context: the German analysis behind the draft, with the GitHub App migration, ruleset design and its open questions; read in full, 12 pages.",
+      "verified": true
+    },
+    {
+      "ref": "/home/ohoeft/workspace/edotz.claude-code/bin/adapters/claude/agent.sh",
+      "what": "Named in dialog (gap G4): the Claude adapter's adapter_run_prompt (claude -p, model haiku) and adapter_run_agent; read together with lib/provider.sh, whose provider_run_prompt dispatches to it.",
+      "verified": true
+    },
+    {
+      "ref": "bin/modules, bin/lib, Dockerfile",
+      "what": "Named in dialog (gap G3): the git module scripts, templates, hooks.yaml, github.sh, worktree.sh and the Dockerfile, read for what the plugin does today; the ide scripts were not read.",
+      "verified": true
+    }
+  ],
+  "not_looked_at": [
+    "The detected scope ci has no declaration and so no memory.",
+    "The path .github/workflow named in the input does not exist; .github/workflows was read in its place.",
+    "The ide scripts, the commit-msg hook script and bin/config/env.defaults were not read.",
+    "The 56 web references cited in the PDF were not followed.",
+    "Whether agentic-os provides a way to run the framework inside the container was not looked at."
+  ],
+  "questions": [
+    {
+      "id": "Q1",
+      "question": "What is the name of this concept?",
+      "why": "Every call of the concept needs the name.",
+      "decision": "D1"
+    },
+    {
+      "id": "Q2",
+      "question": "How do the draft's linear history on 2.x/1.x and the merge-commit-only rule fit together?",
+      "why": "The draft and the old skills disagree on the merge policy.",
+      "decision": "D2"
+    },
+    {
+      "id": "Q3",
+      "question": "Which command surface does the plugin expose, given that the framework app replaces bin/gh-wf?",
+      "why": "The draft names the tool gh wf, gh-wf and git-wf.",
+      "decision": "D3"
+    },
+    {
+      "id": "Q4",
+      "question": "What replaces the personal access token of ohoeft for runner authentication, monorepo splits and PR creation?",
+      "why": "The personal token is the administrative bottleneck of the old design.",
+      "decision": "D4"
+    },
+    {
+      "id": "Q5",
+      "question": "Who is the bypass actor on 2.x and 1.x once the GitHub App replaces the personal token?",
+      "why": "The draft names ohoeft by user ID, the PDF names the app and ohoeft.",
+      "decision": "D5"
+    },
+    {
+      "id": "Q6",
+      "question": "How does the local CLI obtain the GitHub App's installation token?",
+      "why": "The split push, PR creation and the release push all need the app identity.",
+      "decision": "D6"
+    },
+    {
+      "id": "Q7",
+      "question": "Does D2 stand for master, or does the linear history of the PDF apply to it too?",
+      "why": "The PDF requires linear history on master, the draft only on the release branches.",
+      "decision": "D7"
+    },
+    {
+      "id": "Q8",
+      "question": "What does the linear changelog require of master?",
+      "why": "It decides whether PRs merge by rebase, squash or merge commit.",
+      "decision": "D8"
+    },
+    {
+      "id": "Q9",
+      "question": "How does a promotion reach 2.x after the first release commit, without backport PRs?",
+      "why": "After the release commit master no longer is a fast-forward ancestor of 2.x.",
+      "decision": "D9"
+    },
+    {
+      "id": "Q10",
+      "question": "Which LLM provider does the plugin call headlessly for commit messages and the changelog summary?",
+      "why": "The draft bundles the claude and gemini CLIs in the image.",
+      "decision": "D10"
+    },
+    {
+      "id": "Q11",
+      "question": "Which merge strategy does master use for PRs?",
+      "why": "D7 and D8 name the goal but not the strategy.",
+      "decision": "D11"
+    },
+    {
+      "id": "Q12",
+      "question": "By which mechanism does a promotion reach 2.x?",
+      "why": "D9 names the criteria but not the mechanism; the developer answered only where the target branch comes from (D16)."
+    },
+    {
+      "id": "Q13",
+      "question": "What stays of the old CI and the STAGE concept?",
+      "why": "The draft keeps only status-checks.yml; the developer had not settled the Stage Guard and STAGE.",
+      "decision": "D17"
+    },
+    {
+      "id": "Q14",
+      "question": "Where do the steps that need an LLM, the commit message and the changelog summary, run?",
+      "why": "provider_run_prompt skips when the provider binary is missing, and the container entrypoint is app.",
+      "decision": "D18"
+    },
+    {
+      "id": "Q15",
+      "question": "Which parts of the old CI does the plugin remove?",
+      "why": "Four callables use the personal token and the release flow no longer needs release-please or backport PRs.",
+      "decision": "D19"
+    },
+    {
+      "id": "Q16",
+      "question": "What is the purpose of this work, the problem it answers?",
+      "why": "The abstract needs its background and problem.",
+      "decision": "D14"
+    },
+    {
+      "id": "Q17",
+      "question": "What does the work have to reach, so that it can be told to be done?",
+      "why": "The abstract needs its goals.",
+      "decision": "D15"
+    },
+    {
+      "id": "Q18",
+      "question": "What does this concept not cover?",
+      "why": "The abstract needs its constraints and what is out of scope.",
+      "decision": "D20"
+    },
+    {
+      "id": "Q19",
+      "question": "Where does the target branch of a promotion come from?",
+      "why": "The draft passes it as --target 2.x.",
+      "decision": "D16"
+    },
+    {
+      "id": "Q20",
+      "question": "What does the development phase of STAGE relax on master?",
+      "why": "D17 keeps STAGE as a switch without saying what it switches.",
+      "decision": "D21"
+    },
+    {
+      "id": "Q21",
+      "question": "How is the README generated locally in the release commit?",
+      "why": "generate-readme-action runs only as a GitHub Action today.",
+      "decision": "D22"
+    },
+    {
+      "id": "Q22",
+      "question": "How is the token service designed?",
+      "why": "D6 chooses a token service without a design.",
+      "decision": "D23"
+    },
+    {
+      "id": "Q23",
+      "question": "Which pre-release flags and tag format does a release use, for a single repo and for monorepo packages?",
+      "why": "The PDF names --pre=<channel> and packages/object/v2.1.0-beta.1.",
+      "decision": "D24"
+    },
+    {
+      "id": "Q24",
+      "question": "How do workflow-status and branch-cleanup change after squash merge and replay?",
+      "why": "Both rely on rev-list counts and git branch --merged.",
+      "decision": "D25"
+    },
+    {
+      "id": "Q25",
+      "question": "How do the rulesets replace the classic branch protection code?",
+      "why": "github.sh and workflow-setup only know the classic protection API.",
+      "decision": "D26"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "question": "The concept name",
+      "chosen": "git-workflow-plugin",
+      "reason": "Taken from the goal: the new agentic-os git workflow plugin.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D2",
+      "question": "History policy of master and the release branches",
+      "chosen": "Split by branch: master takes PRs with merge commits only; 2.x and 1.x have linear history, promotion goes onto them and the atomic release commit sits on top, both by the bypass actor.",
+      "reason": "Keeps the individual conventional commits on master for git-cliff and gives the release branches the linear history of the draft. Its master half is superseded by D11.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "superseded",
+      "superseded_by": "D11"
+    },
+    {
+      "id": "D3",
+      "question": "Command surface of the plugin",
+      "chosen": "app git <command>; the names gh-wf, gh wf and git-wf are dropped and the container entrypoint is app.",
+      "reason": "The framework app replaces bin/gh-wf and the plugin's git module already lives under app git.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D4",
+      "question": "Replacement of the personal access token",
+      "chosen": "The current process, in which ohoeft's personal access token is used for runner authentication, monorepo splits, and creating pull requests, will be completely replaced by an internal GitHub App.",
+      "reason": "The developer's words, which the PDF repeats: a personal token binds the process to one person and one token lifetime.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D5",
+      "question": "Bypass actor on 2.x and 1.x",
+      "chosen": "The GitHub App is the only bypass actor (actor_type Integration, mode always); master has no bypass for anyone. ohoeft as a user ID is dropped.",
+      "reason": "The personal token is replaced completely (D4); the PDF lists the app and ohoeft, the developer chose the app alone.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D6",
+      "question": "How the CLI obtains the app token",
+      "chosen": "A token service issues short-lived installation tokens to the CLI, so the app's private key never reaches a developer machine.",
+      "reason": "The PDF names a GitHub App Token Service in its phase 1; the developer chose it. The service design is not specified.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D7",
+      "question": "Goal for the changelog",
+      "chosen": "What I need is a linear changelog, adapt the rest to this goal.",
+      "reason": "The developer's words, given instead of an option; it is a requirement for the history and the release commit.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D8",
+      "question": "Ease of development",
+      "chosen": "The development should be easy and the developer concern should not be the incorporation of his changes.",
+      "reason": "The developer's words, given instead of an option; the tool carries the incorporation, not the developer.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D9",
+      "question": "Criteria for the promotion and release process",
+      "chosen": "I want a process with no pitfalls. If master tracks the new version, nice, if not, ok. The old approach causes a lot of errors and problems. I want to get rid of this. Today only one developer is in charge.",
+      "reason": "The developer's words, given instead of an option; master does not have to track the version, and the cascade of the old approach has to go.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D10",
+      "question": "LLM provider for commit messages and the changelog summary",
+      "chosen": "The LLM provider mentioned in the raw concept is just an example; we are using agentic-os and ship the functionality within agentic-os as a plugin. The plugin neither chooses nor bundles an LLM CLI.",
+      "reason": "The developer's words; the provider side belongs to agentic-os. How a plugin makes a headless provider call was looked at afterwards: provider_run_prompt, see D18.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D11",
+      "question": "Merge strategy of master",
+      "chosen": "Squash merge on master: one PR, one linear commit and one changelog entry taken from the PR title. master, 2.x and 1.x all have linear history, and the promotion and the atomic release commit go onto 2.x and 1.x by the bypass actor.",
+      "reason": "The developer chose it after the recommendation from D7 and D8. Without release-please the old reason for merge-commit-only history is gone; branch-cleanup's merged-branch detection has to change (D25).",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D12",
+      "question": "Mechanism of the promotion to 2.x",
+      "chosen": "The CLI replays the new master commits onto 2.x; the release commit with version, CHANGELOG and README exists only on 2.x and its tag, and master's README carries no version, only releases/latest links and version badges.",
+      "reason": "Derived from D9: master need not track the version, and the local atomic release commit with its tag stays, unlike a release PR with a tag after an async merge. Unconfirmed: the developer answered with D16 instead of choosing. A replay conflicts if a master commit touches files the release commit owns, and workflow-status would have to compare patch IDs.",
+      "by": "claude",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "proposed"
+    },
+    {
+      "id": "D13",
+      "question": "What stays of the old CI and the STAGE concept",
+      "chosen": "Not decided at the time: the draft keeps only status-checks.yml; the Stage Guard and the dev/prod STAGE split were open.",
+      "reason": "The developer said they were searching for the best fit and that a project start brings many changes. Answered by D17 for STAGE and D19 for the old CI.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "superseded",
+      "superseded_by": "D17"
+    },
+    {
+      "id": "D14",
+      "question": "Purpose of the work",
+      "chosen": "A reliable release process: replace the cascade of GitHub Actions, the personal token and the asynchronous backport PRs with a local, deterministic workflow run through agentic-os that can be fixed before anything reaches GitHub.",
+      "reason": "The developer confirmed the recommendation drawn from D9 and the PDF analysis.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D15",
+      "question": "Goal of the work",
+      "chosen": "Local release, GitHub only gates: single repo and monorepo run start, commit, PR, promote, release (dry run and apply) and split through app git <command>; each release is one atomic release commit with its tag; GitHub Actions only run the PR checks and the GitHub App holds every write right.",
+      "reason": "The developer confirmed the recommendation; it is done when no backport PR, no personal token and no cascade remain in the concept.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D16",
+      "question": "Where the target branch of a promotion comes from",
+      "chosen": "The Release branch is determined via the env variable RELEASE_BRANCH.",
+      "reason": "The developer's words, given as the answer to the promotion mechanism; it drops the --target flag of the draft. How the promotion reaches the branch stays open (Q12).",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D17",
+      "question": "What stays of the STAGE concept and the Stage Guard",
+      "chosen": "STAGE stays as a project-phase switch for the master ruleset only: a lighter development phase and the full D5 rules in production. The Stage Guard goes.",
+      "reason": "The developer confirmed the recommendation, matching their note that a project start brings many changes. D5 removes the master bypass that STAGE used to toggle, and a promotion makes no PR to the release branch that the Stage Guard could block.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D18",
+      "question": "Where the LLM steps run",
+      "chosen": "The commit message and the changelog summary come from provider_run_prompt on the host session, where the provider already runs; the container does only the deterministic tools (git-cliff, splitsh-lite, gh) and needs no provider binary and no LLM credentials.",
+      "reason": "The developer confirmed the recommendation. provider_run_prompt dispatches to the adapter of the active provider and skips when the binary is missing (bin/lib/provider.sh, adapters/claude/agent.sh).",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D19",
+      "question": "Which parts of the old CI the plugin removes",
+      "chosen": "All but the PR checks. Removed: the callables for release-please, post-release, merge-split-repo and sync-to-monorepo, the generated release and split callers, and release-please-config.json. Kept: status-checks.yml (commit-lint, biome, php-cs-fixer, shellcheck) as the only GitHub Action.",
+      "reason": "The developer confirmed the recommendation, as in the draft; all four removed callables use the personal token.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D20",
+      "question": "What the concept does not cover",
+      "chosen": "Concept only, designs left out: any implementation, the design of the token service, the internals of generate-readme-action, the ide module and the vscode profiles are out of scope. The concept names what each of them must provide.",
+      "reason": "The developer confirmed the recommendation; it keeps the stated limit of a conceptual approach with no implementation.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D21",
+      "question": "What the development phase of STAGE relaxes on master",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry the detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D22",
+      "question": "How the README is generated locally in the release commit",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry the detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D23",
+      "question": "How the token service is designed",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry the detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D24",
+      "question": "Pre-release flags and tag format for a single repo and monorepo packages",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry the detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D25",
+      "question": "How workflow-status and branch-cleanup change after squash merge and replay",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach and on Q12; the developer chose to carry the detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D26",
+      "question": "How the rulesets replace the classic branch protection code",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry the detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-10-20",
+      "scope": "concept-only",
+      "status": "decided"
+    }
+  ]
+}
