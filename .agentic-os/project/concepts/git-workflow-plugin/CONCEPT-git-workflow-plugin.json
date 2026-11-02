@@ -3,13 +3,13 @@
   "id": "CONCEPT-git-workflow-plugin",
   "goal": "Settle the conceptual approach of the agentic-os git-workflow plugin that replaces the old single-repo and monorepo workflows.",
   "scope": "edotz.git-workflow plugin: ci, bin/modules, bin/lib and the container image, as a concept with no implementation",
-  "input": "This project is the new Agentic-os Git workflow plugin. We are developing only a conceptual approach that functions as a git-workflow plugin within agentic-os.",
+  "input": "B-1",
   "raw_input": "notes/raw-input.md",
-  "status": "draft",
+  "status": "decided",
   "abstract": {
-    "summary": "The edotz git-workflow plugin for agentic-os replaces the old cascade of GitHub Actions with a local workflow run through `app git <command>`: PRs are checked on GitHub and squash-merged to master, each release is one atomic local commit with its tag, and a GitHub App replaces the personal token.",
+    "summary": "The edotz git-workflow plugin replaces the old cascade of GitHub Actions with a local, deterministic workflow behind `app git <command>`: pull requests are gated on GitHub, a release is one commit with its tag made locally on master and pushed by a GitHub App, and a release branch follows master by fast-forward only.",
     "background": "The old single-repo and monorepo workflows rest on a chain of asynchronous Actions, backport PRs and the personal token of one developer; the plugin is the redesign that replaces them.",
-    "problem": "The old approach causes many errors: up to five chained PRs and workflows per release, asynchronous backport PRs that conflict, no way to preview or fix a release locally, and every write right tied to the personal token of ohoeft.",
+    "problem": "The old approach causes many errors: up to five chained PRs and workflows per release, asynchronous backport PRs that conflict, no way to preview or fix a release locally, and every write right tied to one personal token.",
     "constraints": [
       "This is a conceptual approach only; nothing is implemented.",
       "The functionality ships inside agentic-os as a plugin, and the plugin neither chooses nor bundles an LLM provider."
@@ -17,57 +17,78 @@
     "goals": [
       "Single repo and monorepo run start, commit, PR, promote, release (dry run and apply) and split through `app git <command>`.",
       "Each release is one atomic release commit with its tag, made locally.",
-      "GitHub Actions only run the PR checks, and a GitHub App holds every write right.",
+      "GitHub Actions only run the PR checks, and a GitHub App holds every release write right.",
       "The changelog is linear.",
-      "The process has no pitfalls, and the developer does not care how their changes are incorporated."
+      "The process has no pitfalls, and a developer in a young project can still push fast."
     ],
     "out_of_scope": [
       "Any implementation.",
       "The design of the token service.",
-      "The internals of generate-readme-action, the ide module and the vscode profiles."
+      "The internals of generate-readme-action, the ide module and the vscode profiles.",
+      "Publishing, deployment and provisioning after the release, which belong to the consuming project."
     ],
     "audience": "The edotz developers working in agentic-os sessions; one developer is in charge today.",
-    "approach": "A local, deterministic workflow. PRs are squash-merged onto master after the GitHub checks. A promotion lands on the release branch named in RELEASE_BRANCH, where one atomic release commit with its tag is made locally and pushed by a GitHub App that is the only bypass actor. The monorepo split runs from the developer machine. How a promotion reaches the release branch is proposed (replay of the master commits onto it) and not confirmed.",
+    "approach": "A feature branch becomes a PR that GitHub gates with one aggregate check and squash-merges onto master; in a project's development phase developers may push to master directly. A release is made on master as one commit with version files, changelog and README plus its tag. A dry run previews it, and the GitHub App, the only actor that releases, pushes it. The release branch named in RELEASE_BRANCH follows by a separate fast-forward promote. Legacy branches have no relation to master and change by PR. A monorepo is an integrated product of components, each versioned and released on its own. Tools run from a pinned image through docker.",
     "measures": [
-      "Squash merge on master with a conventional PR title; linear history on master, 2.x and 1.x; no bypass on master.",
-      "Rulesets with the GitHub App as sole bypass actor on 2.x and 1.x replace the classic branch protection.",
+      "Squash merge on master with a conventional PR title in the production phase; in the development phase developers push to master directly; STAGE switches the master ruleset between the two.",
+      "Rulesets replace the classic branch protection. The App makes the release commit, the tag and the promote in both phases. In production no human pushes to master, and the release branch takes no human push in either phase.",
       "A token service gives the CLI short-lived installation tokens of the app.",
-      "`release --dry-run` previews version and changelog with git-cliff; `release --apply` writes version, CHANGELOG and README into one release commit with its tag.",
-      "The monorepo split runs locally with splitsh-lite and pushes the child repositories.",
-      "Commit message and changelog summary come from `provider_run_prompt` on the host session; the container carries only git-cliff, splitsh-lite and gh.",
-      "STAGE stays as a project-phase switch for the master ruleset, and the Stage Guard goes.",
-      "All old CI except status-checks.yml is removed.",
-      "Commands are `app git <command>`.",
-      "The release branch is read from RELEASE_BRANCH."
+      "`release --dry-run` previews version, notes and the files that change; `release --apply` writes version files, CHANGELOG and README into one release commit on master with its tag, pushes both as the App and creates the GitHub Release; `--draft` leaves it unpublished.",
+      "A release needs a green minimum check on HEAD: commit lint of the commits since the last tag plus the quick checks the project declares. The local commit-msg lint guards every commit.",
+      "`promote` fast-forwards the release branch to the release commit of a release, identified by its tag, never to the head of master, and does nothing else.",
+      "Legacy branches stay separate, change by PR (cherry-picks allowed) and are released as master is.",
+      "A component has its own version and the tag <component>/vX.Y.Z (vX.Y.Z for a single repo). The bump comes from its paths, non-library components are version: none, and only a component with split: yes is split with splitsh-lite and pushed from the developer machine.",
+      "The plugin ends at the release: publishing, deployment and provisioning are consumers of the GitHub Release in the consuming project.",
+      "Commit message and changelog summary come from `provider_run_prompt` on the host session.",
+      "The image carries only git, gh, git-cliff and splitsh-lite. It is built by docker compose with its config in .docker, pinned by digest and checksum. Modules run the tools through docker with identical host and container paths and the token passed per call; whether by docker exec in a running container or by an ephemeral container per call is left to the plan.",
+      "Commands are `app git start`, `commit`, `pr`, `release`, `promote`, `split` and `rules-sync`, beside the seven existing ones: lint-commit and worktree stay, workflow-setup shrinks to config validation and status-checks.yml, the plumbing of branch-protection becomes rules-sync, workflow-status and branch-cleanup adapt to squash and promote, and run-status folds or goes.",
+      "All old CI except status-checks.yml is removed, and the release branch is read from RELEASE_BRANCH.",
+      "A pre-push guard hook runs the minimum check locally when a developer pushes, so a broken direct push is found at once.",
+      "In a repository with several components every component release is created with --latest=false, and READMEs and badges link to explicit component tags; a repository with one component keeps the normal latest release."
     ],
-    "why": "The old chain breaks at any link and cannot be fixed locally; a local release can be previewed and corrected before GitHub sees it. A GitHub App with short-lived tokens removes the dependence on one person. Squash merge gives the linear changelog without history cleanup by the developer, and without release-please the reason for merge-commit-only history is gone.",
+    "why": "The old chain breaks at any link and cannot be fixed locally; a local release can be previewed and corrected before GitHub sees it. The App's short-lived tokens remove the dependence on one person, and squash merge gives a linear changelog without history cleanup. Releasing on master aligns the version files in one commit, and the fast-forward release branch still shows how the project evolved. Direct pushes in the development phase keep a young project fast, while the minimum check and the App-only release keep the release itself safe.",
     "alternatives": [
+      "Replaying master commits onto the release branch: dropped for fast-forward only.",
+      "The release commit only on the release branch: rejected because master could no longer fast-forward it.",
+      "No standing release branch and no promotion, as the white paper proposes: not chosen, because the release branch shows how the project evolved.",
+      "Maintenance lines cut on demand instead of legacy branches: not chosen.",
       "Rebase merge on master: keeps every commit but makes the developer care about commit hygiene.",
-      "Merge commits on master with git-cliff skipping them: the history stays non-linear.",
-      "ohoeft as bypass actor, alone or with the app: dropped because the personal token is replaced completely.",
-      "A key in the container or SSH for the split push: rejected for a token service, so no private key reaches a developer machine.",
-      "Keeping release-please or the post-release README step: rejected with the rest of the old CI.",
-      "Bundled claude or gemini CLIs, or a local Ollama: dropped because the provider belongs to agentic-os.",
-      "LLM steps inside the container: not chosen."
+      "A workflow on tag push or a release PR to create the GitHub Release: rejected, they add a generated file or an asynchronous hop.",
+      "A host-binary shim with a docker fallback: not chosen, modules always call docker.",
+      "Personal tokens, a key in the container or SSH for the split push: rejected for a token service.",
+      "Bundled provider CLIs or LLM steps inside the container: dropped, because the provider belongs to agentic-os.",
+      "A GitHub Action on every push to master: not chosen, a local pre-push guard gives immediate feedback and adds no workflow."
     ],
     "risks": [
-      "A replay of master commits onto 2.x conflicts if a master commit touches files the release commit owns (proposed, not confirmed).",
+      "The release commit reaches master without CI, so the dry run and the minimum check are its only gate.",
+      "A direct push to master in the development phase is unreviewed; the phase switch returns master to PRs once the project matures.",
+      "Several GitHub behaviours the release depends on are unverified (an Integration bypass with an atomic push of commit and tag, gh release create with an App token and with --latest=false, skipped jobs counting as passed); the plan verifies them first.",
+      "The first split of an existing child repository needs a force push; a confirmed dry run per child is required.",
+      "Every machine that releases needs Docker, and whether the container is long-running or ephemeral is undecided.",
       "branch-cleanup finds no merged branches after squash merges, so its detection is carried to the plan.",
-      "The GitHub App, the token service and the local README generator have no design or code yet, and releases depend on them."
+      "The GitHub App, the token service and the local README generator have no design or code yet, and releases depend on them.",
+      "The project context (product, identity, architecture and the root rule) still holds the old merge-commit, gh-wf and entrypoint wording; the plan updates it."
     ],
     "success": [
       "A release can be previewed and corrected locally before anything reaches GitHub.",
       "No backport PR, no personal token and no cascade of workflows remain.",
-      "The master changelog has one entry per merged PR, in order."
+      "In the production phase the master changelog has one entry per merged PR, in order.",
+      "The release branch shows each released state of master as a fast-forward line."
     ],
     "open": [
-      "How a promotion reaches the release branch; replay is proposed and not confirmed.",
-      "What the development phase of STAGE relaxes.",
-      "How the README is generated locally in the release commit.",
-      "The design of the token service.",
-      "Pre-release flags and the tag format for monorepo packages.",
-      "How workflow-status and branch-cleanup change after squash merge and replay.",
-      "How the rulesets replace the classic branch protection code."
+      "Whether the modules use docker exec in a running container (one per machine or one per repository) or an ephemeral container per call.",
+      "The baseline force push of existing child repositories.",
+      "The format of the component declaration.",
+      "Which quick checks join the minimum check and the aggregate check.",
+      "Whether JS components take their paths from the workspace graph.",
+      "Pre-release handling.",
+      "How the token service authenticates a developer and how it is designed.",
+      "Whether the release notes carry an LLM summary.",
+      "The writers for the version files.",
+      "The naming of split and rules-sync.",
+      "How the README is generated locally.",
+      "How workflow-status and branch-cleanup change.",
+      "How the rulesets replace the classic protection code."
     ]
   },
   "sources": [
@@ -110,14 +131,48 @@
       "ref": "bin/modules, bin/lib, Dockerfile",
       "what": "Named in dialog (gap G3): the git module scripts, templates, hooks.yaml, github.sh, worktree.sh and the Dockerfile, read for what the plugin does today; the ide scripts were not read.",
       "verified": true
+    },
+    {
+      "ref": "261102-git-workflow-whitepaper.md",
+      "what": "Role new: the white paper, the discussion basis with the owner's positions of 2026-11-02, the component model, the container models and the open question register; read in full.",
+      "verified": true
+    },
+    {
+      "ref": "261102-git-workflow-process.md",
+      "what": "Role new: the possible process for a single repository and a monorepo, with the daily and release loops, guards and failure table; read in full.",
+      "verified": true
+    },
+    {
+      "ref": "2611102-git-workflow-evaluation.md",
+      "what": "Role context: an evaluation of the concept against complexity, monorepo support and command centralisation; read in full.",
+      "verified": true
+    },
+    {
+      "ref": "/home/ohoeft/workspace/protect.technikschutz",
+      "what": "Named in dialog: the docker-compose files, the .docker directory, the Dockerfile stages and .env.defaults as the pattern for the image definition; the Dockerfile was read in part and .env was not opened.",
+      "verified": false
+    },
+    {
+      "ref": ".agentic-os/project/concepts/261102-git-workflow-plugin-review.md",
+      "what": "Role context: a review of the first draft of the concept against the white paper; read in full.",
+      "verified": true
+    },
+    {
+      "ref": ".agentic-os/project/concepts/261102-git-workflow-plugin-review-2.md",
+      "what": "Role context: a review of the decided concept, with the promote race, the container lifecycle and the late discovery of a broken direct push; read in full.",
+      "verified": true
     }
   ],
   "not_looked_at": [
     "The detected scope ci has no declaration and so no memory.",
     "The path .github/workflow named in the input does not exist; .github/workflows was read in its place.",
-    "The ide scripts, the commit-msg hook script and bin/config/env.defaults were not read.",
+    "The ide scripts, the commit-msg hook script and bin/config/env.defaults were not read in full.",
     "The 56 web references cited in the PDF were not followed.",
-    "Whether agentic-os provides a way to run the framework inside the container was not looked at."
+    "Whether agentic-os provides a way to run the framework inside a container was not looked at; the docker exec model makes it moot.",
+    "The white paper cites three repositories that were not followed: edotz.monorepo-split-action, edotz.hh-web and edotz.terraform.",
+    "The 13 verify claims of the white paper were not checked against current documentation, for example the ruleset bypass of an Integration actor and gh release create with a target.",
+    "The bodies of the seven existing git commands were not read in full; their fates are judged from the registry, the file headers and the architecture notes.",
+    "protect.technikschutz was read for its compose and .docker layout only; its .env was not opened."
   ],
   "questions": [
     {
@@ -189,7 +244,8 @@
     {
       "id": "Q12",
       "question": "By which mechanism does a promotion reach 2.x?",
-      "why": "D9 names the criteria but not the mechanism; the developer answered only where the target branch comes from (D16)."
+      "why": "D9 names the criteria but not the mechanism; the developer answered only where the target branch comes from (D16).",
+      "decision": "D27"
     },
     {
       "id": "Q13",
@@ -237,7 +293,7 @@
       "id": "Q20",
       "question": "What does the development phase of STAGE relax on master?",
       "why": "D17 keeps STAGE as a switch without saying what it switches.",
-      "decision": "D21"
+      "decision": "D29"
     },
     {
       "id": "Q21",
@@ -268,6 +324,156 @@
       "question": "How do the rulesets replace the classic branch protection code?",
       "why": "github.sh and workflow-setup only know the classic protection API.",
       "decision": "D26"
+    },
+    {
+      "id": "Q26",
+      "question": "How do legacy branches live next to a fast-forward-only release branch?",
+      "why": "The concept never decided them, and a legacy branch cannot be fed by promotion.",
+      "decision": "D31"
+    },
+    {
+      "id": "Q27",
+      "question": "Where is the release commit made?",
+      "why": "Fast-forward promotion needs the release commit on master.",
+      "decision": "D28"
+    },
+    {
+      "id": "Q28",
+      "question": "Who may push the release commit, the tag and the promote?",
+      "why": "Master now receives the release commit directly.",
+      "decision": "D30"
+    },
+    {
+      "id": "Q29",
+      "question": "Where does the minimum check for quality run?",
+      "why": "A direct push has no CI, and the release guard needs a check on HEAD.",
+      "decision": "D32"
+    },
+    {
+      "id": "Q30",
+      "question": "Does master carry the version?",
+      "why": "The release commit is on master, and an earlier decision said master need not track the version.",
+      "decision": "D33"
+    },
+    {
+      "id": "Q31",
+      "question": "What does the container do?",
+      "why": "The white paper records the model M2 against the entrypoint wording of an earlier decision.",
+      "decision": "D34"
+    },
+    {
+      "id": "Q32",
+      "question": "Do the modules use a host binary or docker only?",
+      "why": "The white paper proposes a shim with a host-binary fallback.",
+      "decision": "D35"
+    },
+    {
+      "id": "Q33",
+      "question": "How is the image defined and how do the modules call it?",
+      "why": "Compose and a .docker directory are the pattern of the example project.",
+      "decision": "D55"
+    },
+    {
+      "id": "Q34",
+      "question": "How does the container lifecycle work?",
+      "why": "A running container mounts its directories at start, and the modules work in many repos and worktrees.",
+      "decision": "D55"
+    },
+    {
+      "id": "Q35",
+      "question": "What is the versioning unit and the tag format?",
+      "why": "A monorepo is an integrated product of components, not an unversioned staging area.",
+      "decision": "D38"
+    },
+    {
+      "id": "Q36",
+      "question": "Where does the plugin end?",
+      "why": "Publishing, deployment and provisioning follow the release.",
+      "decision": "D39"
+    },
+    {
+      "id": "Q37",
+      "question": "How is the GitHub Release created?",
+      "why": "The READMEs link to releases/latest, and release-please created the Release before.",
+      "decision": "D40"
+    },
+    {
+      "id": "Q38",
+      "question": "Which commands does the plugin expose, and what happens to the seven existing ones?",
+      "why": "The existing seven phase out the old approach.",
+      "decision": "D41"
+    },
+    {
+      "id": "Q39",
+      "question": "How does GitHub's single latest release per repository work with several components, and how do the READMEs link to a component's release?",
+      "why": "GitHub has one latest release per repository.",
+      "decision": "D56"
+    },
+    {
+      "id": "Q40",
+      "question": "How is the baseline of existing child repositories done?",
+      "why": "Their history shares no SHAs with a splitsh-lite history, so the first push needs a force push.",
+      "decision": "D43"
+    },
+    {
+      "id": "Q41",
+      "question": "What is the format of the component declaration, and does it need a kind?",
+      "why": "It replaces PACKAGES_DIR and the workflow.env per package.",
+      "decision": "D44"
+    },
+    {
+      "id": "Q42",
+      "question": "Which quick checks join the minimum check and the aggregate check?",
+      "why": "The project declares them, and the plugin supplies commit lint and the aggregate.",
+      "decision": "D45"
+    },
+    {
+      "id": "Q43",
+      "question": "Do JS components take their paths from the workspace graph?",
+      "why": "turbo --affected knows what changed.",
+      "decision": "D46"
+    },
+    {
+      "id": "Q44",
+      "question": "How are pre-releases handled?",
+      "why": "Whether a pre-release is tag only or makes a commit, and whether git-cliff counts pre-release versions, is unchecked.",
+      "decision": "D47"
+    },
+    {
+      "id": "Q45",
+      "question": "How does the token service authenticate a developer?",
+      "why": "A gh login against organisation membership is the candidate, and the fallback when the service is down is open.",
+      "decision": "D48"
+    },
+    {
+      "id": "Q46",
+      "question": "Do the release notes carry an LLM summary?",
+      "why": "The summary is optional and never required in the white paper.",
+      "decision": "D49"
+    },
+    {
+      "id": "Q47",
+      "question": "Which writers align the version files?",
+      "why": "package.json, composer.json and ext_emconf.php need one writer per file kind, read back after writing.",
+      "decision": "D50"
+    },
+    {
+      "id": "Q48",
+      "question": "Do split and rules-sync live in the git domain or in their own domain?",
+      "why": "The dispatcher has no nested commands.",
+      "decision": "D51"
+    },
+    {
+      "id": "Q49",
+      "question": "What does promote fast-forward the release branch to?",
+      "why": "Master can move after the release commit, so a head-of-master target would carry unreleased commits.",
+      "decision": "D52"
+    },
+    {
+      "id": "Q50",
+      "question": "Where does early feedback on a direct push to master come from?",
+      "why": "The minimum check runs at release, so a broken direct push would surface late.",
+      "decision": "D54"
     }
   ],
   "decisions": [
@@ -300,7 +506,8 @@
       "by": "owner",
       "date": "2026-10-20",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D41"
     },
     {
       "id": "D4",
@@ -320,7 +527,8 @@
       "by": "owner",
       "date": "2026-10-20",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D30"
     },
     {
       "id": "D6",
@@ -360,7 +568,8 @@
       "by": "owner",
       "date": "2026-10-20",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D33"
     },
     {
       "id": "D10",
@@ -380,7 +589,8 @@
       "by": "owner",
       "date": "2026-10-20",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D29"
     },
     {
       "id": "D12",
@@ -390,7 +600,8 @@
       "by": "claude",
       "date": "2026-10-20",
       "scope": "durable",
-      "status": "proposed"
+      "status": "superseded",
+      "superseded_by": "D27"
     },
     {
       "id": "D13",
@@ -481,7 +692,8 @@
       "by": "owner",
       "date": "2026-10-20",
       "scope": "concept-only",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D29"
     },
     {
       "id": "D22",
@@ -511,7 +723,8 @@
       "by": "owner",
       "date": "2026-10-20",
       "scope": "concept-only",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D38"
     },
     {
       "id": "D25",
@@ -532,6 +745,383 @@
       "date": "2026-10-20",
       "scope": "concept-only",
       "status": "decided"
+    },
+    {
+      "id": "D27",
+      "question": "How a promotion reaches the release branch",
+      "chosen": "Promotion is fast-forward only and covers master to the release branch only; the release branch stays so that it shows the evolution of the project.",
+      "reason": "The developer's words: the release branch helps to see the evolution of a project. It supersedes the replay proposed in D12.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D28",
+      "question": "Where the release commit is made",
+      "chosen": "On master; the release branch moves later by a separate promote command that fast-forwards it.",
+      "reason": "The developer chose it over moving the branch in the same push: master can lead the release branch, and a release commit only on the release branch would break the fast-forward rule.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D29",
+      "question": "What the development phase of STAGE relaxes on master",
+      "chosen": "In the development phase master takes direct pushes by developers and requires no checks; in the production phase a PR with the aggregate check and squash merge is required. Master, the release branch and the legacy branches keep a linear history.",
+      "reason": "The developer prefers to push to master directly when building a project from scratch, because the code changes very often; the release stays App-only in both phases. It supersedes D11 and D21.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D30",
+      "question": "Who may make the release commit, the tag and the promote",
+      "chosen": "The GitHub App is the only actor that makes the release commit, the tag and the promote, in both phases. In production no human pushes to master; in development developers push to master only; the release branch takes no human push in either phase.",
+      "reason": "The developer confirmed the recommendation after the comparison of flexibility and standards; it revises D5, which gave master no bypass.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D31",
+      "question": "How legacy branches live next to a fast-forward-only release branch",
+      "chosen": "A legacy branch has no relation to master any more; it changes only by a PR that targets it, which may carry cherry-picked commits, and it gets the release-branch ruleset: PR required, linear history, the App as sole bypass for the release commit and tag.",
+      "reason": "The developer chose reading B after saying that cherry-picks are fine; promotion cannot feed a legacy branch because it has diverged from master. That the App makes the release on a legacy branch comes from the white paper and was not separately confirmed.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D32",
+      "question": "Where the minimum check for quality runs",
+      "chosen": "The minimum check runs at release: release --dry-run and --apply require it green on HEAD, made of the commit lint of the commits since the last tag plus the quick checks the project declares. The local commit-msg lint stays the floor for every commit, and direct pushes need no CI.",
+      "reason": "The developer asked for a minimum check and followed the recommendation of reading 2: GitHub cannot gate a direct push with CI, and the release is the point where the App pushes unchecked. Which quick checks is left to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D33",
+      "question": "Whether master carries the version",
+      "chosen": "Master carries the version through the release commit, and the release branch follows by the separate promote.",
+      "reason": "The developer confirmed it as the consequence of making the release commit on master; it supersedes D9.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D34",
+      "question": "What the container does",
+      "chosen": "The image carries only git, gh, git-cliff and splitsh-lite; it has no entrypoint, and app runs on the host.",
+      "reason": "The developer's choice of M2 recorded in the white paper, confirmed by the answer that the local modules execute docker commands; it replaces the entrypoint wording of D3.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D35",
+      "question": "Whether the modules use a host binary or docker only",
+      "chosen": "Every tool call goes through docker, with no host-binary fallback, built by one library function.",
+      "reason": "The developer chose option A: it is simpler and guarantees identical versions; Docker is required on every machine that releases.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D36",
+      "question": "How the image is defined and how the modules call it",
+      "chosen": "The image is defined with docker compose and a dedicated .docker config directory; compose serves to build the images and to give a configuration overview. Modules run the tools with docker exec in a running container with identical host and container paths and the token passed per call. The base image is pinned by digest and each download by checksum.",
+      "reason": "The developer's words, modelled on the project protect.technikschutz; it replaces the build on first use with a hash tag that the white paper proposed.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "superseded",
+      "superseded_by": "D55"
+    },
+    {
+      "id": "D37",
+      "question": "How the container lifecycle works",
+      "chosen": "The plan settles it: one container per machine or one per repository.",
+      "reason": "A detail that depends on the chosen approach; the developer did not know yet and chose to carry it after the pros and cons were listed.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "superseded",
+      "superseded_by": "D53"
+    },
+    {
+      "id": "D38",
+      "question": "The versioning unit and the tag format",
+      "chosen": "Each versioned component has its own version and is released on its own with the tag <component>/vX.Y.Z (vX.Y.Z for a single repo, which is one component at the root). The bump comes from the commits that touch its paths, components that make no library can be version: none, and only a component with split: yes is split.",
+      "reason": "The developer confirmed the recommendation from the white paper; it supersedes the tag-format part of D24, and the pre-release flags stay with the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D39",
+      "question": "Where the plugin ends",
+      "chosen": "The plugin ends at the release: tag, release commit, notes and GitHub Release. Publishing, deployment and provisioning belong to the consuming project and start from the Release; the plugin may document an example workflow for node packages.",
+      "reason": "The developer confirmed it; it keeps D19 intact.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D40",
+      "question": "How the GitHub Release is created",
+      "chosen": "release --apply creates the GitHub Release as the App in the same run, a repeated --apply creates only what is missing, and --draft leaves it unpublished for a person to publish.",
+      "reason": "The developer followed the recommendation: no asynchronous hop and no generated file per repo; a Release created with an App token starts consumer workflows, which is still to be verified.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D41",
+      "question": "The command surface and the fate of the seven existing commands",
+      "chosen": "app git <command>; the names gh-wf, gh wf and git-wf stay dropped. New: start, commit, pr, release, promote, split and rules-sync. Existing: lint-commit and worktree stay; workflow-setup shrinks to config validation and status-checks.yml; branch-protection becomes rules-sync on its plumbing; workflow-status and branch-cleanup adapt to squash and promote; run-status folds or goes.",
+      "reason": "The developer confirmed the list and the fate of the seven, with the details left to the plan; it supersedes D3, whose container wording D34 replaces.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D42",
+      "question": "How GitHub's single latest release per repository works with several components",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "superseded",
+      "superseded_by": "D56"
+    },
+    {
+      "id": "D43",
+      "question": "How the baseline of existing child repositories is done",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D44",
+      "question": "The format of the component declaration",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D45",
+      "question": "Which quick checks join the minimum check and the aggregate check",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D46",
+      "question": "Whether JS components take their paths from the workspace graph",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D47",
+      "question": "How pre-releases are handled",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D48",
+      "question": "How the token service authenticates a developer",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D49",
+      "question": "Whether the release notes carry an LLM summary",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D50",
+      "question": "Which writers align the version files",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D51",
+      "question": "Whether split and rules-sync live in the git domain or in their own domain",
+      "chosen": "The plan settles it.",
+      "reason": "A detail that depends on the chosen approach; the developer chose to carry all detail questions to the plan.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "decided"
+    },
+    {
+      "id": "D52",
+      "question": "What promote fast-forwards the release branch to",
+      "chosen": "promote fast-forwards the release branch to the release commit of a release, identified by its tag, and never to the head of master, so commits pushed to master after the release cannot reach the release branch.",
+      "reason": "Review 2 found that a head-of-master target would carry unreleased commits when developers push directly in the development phase; the developer recorded the recommendation. It refines D28.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D53",
+      "question": "How the container lifecycle works",
+      "chosen": "The plan settles it: one container per machine, one per repository, or an ephemeral container per call. Docker stays required, and D35 and D36 stand.",
+      "reason": "Review 2 argued for ephemeral runs; the developer recorded the recommendation to add them as a third candidate and to keep docker only and docker exec as decided. It supersedes D37.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "concept-only",
+      "status": "superseded",
+      "superseded_by": "D55"
+    },
+    {
+      "id": "D54",
+      "question": "Where early feedback on a direct push comes from",
+      "chosen": "A pre-push guard hook runs the minimum check locally when a developer pushes, so a broken direct push is found at once; no GitHub Action runs on push.",
+      "reason": "Review 2 found that a broken direct push would surface only at release; the developer recorded the recommendation of a local guard: the pre-push key is registered and has no hook yet, and it keeps the workflow local-first and the single status-checks.yml.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D55",
+      "question": "How the modules call the tool image",
+      "chosen": "Modules always run the tools through docker, with no host-binary fallback, identical host and container paths and the token passed per call. The plan settles whether that is docker exec in a running container (one per machine or one per repository) or an ephemeral container per call. The image is defined with docker compose and a .docker config directory, compose builds the images and gives the configuration overview, and the base image is pinned by digest and each download by checksum.",
+      "reason": "Review 3 found that D53 listed an ephemeral container as a candidate while saying D36 stands, and D36 names docker exec. The developer chose option c: reword both so that docker is fixed and the plan picks exec or ephemeral. It supersedes D36 and D53; D35 stands.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D56",
+      "question": "How one latest release per repository works with several components",
+      "chosen": "In a repository with several components every component release is created with --latest=false, and READMEs and badges link to explicit component tags (releases/tag/<component>/vX.Y.Z), never to releases/latest. A repository with one component keeps the normal latest release. Whether gh release create supports --latest=false is checked in the plan.",
+      "reason": "The developer followed review 3 with the fix that the rule applies only to repositories with several components, so that a single-component repository keeps a working releases/latest. It matches the lean of the white paper and supersedes D42.",
+      "by": "owner",
+      "date": "2026-11-02",
+      "scope": "durable",
+      "status": "decided"
+    }
+  ],
+  "role": "The plugin is the one place where the edotz projects get their git and GitHub workflow, a local and deterministic lifecycle behind `app git <command>` that replaces the old cascade of GitHub Actions.",
+  "capabilities": [
+    "Start a branch or worktree from the main branch and commit with a validated conventional message, optionally drafted by the host provider.",
+    "Open a PR with a conventional title and gate it through one aggregate status check.",
+    "Preview a release locally (version, notes, changed files) and apply it as one release commit with its tag and a GitHub Release, pushed by the GitHub App.",
+    "Require a green minimum check on HEAD before a release.",
+    "Promote a released master to the release branch by fast-forward only, and keep legacy branches separate, changed by PR.",
+    "Version and release each component of a monorepo on its own, with tags <component>/vX.Y.Z derived from its paths.",
+    "Split a component marked split: yes into its own repository with splitsh-lite.",
+    "Apply the GitHub rulesets and the STAGE phase through rules-sync, with the App as the bypass actor.",
+    "Obtain short-lived App installation tokens from a token service.",
+    "Run git-cliff, splitsh-lite and gh from a pinned image built by docker compose, through docker.",
+    "Run the minimum check locally on push through a pre-push guard."
+  ],
+  "revisions": [
+    {
+      "date": "2026-11-02",
+      "change": "promote targets the release commit by its tag and never the head of master.",
+      "affects": [
+        "Q49",
+        "D28",
+        "D52"
+      ],
+      "reason": "Review 2: a head-of-master target would carry unreleased commits onto the release branch.",
+      "by": "owner"
+    },
+    {
+      "date": "2026-11-02",
+      "change": "The container lifecycle candidates now include an ephemeral container per call.",
+      "affects": [
+        "Q34",
+        "D37",
+        "D53"
+      ],
+      "reason": "Review 2 argued for ephemeral runs; D35 and D36 stand.",
+      "by": "owner"
+    },
+    {
+      "date": "2026-11-02",
+      "change": "A local pre-push guard runs the minimum check on push.",
+      "affects": [
+        "Q50",
+        "D32",
+        "D54"
+      ],
+      "reason": "Review 2: a broken direct push would surface only at release.",
+      "by": "owner"
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Docker is fixed for the tool calls, and the plan chooses between docker exec in a running container and an ephemeral container per call.",
+      "affects": [
+        "Q33",
+        "Q34",
+        "D36",
+        "D53",
+        "D55"
+      ],
+      "reason": "Review 3: D53 listed an ephemeral container while saying D36, which names docker exec, stands.",
+      "by": "owner"
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Component releases in a repository with several components use --latest=false and READMEs link to explicit component tags.",
+      "affects": [
+        "Q39",
+        "D42",
+        "D56"
+      ],
+      "reason": "Review 3: GitHub has one latest release per repository; a single-component repository keeps the normal latest release.",
+      "by": "owner"
     }
   ]
 }
