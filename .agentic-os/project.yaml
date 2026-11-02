@@ -16,7 +16,9 @@ toolchain:
 
 # Plugins the project uses, in precedence order (a later entry wins over an earlier one).
 # Each plugin needs a plugin.yaml at its root. `bash bin/app plugins list` shows the registry.
-plugins: []
+plugins:
+  - name: edotz.git-workflow
+    path: "."
 #  - name: example-plugin
 #    path: "../example-plugin"   # relative to the project root, or absolute
 

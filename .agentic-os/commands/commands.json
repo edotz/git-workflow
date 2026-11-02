@@ -54,6 +54,36 @@
       "enabled": true,
       "description": "Use when tasks of a plan must be written and reviewed as bash code, one or a group of related ones, be it a library function, module command, hook script or adapter; takes plan task ids.",
       "origin": "framework"
+    },
+    {
+      "name": "spec",
+      "enabled": true,
+      "description": "Use when the tasks of one plan must be turned into a specification of requirements, or an existing specification must be continued; takes an optional plan id and an optional specification name.",
+      "origin": "framework"
+    },
+    {
+      "name": "roadmap",
+      "enabled": true,
+      "description": "Use when the project needs its first roadmap, a new area, milestone or release, or a change to one; takes the mode init, add or edit.",
+      "origin": "framework"
+    },
+    {
+      "name": "planning",
+      "enabled": true,
+      "description": "Use when a project has no roadmap or backlog yet, or when it is unclear where the planning stands: creates the first planning files and shows the status, or points at the listing of one planning artifact.",
+      "origin": "framework"
+    },
+    {
+      "name": "plan-review",
+      "enabled": true,
+      "description": "Use when a written plan must be reviewed against the code before its tasks are authored, or after an amend; takes an optional plan id and an optional lens.",
+      "origin": "framework"
+    },
+    {
+      "name": "backlog",
+      "enabled": true,
+      "description": "Use when an item must be added to the backlog, or the title, goal or milestone of an item changed; takes the mode add or edit.",
+      "origin": "framework"
     }
   ],
   "claude": []

@@ -42,10 +42,6 @@
       "enabled": true
     },
     {
-      "name": "session-start/inject-roadmap",
-      "enabled": true
-    },
-    {
       "name": "session-start/scope-state",
       "enabled": true
     },
@@ -64,6 +60,18 @@
     {
       "name": "task-completed/write-back",
       "enabled": true
+    },
+    {
+      "name": "pre-commit/planning-gate",
+      "enabled": true
+    },
+    {
+      "name": "session-start/inject-planning",
+      "enabled": true
+    },
+    {
+      "name": "commit-msg/conventional",
+      "enabled": false
     }
   ],
   "claude": []
