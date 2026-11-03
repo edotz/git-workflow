@@ -1,0 +1,7 @@
+{
+  "claude": {
+    "context_file": ".agentic-os/adapters/claude/templates/rules/github-workflows.md",
+    "purpose": "GitHub Actions workflows; after the concept only the status checks of a pull request remain, M4 and M6 rewrite them",
+    "scope_trigger": ".github/workflows/**"
+  }
+}
