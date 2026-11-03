@@ -647,7 +647,7 @@
             "run": "test -f token-service/server.js && docker compose -f token-service/compose.yaml build && bash token-service/check.sh",
             "from": "environment fact: the service is built and answers the sandbox App with a narrowed token and refuses what the contract says"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "Write the token service of notes/token-service.md in Node with @octokit/auth-app (decision D27): one HTTPS-less localhost endpoint (decision D26, listening on 127.0.0.1 only) that takes the developer's gh login token, the repository owner/name and the name of a permission set; checks GET /user and GET /user/memberships/orgs/<org> (active member of the configured organisation, nothing stored); then returns the installation token of the App for that one repository with only the permissions of the set and its expires_at, or a refusal with a named reason (login not accepted, not a member, repository not installed, set unknown). Permission sets by command are those of the note: contents write for release and promote, pull requests write, administration write for rules-sync. The image holds the code and the configuration (organisation, App ID, the sets); the private key is a read-only host file mounted at run time and read from the path in an environment variable, never copied into the image. No log line, response or file holds a developer token or an installation token. token-service/compose.yaml builds the image and mounts the key; token-service/check.sh runs it against the sandbox App and checks the cases.",
             "output": "token-service/ with server.js, package.json, Dockerfile, compose.yaml and check.sh; `docker compose -f token-service/compose.yaml build` builds the image and check.sh exits 0.",
@@ -662,7 +662,11 @@
             "CONCEPT-git-workflow-plugin:D4",
             "CONCEPT-git-workflow-plugin:D6",
             "CONCEPT-git-workflow-plugin:D30"
-          ]
+          ],
+          "last_verify": {
+            "at": "2026-11-03T16:22:48Z",
+            "exit": 0
+          }
         },
         {
           "id": "T3.2",

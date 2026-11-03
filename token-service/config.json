@@ -1,0 +1,8 @@
+{
+  "org": "edotz",
+  "sets": {
+    "contents": { "contents": "write" },
+    "pull-requests": { "pull_requests": "write" },
+    "administration": { "administration": "write" }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "git-workflow-token-service",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Issues narrowed one-hour installation tokens of the git-workflow GitHub App to organisation members",
+  "dependencies": {
+    "@octokit/auth-app": "8.3.1"
+  }
+}

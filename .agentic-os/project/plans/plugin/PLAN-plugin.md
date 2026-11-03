@@ -140,7 +140,7 @@ Build release --dry-run and --apply with the minimum check, the version-file wri
 
 | Title | Task | Owner | Depends | Status |
 |---|---|---|---|---|
-| Build the token service container | T3.1 | inline | - | pending |
+| Build the token service container | T3.1 | inline | - | done |
 | Write the library that fetches the installation token | T3.2 | bash-author | T3.1, T2.3 | pending |
 | Write the component declaration library | T3.3 | bash-author | - | pending |
 | Write the version library: next version, pre-release and the version files | T3.4 | bash-author | T3.3, T2.3 | pending |
