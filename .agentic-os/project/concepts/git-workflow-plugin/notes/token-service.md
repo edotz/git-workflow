@@ -38,8 +38,9 @@ Settles what the concept decisions D6 (the CLI gets a short-lived installation t
 
 ## Service hosting
 
-- **Platform.** Not chosen now. Decision D15 defers it: it is chosen before the release core phase is detailed, and the milestone gate of m1-foundations is met for the contract, the authentication, the fallback and the key custody, not for the platform.
-- **Requirements the platform has to meet, fixed now:**
+- **Platform (D25).** A Docker container on the developer's own machine, chosen 2026-11-03. The image holds the service code and its configuration: the organisation, the App ID and the permission set of each command. The private key is not in the image: it is a read-only file on the host, mounted into the container at run time. This machine is the one declared exception to "the key is not on a developer machine"; D16 holds otherwise.
+- **Open under D25.** How developers on other machines reach the endpoint of this machine (a tunnel or an exposed port with a certificate) is not settled; the hosting phase detail has to settle it. While this machine or the container is down nobody releases (D5).
+- **Requirements the platform has to meet:**
   - an HTTPS endpoint that developer machines can reach;
   - the App's private key only in the platform's secret store, never in a repository, an image, a log or on a developer machine (D6);
   - no logging, storing or forwarding of developer tokens or installation tokens;

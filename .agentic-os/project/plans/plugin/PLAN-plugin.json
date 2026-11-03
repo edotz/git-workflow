@@ -790,7 +790,8 @@
       "by": "developer",
       "date": "2026-11-03",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D25"
     },
     {
       "id": "D16",
@@ -878,6 +879,16 @@
       "question": "Where the pinned versions, the base image digest and the checksums live, after D22",
       "chosen": "In .env.defaults in the plugin root, with unprefixed keys (IMAGE_BASE, GH_VERSION and so on); a consuming project does not override them, and bin/config/env.defaults keeps only the settings a project may override through its .env",
       "reason": "Developer correction on 2026-11-03: the pins are plugin internals read by the compose file and the library function, while the plugin config in bin/config is the overridable part. The framework loads only the file name env.defaults from bin/config, so that file keeps its name.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D25",
+      "question": "Where the token service runs, after D15 deferred it",
+      "chosen": "As a Docker container on the developer's own machine, with the service code and its configuration (organisation, App ID, permission set of each command) in the image; the App's private key is a read-only file on the host, mounted into the container at run time and never part of an image, a repository or a log; the other requirements of the note stay (HTTPS endpoint, no token logging or storing, refusal of non-members, narrowed tokens only)",
+      "reason": "Developer answer on 2026-11-03: run it on this machine as a Docker container holding all needed information and configuration; for the key the developer chose the mounted secret, not the image. This machine is the one declared exception to the note's rule that the key is not on a developer machine; D16 holds otherwise (one copy, no backup, an organisation owner rotates it). Consequence under D5: while this machine or the container is down, nobody releases, and developers on other machines reach the service only through an endpoint this machine exposes, which is still to be settled.",
       "by": "developer",
       "date": "2026-11-03",
       "scope": "durable",
@@ -1018,6 +1029,16 @@
         "P2"
       ],
       "reason": "The key loop built the prefix from a variable, so the first rewrite missed it",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "The token service runs as a Docker container on the developer's machine, the key a mounted host file",
+      "affects": [
+        "D15",
+        "D16"
+      ],
+      "reason": "Developer chose the platform D15 deferred, and the mounted secret for the key",
       "by": "developer"
     }
   ]
