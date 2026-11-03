@@ -17,7 +17,7 @@ Five notes in the concept's notes directory, one of them recording the sandbox: 
 
 - P1 Foundations: checked claims, token service, component declaration: 5 tasks
 - P2 Tool image: 4 tasks
-- P3 Release core: 0 tasks
+- P3 Release core: 8 tasks
 - P4 Daily loop and guards: 0 tasks
 - P5 Monorepo: 0 tasks
 - P6 Retire the old approach: 0 tasks
@@ -134,9 +134,98 @@ Gate: (f=.agentic-os/project/concepts/git-workflow-plugin/notes/sandbox.md; test
 
 Gate: (f=.env.defaults; for k in IMAGE_BASE IMAGE_PLATFORM GIT_CLIFF_VERSION GIT_CLIFF_SHA512 SPLITSH_VERSION SPLITSH_SHA256 GH_VERSION GH_SHA256 GIT_APT_VERSION; do grep -qE "^${k}=.+" $f || exit 1; done; grep -qE '^IMAGE_BASE=.*@sha256:[0-9a-f]{64}$' $f && grep -qE '^IMAGE_PLATFORM=linux/amd64$' $f && grep -qE '^GIT_CLIFF_SHA512=[0-9a-f]{128}$' $f && grep -qE '^SPLITSH_SHA256=[0-9a-f]{64}$' $f && grep -qE '^GH_SHA256=[0-9a-f]{64}$' $f) && (set -a; . ./.env.defaults; set +a; docker compose -f .docker/compose.yaml build --no-cache tools && docker compose -f .docker/compose.yaml run --rm tools git-cliff --version | grep -q "git-cliff ${GIT_CLIFF_VERSION#v}" && docker compose -f .docker/compose.yaml run --rm tools gh --version | grep -q "gh version ${GH_VERSION#v}" && docker compose -f .docker/compose.yaml run --rm tools dpkg -s git | grep -q "^Version: ${GIT_APT_VERSION}$" && docker compose -f .docker/compose.yaml run --rm -e GIT_AUTHOR_NAME=t -e GIT_AUTHOR_EMAIL=t@example.com -e GIT_COMMITTER_NAME=t -e GIT_COMMITTER_EMAIL=t@example.com tools sh -c 'cd /tmp && git init -q r && cd r && mkdir p && echo a > p/f && git add . && git commit -q -m x && splitsh-lite --prefix=p 2>/dev/null' | grep -qE '^[0-9a-f]{40}$' && ! docker compose -f .docker/compose.yaml run --rm tools sh -c 'command -v node || command -v claude || command -v gemini') && (bash -n bin/lib/tool.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source "${BU_ROOT}/lib/core.sh"; source bin/lib/tool.sh; tool_run git --version | grep -q "^git version"; tool_run git-cliff --version | grep -q "^git-cliff"; t=$(mktemp -d); git -C "$t" init -q r; git -C "$t/r" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x; git -C "$t/r" worktree add -q "$t/w" -b w; (cd "$t/w" && tool_run git rev-parse --is-inside-work-tree | grep -q true); rm -rf "$t"') && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/tool-image-check.md; test -s $f && grep -q '^## Machine' $f && grep -q '^## Result' $f && ! command -v git-cliff >/dev/null && ! command -v splitsh-lite >/dev/null)
 
-## P3 Release core (outlined)
+## P3 Release core (detailed)
 
 Build release --dry-run and --apply with the minimum check, the version-file writers, the local README generation, the GitHub Release by the App and promote to the release tag (roadmap milestone m3-release-core).
+
+| Title | Task | Owner | Depends | Status |
+|---|---|---|---|---|
+| Build the token service container | T3.1 | inline | - | pending |
+| Write the library that fetches the installation token | T3.2 | bash-author | T3.1, T2.3 | pending |
+| Write the component declaration library | T3.3 | bash-author | - | pending |
+| Write the version library: next version, pre-release and the version files | T3.4 | bash-author | T3.3, T2.3 | pending |
+| Write the minimum check | T3.5 | bash-author | T3.3, T2.3 | pending |
+| Write the release command: dry run and apply | T3.6 | bash-author | T3.2, T3.3, T3.4, T3.5 | pending |
+| Write the promote command | T3.7 | bash-author | T3.2, T3.6 | pending |
+| Release and promote a pilot in the sandbox | T3.8 | developer | T3.1, T3.6, T3.7 | pending |
+
+**Build the token service container** (T3.1)
+- Why: Every remote write of the release core (release commit push, tag, GitHub Release, promote) needs an installation token, and the service that issues it does not exist yet; decisions D25 and D26 fix where it runs.
+- Result: A container image and a compose file that run the token service on this machine against the sandbox App, with its own check script.
+- Done: The image builds; with the sandbox key mounted, a request for edotz/git-workflow-sandbox with the developer's gh login returns a token that holds contents write and metadata read on that repository only; an invalid login token, a repository without the installation and an unknown permission set are refused with a named reason; the container log holds no token.
+- Fails: The release commands cannot push as the App, or a token issued too wide, or a token or the key lands in an image or a log.
+- Carries: Replacement of the personal access token (CONCEPT-git-workflow-plugin:D4); How the CLI obtains the app token (CONCEPT-git-workflow-plugin:D6); Who may make the release commit, the tag and the promote (CONCEPT-git-workflow-plugin:D30)
+
+**Write the library that fetches the installation token** (T3.2)
+- Why: One function fetches the token so that no command assembles its own request and fail-closed is decided in one place; the release and promote commands call it before their first write.
+- Result: A library that fetches a narrowed installation token from the local service and hands it to the tool call by variable name.
+- Done: token_fetch and token_drop exist, pass bash -n, and with the service unreachable token_fetch exits non-zero with 'service unreachable' and leaves GH_TOKEN unset.
+- Fails: A command would write without a token fetched first, or would fall back to a personal token, or a token would reach a log line or an argument.
+- Carries: Replacement of the personal access token (CONCEPT-git-workflow-plugin:D4); How the CLI obtains the app token (CONCEPT-git-workflow-plugin:D6)
+- Produces: token_fetch token_fetch <owner/repo> <permission-set>
+- Produces: token_drop token_drop
+
+**Write the component declaration library** (T3.3)
+- Why: The release, the split and the aggregate check all read the component declaration; one library holds its rules and its path resolution so no command guesses the shape.
+- Result: A library that loads and validates components.yaml and resolves a component's directories.
+- Done: A valid declaration loads and shows its defaults; a declaration with both workspace and paths, and one with an unknown field, are refused; the library passes bash -n.
+- Fails: Each command would parse the declaration its own way, and a malformed declaration would be accepted until a release fails halfway.
+- Carries: The versioning unit and the tag format (CONCEPT-git-workflow-plugin:D38); The command surface and the fate of the seven existing commands (CONCEPT-git-workflow-plugin:D41)
+- Produces: component_load component_load <file>
+- Produces: component_names component_names
+- Produces: component_paths component_paths <name>
+- Produces: component_field component_field <name> <field>
+
+**Write the version library: next version, pre-release and the version files** (T3.4)
+- Why: The release commit needs one place that computes the version, the tag and the file rewrite exactly as the declaration note decided, so dry run and apply cannot disagree.
+- Result: A library that computes the next version and tag of a component and writes and verifies its version files.
+- Done: On a throwaway repository with the tag v1.0.0 and one feat commit, version_next prints 1.1.0 and with channel rc 1.1.0-rc.1, version_write puts 1.1.0 into package.json and reads it back, and version_tag prints v1.1.0.
+- Fails: A tag would not match the version file, a pre-release would restart or skip a counter, or a version file would silently keep the old value.
+- Carries: Whether master carries the version (CONCEPT-git-workflow-plugin:D33); The versioning unit and the tag format (CONCEPT-git-workflow-plugin:D38); Where the plugin ends (CONCEPT-git-workflow-plugin:D39)
+- Produces: version_next version_next <component> [channel]
+- Produces: version_write version_write <component> <version>
+- Produces: version_tag version_tag <component> <version>
+- Consumes: T3.3 component_paths component_paths <name>
+- Consumes: T3.3 component_field component_field <name> <field>
+
+**Write the minimum check** (T3.5)
+- Why: The release requires the minimum check green on HEAD, so a broken commit message or a failing quick check stops a release before anything is written.
+- Result: A library that runs the commit lint and the declared quick checks for a component.
+- Done: On a throwaway repository a conventional history with a passing check command passes check_minimum, and after a commit with a message that breaks the rule check_minimum exits non-zero.
+- Fails: A release would go out over a commit that the commit-msg hook never saw, or over a failing project check.
+- Carries: Where the minimum check for quality runs (CONCEPT-git-workflow-plugin:D32)
+- Produces: check_minimum check_minimum <component>
+- Consumes: T3.3 component_field component_field <name> <field>
+
+**Write the release command: dry run and apply** (T3.6)
+- Why: The release is the heart of the workflow: one local command that makes the release commit, the tag and the GitHub Release as the App, with a dry run that shows exactly what apply would do.
+- Result: The command app git release with dry run and apply that makes the release commit, the tag and the GitHub Release.
+- Done: The dry run on a throwaway repository prints the next version, the tag and the notes and leaves the working tree and the tags unchanged; the module registry and the script agree. The apply path is checked by the pilot of T3.8.
+- Fails: A release would write before its token is fetched, a dry run would differ from apply, or a repeated apply would create a second commit or release.
+- Carries: Where the release commit is made (CONCEPT-git-workflow-plugin:D28); Who may make the release commit, the tag and the promote (CONCEPT-git-workflow-plugin:D30); Where the minimum check for quality runs (CONCEPT-git-workflow-plugin:D32); Whether master carries the version (CONCEPT-git-workflow-plugin:D33); How the GitHub Release is created (CONCEPT-git-workflow-plugin:D40); The command surface and the fate of the seven existing commands (CONCEPT-git-workflow-plugin:D41)
+- Consumes: T3.2 token_fetch token_fetch <owner/repo> <permission-set>
+- Consumes: T3.3 component_load component_load <file>
+- Consumes: T3.4 version_next version_next <component> [channel]
+- Consumes: T3.4 version_write version_write <component> <version>
+- Consumes: T3.4 version_tag version_tag <component> <version>
+- Consumes: T3.5 check_minimum check_minimum <component>
+
+**Write the promote command** (T3.7)
+- Why: Master carries the release commit and the release branch follows only by promote, so a commit pushed to master after a release can never reach the release branch.
+- Result: The command app git promote that fast-forwards the release branch to a release tag.
+- Done: On a throwaway repository the dry run names the tag's commit as the target and a diverged release branch is refused; the module registry and the script agree. The push path is checked by the pilot of T3.8.
+- Fails: A promote would move the release branch to the head of master, or would force a diverged branch.
+- Carries: How a promotion reaches the release branch (CONCEPT-git-workflow-plugin:D27); Who may make the release commit, the tag and the promote (CONCEPT-git-workflow-plugin:D30); The command surface and the fate of the seven existing commands (CONCEPT-git-workflow-plugin:D41); What promote fast-forwards the release branch to (CONCEPT-git-workflow-plugin:D52)
+- Consumes: T3.2 token_fetch token_fetch <owner/repo> <permission-set>
+
+**Release and promote a pilot in the sandbox** (T3.8)
+- Why: The gate of m3-release-core asks that a pilot single repository releases locally with commit, tag and GitHub Release by the App and that promote fast-forwards the release branch; only a run against GitHub shows it.
+- Result: A note that records a pilot release and promote in the sandbox repository.
+- Done: The note names the repository and the result: the tag, the release commit, the GitHub Release made by the App, the harmless repeated apply and the release branch at the tag.
+- Fails: The apply and push paths, which the earlier checks cannot reach without GitHub, would first run in a consuming project.
+- Carries: How the GitHub Release is created (CONCEPT-git-workflow-plugin:D40); What promote fast-forwards the release branch to (CONCEPT-git-workflow-plugin:D52)
+
+Gate: (test -f token-service/server.js && docker compose -f token-service/compose.yaml build && bash token-service/check.sh) && (bash -n bin/lib/token.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source "${BU_ROOT}/lib/core.sh"; source bin/lib/token.sh; declare -F token_fetch >/dev/null; declare -F token_drop >/dev/null; out=$(TOKEN_SERVICE_URL=http://127.0.0.1:9 token_fetch edotz/git-workflow-sandbox contents 2>&1) && exit 1; printf "%s" "$out" | grep -q "service unreachable"; test -z "${GH_TOKEN:-}"' ) && (bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source "${BU_ROOT}/lib/core.sh"; source bin/lib/component.sh; t=$(mktemp -d); printf "components:\n  - name: object\n    paths: [\".\"]\n    version_files: [package.json]\n" > "$t/ok.yaml"; printf "components:\n  - name: web\n    workspace: w\n    paths: [a]\n" > "$t/both.yaml"; printf "components:\n  - name: web\n    paths: [a]\n    colour: red\n" > "$t/unknown.yaml"; component_load "$t/ok.yaml"; test "$(component_names)" = object; test "$(component_field object version)" = yes; ! component_load "$t/both.yaml" 2>/dev/null; ! component_load "$t/unknown.yaml" 2>/dev/null; rm -rf "$t"') && (bash -n bin/lib/version.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source "${BU_ROOT}/lib/core.sh"; source bin/lib/component.sh; source bin/lib/version.sh; t=$(mktemp -d); cd "$t"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf "{\"name\":\"o\",\"version\":\"1.0.0\"}\n" > package.json; printf "components:\n  - name: object\n    paths: [\".\"]\n    version_files: [package.json]\n" > components.yaml; git add .; git commit -q -m "chore: init"; git tag v1.0.0; echo a > a; git add a; git commit -q -m "feat: add a"; component_load components.yaml; test "$(version_next object)" = 1.1.0; test "$(version_next object rc)" = 1.1.0-rc.1; version_write object 1.1.0; grep -q "\"version\": \"1.1.0\"\|\"version\":\"1.1.0\"" package.json; test "$(version_tag object 1.1.0)" = v1.1.0; cd /; rm -rf "$t"') && (bash -n bin/lib/check.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source "${BU_ROOT}/lib/core.sh"; source bin/lib/component.sh; source bin/lib/check.sh; t=$(mktemp -d); cd "$t"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf "components:\n  - name: object\n    paths: [\".\"]\n    checks: [\"true\"]\n" > components.yaml; git add .; git commit -q -m "chore: init"; git tag v0.0.1; echo a > a; git add a; git commit -q -m "feat: add a"; component_load components.yaml; check_minimum object; echo b > b; git add b; git commit -q -m "not conventional"; ! check_minimum object 2>/dev/null; cd /; rm -rf "$t"') && (bash tests/git-release/dry-run.sh && bash ${BU_ROOT}/app lint modules) && (bash tests/git-promote/ff.sh && bash ${BU_ROOT}/app lint modules) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f)
 
 ## P4 Daily loop and guards (outlined)
 
@@ -197,6 +286,9 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 - D24 [decided] Where the pinned versions, the base image digest and the checksums live, after D22 -> In .env.defaults in the plugin root, with unprefixed keys (IMAGE_BASE, GH_VERSION and so on); a consuming project does not override them, and bin/config/env.defaults keeps only the settings a project may override through its .env (Developer correction on 2026-11-03: the pins are plugin internals read by the compose file and the library function, while the plugin config in bin/config is the overridable part. The framework loads only the file name env.defaults from bin/config, so that file keeps its name.; developer, 2026-11-03, durable)
 - D25 [decided] Where the token service runs, after D15 deferred it -> As a Docker container on the developer's own machine, with the service code and its configuration (organisation, App ID, permission set of each command) in the image; the App's private key is a read-only file on the host, mounted into the container at run time and never part of an image, a repository or a log; the other requirements of the note stay (HTTPS endpoint, no token logging or storing, refusal of non-members, narrowed tokens only) (Developer answer on 2026-11-03: run it on this machine as a Docker container holding all needed information and configuration; for the key the developer chose the mounted secret, not the image. This machine is the one declared exception to the note's rule that the key is not on a developer machine; D16 holds otherwise (one copy, no backup, an organisation owner rotates it). Consequence under D5: while this machine or the container is down, nobody releases, and developers on other machines reach the service only through an endpoint this machine exposes, which is still to be settled.; developer, 2026-11-03, durable)
 - D26 [decided] Who reaches the token service, which D25 left open -> Only this machine: the service listens on the local machine and is not exposed to other machines, no tunnel and no certificate; its purpose is to learn how it works and to be able to change it (Developer answer on 2026-11-03. It closes the open point of D25. Consequence: the release commands work on this machine only, and a developer on another machine cannot get a token (D5, fail closed). A shared or exposed endpoint is a later decision that supersedes this one.; developer, 2026-11-03, durable)
+- D27 [decided] In which language the token service is written -> Node with Octokit (@octokit/auth-app): the App JWT, the installation token request and its narrowing come from the maintained library; a small HTTP server in its own image under token-service/ that holds code and configuration, the key mounted as a host file (D25); the tool image stays free of Node (concept D34) (Developer chose the recommended option on 2026-11-03: the security-critical parts are not hand-rolled.; developer, 2026-11-03, durable)
+- D28 [decided] Whether the release notes carry an LLM summary in P3 (concept D49) -> No: the release commit, the CHANGELOG and the GitHub Release body come from git-cliff alone and are deterministic; a summary through provider_run_prompt on the host (concept D18) is a later addition (Developer chose the recommended option on 2026-11-03: the m3 gate does not depend on an LLM.; developer, 2026-11-03, durable)
+- D29 [decided] What the release does to the README -> It rewrites only the lines between the markers <!-- release:start --> and <!-- release:end --> (a version badge and a release link: releases/tag/<tag> of the component, in a single repository the same link form); the rest of the README stays the author's; a README without the markers is left untouched and the release says so (Developer chose the recommended option on 2026-11-03: no template and no generation, which the concept leaves out of scope (D20).; developer, 2026-11-03, durable)
 
 ## Revisions
 
@@ -211,3 +303,4 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 - 2026-11-03 The T2.1 verify and the phase gate read the unprefixed pin keys (affects T2.1, P2) -- The key loop built the prefix from a variable, so the first rewrite missed it (developer)
 - 2026-11-03 The token service runs as a Docker container on the developer's machine, the key a mounted host file (affects D15, D16) -- Developer chose the platform D15 deferred, and the mounted secret for the key (developer)
 - 2026-11-03 The token service is reachable from this machine only (affects D25) -- Developer closed the reach question of D25 (developer)
+- 2026-11-03 P3 Release core detailed with eight tasks T3.1 to T3.8 and a gate; decisions D27 to D29 added (affects P3, T3.1, T3.2, T3.3, T3.4, T3.5, T3.6, T3.7, T3.8, D27, D28, D29) -- Developer approved the P3 breakdown after choosing the token service language, git-cliff-only release notes and marker-line README updates (developer)

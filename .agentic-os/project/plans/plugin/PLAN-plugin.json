@@ -613,9 +613,534 @@
     {
       "id": "P3",
       "title": "Release core",
-      "state": "outlined",
+      "state": "detailed",
       "intent": "Build release --dry-run and --apply with the minimum check, the version-file writers, the local README generation, the GitHub Release by the App and promote to the release tag (roadmap milestone m3-release-core).",
-      "tasks": []
+      "tasks": [
+        {
+          "id": "T3.1",
+          "title": "Build the token service container",
+          "depends": [],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/token-service.md",
+              "why": "the client contract, the authentication, the fallback and the hosting decided in D25 and D26"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/sandbox.md",
+              "why": "the test App and the sandbox repository the service is checked against; the key path is in the session memory, never in a file of the repository"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "token-service/server.js",
+                "token-service/package.json",
+                "token-service/Dockerfile",
+                "token-service/compose.yaml",
+                "token-service/check.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "test -f token-service/server.js && docker compose -f token-service/compose.yaml build && bash token-service/check.sh",
+            "from": "environment fact: the service is built and answers the sandbox App with a narrowed token and refuses what the contract says"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Write the token service of notes/token-service.md in Node with @octokit/auth-app (decision D27): one HTTPS-less localhost endpoint (decision D26, listening on 127.0.0.1 only) that takes the developer's gh login token, the repository owner/name and the name of a permission set; checks GET /user and GET /user/memberships/orgs/<org> (active member of the configured organisation, nothing stored); then returns the installation token of the App for that one repository with only the permissions of the set and its expires_at, or a refusal with a named reason (login not accepted, not a member, repository not installed, set unknown). Permission sets by command are those of the note: contents write for release and promote, pull requests write, administration write for rules-sync. The image holds the code and the configuration (organisation, App ID, the sets); the private key is a read-only host file mounted at run time and read from the path in an environment variable, never copied into the image. No log line, response or file holds a developer token or an installation token. token-service/compose.yaml builds the image and mounts the key; token-service/check.sh runs it against the sandbox App and checks the cases.",
+            "output": "token-service/ with server.js, package.json, Dockerfile, compose.yaml and check.sh; `docker compose -f token-service/compose.yaml build` builds the image and check.sh exits 0.",
+            "pattern": "bin/lib/tool.sh: how the plugin passes a token by variable name and never writes it",
+            "target": "new"
+          },
+          "why": "Every remote write of the release core (release commit push, tag, GitHub Release, promote) needs an installation token, and the service that issues it does not exist yet; decisions D25 and D26 fix where it runs.",
+          "result": "A container image and a compose file that run the token service on this machine against the sandbox App, with its own check script.",
+          "done": "The image builds; with the sandbox key mounted, a request for edotz/git-workflow-sandbox with the developer's gh login returns a token that holds contents write and metadata read on that repository only; an invalid login token, a repository without the installation and an unknown permission set are refused with a named reason; the container log holds no token.",
+          "fails": "The release commands cannot push as the App, or a token issued too wide, or a token or the key lands in an image or a log.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D4",
+            "CONCEPT-git-workflow-plugin:D6",
+            "CONCEPT-git-workflow-plugin:D30"
+          ]
+        },
+        {
+          "id": "T3.2",
+          "title": "Write the library that fetches the installation token",
+          "depends": [
+            "T3.1",
+            "T2.3"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/token-service.md",
+              "why": "the client contract: one request per command run, fail closed, delivery to the tool call by variable name"
+            },
+            {
+              "ref": "bin/lib/tool.sh",
+              "why": "tool_run passes GH_TOKEN by name when it is set; the token library only sets it"
+            },
+            {
+              "ref": "token-service/server.js",
+              "why": "the endpoint, the request fields and the refusal reasons the client reads"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/lib",
+              "paths": [
+                "bin/lib/token.sh"
+              ]
+            }
+          ],
+          "produces": [
+            {
+              "name": "token_fetch",
+              "signature": "token_fetch <owner/repo> <permission-set>"
+            },
+            {
+              "name": "token_drop",
+              "signature": "token_drop"
+            }
+          ],
+          "consumes": [],
+          "verify": {
+            "run": "bash -n bin/lib/token.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/token.sh; declare -F token_fetch >/dev/null; declare -F token_drop >/dev/null; out=$(TOKEN_SERVICE_URL=http://127.0.0.1:9 token_fetch edotz/git-workflow-sandbox contents 2>&1) && exit 1; printf \"%s\" \"$out\" | grep -q \"service unreachable\"; test -z \"${GH_TOKEN:-}\"' ",
+            "from": "environment fact: an unreachable service fails closed with a named reason and leaves no token set"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Write bin/lib/token.sh with token_fetch and token_drop. token_fetch takes the repository and the permission set, reads the developer's token from `gh auth token` (never from a file or an argument of another command), sends one request to the token service (URL from the setting TOKEN_SERVICE_URL, default http://127.0.0.1 and the service port), and sets the shell variable GH_TOKEN without exporting it; tool_run then passes it by name. Fail closed (decision D5 of the plan): an unreachable service, a refusal or a response without a token ends with a non-zero exit and a message that names the reason (service unreachable, login not accepted, not a member, repository not installed), and sets no token; there is no second path and no personal token. The token is never written to a file, a log line or an argument. token_drop unsets it. Call it at the top level, not inside $( ).",
+            "output": "bin/lib/token.sh sourced through PLUGIN_ROOT like the other plugin libraries.",
+            "pattern": "bin/lib/tool.sh: the layout of a plugin library and how the token is handled",
+            "target": "new"
+          },
+          "why": "One function fetches the token so that no command assembles its own request and fail-closed is decided in one place; the release and promote commands call it before their first write.",
+          "result": "A library that fetches a narrowed installation token from the local service and hands it to the tool call by variable name.",
+          "done": "token_fetch and token_drop exist, pass bash -n, and with the service unreachable token_fetch exits non-zero with 'service unreachable' and leaves GH_TOKEN unset.",
+          "fails": "A command would write without a token fetched first, or would fall back to a personal token, or a token would reach a log line or an argument.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D4",
+            "CONCEPT-git-workflow-plugin:D6"
+          ]
+        },
+        {
+          "id": "T3.3",
+          "title": "Write the component declaration library",
+          "depends": [],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/component-declaration.md",
+              "why": "the fields, the rules a declaration is checked against, the path resolution and the single-repository case"
+            },
+            {
+              "ref": "bin/lib/worktree.sh",
+              "why": "the layout of a plugin library"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/lib",
+              "paths": [
+                "bin/lib/component.sh"
+              ]
+            }
+          ],
+          "produces": [
+            {
+              "name": "component_load",
+              "signature": "component_load <file>"
+            },
+            {
+              "name": "component_names",
+              "signature": "component_names"
+            },
+            {
+              "name": "component_paths",
+              "signature": "component_paths <name>"
+            },
+            {
+              "name": "component_field",
+              "signature": "component_field <name> <field>"
+            }
+          ],
+          "verify": {
+            "run": "bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; t=$(mktemp -d); printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > \"$t/ok.yaml\"; printf \"components:\\n  - name: web\\n    workspace: w\\n    paths: [a]\\n\" > \"$t/both.yaml\"; printf \"components:\\n  - name: web\\n    paths: [a]\\n    colour: red\\n\" > \"$t/unknown.yaml\"; component_load \"$t/ok.yaml\"; test \"$(component_names)\" = object; test \"$(component_field object version)\" = yes; ! component_load \"$t/both.yaml\" 2>/dev/null; ! component_load \"$t/unknown.yaml\" 2>/dev/null; rm -rf \"$t\"'",
+            "from": "environment fact: a valid declaration loads with its defaults and the refused shapes of the note are refused"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Write bin/lib/component.sh that reads components.yaml at the repository root with the yaml library (never raw yq in a command), checks every rule of the section Fields of the note (exactly one of workspace or paths, unknown field refused, owner repo host only with split yes, split yes needs version yes and is refused in a single repository, version none needs empty version_files, name form and uniqueness) and exposes the components with their defaults (version yes, split no, host github.com). component_paths resolves a component's directories as the section Path resolution says: paths as written with . for the whole repository, only one component in a single repository; workspace through pnpm on the host (pnpm list -r --depth -1 --json --filter '<package>...'), computed on every call and never stored. component_field prints one field. Errors name the component and the rule.",
+            "output": "bin/lib/component.sh sourced through PLUGIN_ROOT like the other plugin libraries.",
+            "pattern": "bin/lib/worktree.sh: the layout of a plugin library",
+            "target": "new"
+          },
+          "why": "The release, the split and the aggregate check all read the component declaration; one library holds its rules and its path resolution so no command guesses the shape.",
+          "result": "A library that loads and validates components.yaml and resolves a component's directories.",
+          "done": "A valid declaration loads and shows its defaults; a declaration with both workspace and paths, and one with an unknown field, are refused; the library passes bash -n.",
+          "fails": "Each command would parse the declaration its own way, and a malformed declaration would be accepted until a release fails halfway.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D38",
+            "CONCEPT-git-workflow-plugin:D41"
+          ]
+        },
+        {
+          "id": "T3.4",
+          "title": "Write the version library: next version, pre-release and the version files",
+          "depends": [
+            "T3.3",
+            "T2.3"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/component-declaration.md",
+              "why": "the sections Path resolution and Pre-releases: the bump command, the tag pattern and the pre-release rule"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/verify-tools.md",
+              "why": "rows L390, L237, L239 and L786: git-cliff has no --pre, composer.json takes no version, ext_emconf.php takes plain versions, a package.json change leaves the lockfile alone"
+            },
+            {
+              "ref": "bin/lib/tool.sh",
+              "why": "every git-cliff and git call runs through tool_run"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/lib",
+              "paths": [
+                "bin/lib/version.sh"
+              ]
+            }
+          ],
+          "produces": [
+            {
+              "name": "version_next",
+              "signature": "version_next <component> [channel]"
+            },
+            {
+              "name": "version_write",
+              "signature": "version_write <component> <version>"
+            },
+            {
+              "name": "version_tag",
+              "signature": "version_tag <component> <version>"
+            }
+          ],
+          "consumes": [
+            {
+              "from": "T3.3",
+              "name": "component_paths",
+              "signature": "component_paths <name>"
+            },
+            {
+              "from": "T3.3",
+              "name": "component_field",
+              "signature": "component_field <name> <field>"
+            }
+          ],
+          "verify": {
+            "run": "bash -n bin/lib/version.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/version.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"{\\\"name\\\":\\\"o\\\",\\\"version\\\":\\\"1.0.0\\\"}\\n\" > package.json; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v1.0.0; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; test \"$(version_next object)\" = 1.1.0; test \"$(version_next object rc)\" = 1.1.0-rc.1; version_write object 1.1.0; grep -q \"\\\"version\\\": \\\"1.1.0\\\"\\|\\\"version\\\":\\\"1.1.0\\\"\" package.json; test \"$(version_tag object 1.1.0)\" = v1.1.0; cd /; rm -rf \"$t\"'",
+            "from": "environment fact: the next version, the first pre-release, the writer and the single-repository tag come out right on a throwaway repository"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Write bin/lib/version.sh. version_next prints the next version of a component: git-cliff through tool_run with --bumped-version, the tag pattern of the component (^<prefix>v, stable tags only for the base) and one --include-path '<dir>/**' per resolved directory of component_paths, as the section Path resolution says; with a channel argument it applies the pre-release rule of the section Pre-releases (the line exists: git-cliff's counter; the line starts: compose <base>-<channel>.1; check the result has exactly the shape X.Y.Z-<channel>.N and stop otherwise). version_tag prints the tag: <component>/vX.Y.Z, in a single repository vX.Y.Z. version_write writes the version into every file of version_files and reads each one back, failing when it does not hold the version (package.json key version; composer.json refused when listed; ext_emconf.php refuses a pre-release version). A commit outside every component bumps none. No LLM step (decision D28 of the plan).",
+            "output": "bin/lib/version.sh sourced through PLUGIN_ROOT like the other plugin libraries.",
+            "pattern": "bin/lib/tool.sh: the layout of a plugin library and the use of tool_run",
+            "target": "new"
+          },
+          "why": "The release commit needs one place that computes the version, the tag and the file rewrite exactly as the declaration note decided, so dry run and apply cannot disagree.",
+          "result": "A library that computes the next version and tag of a component and writes and verifies its version files.",
+          "done": "On a throwaway repository with the tag v1.0.0 and one feat commit, version_next prints 1.1.0 and with channel rc 1.1.0-rc.1, version_write puts 1.1.0 into package.json and reads it back, and version_tag prints v1.1.0.",
+          "fails": "A tag would not match the version file, a pre-release would restart or skip a counter, or a version file would silently keep the old value.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D33",
+            "CONCEPT-git-workflow-plugin:D38",
+            "CONCEPT-git-workflow-plugin:D39"
+          ]
+        },
+        {
+          "id": "T3.5",
+          "title": "Write the minimum check",
+          "depends": [
+            "T3.3",
+            "T2.3"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/lint-commit.sh",
+              "why": "the commit message lint the check reuses for the commits since the last tag"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/component-declaration.md",
+              "why": "the checks field: the project's own quick checks run from the repository root"
+            },
+            {
+              "ref": "CONCEPT-git-workflow-plugin:D32",
+              "why": "the minimum check is commit lint of the commits since the last tag plus the quick checks the project declares; release requires it green on HEAD"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/lib",
+              "paths": [
+                "bin/lib/check.sh"
+              ]
+            }
+          ],
+          "produces": [
+            {
+              "name": "check_minimum",
+              "signature": "check_minimum <component>"
+            }
+          ],
+          "consumes": [
+            {
+              "from": "T3.3",
+              "name": "component_field",
+              "signature": "component_field <name> <field>"
+            }
+          ],
+          "verify": {
+            "run": "bash -n bin/lib/check.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/check.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    checks: [\\\"true\\\"]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v0.0.1; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; check_minimum object; echo b > b; git add b; git commit -q -m \"not conventional\"; ! check_minimum object 2>/dev/null; cd /; rm -rf \"$t\"'",
+            "from": "environment fact: a clean history passes and a commit that breaks the message rule fails the check"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Write bin/lib/check.sh with check_minimum: it lints the message of every commit since the latest tag of the component with the conventional commit rule of the plugin (the same rule as the lint-commit command, through its library path and not by copying the rule), then runs every command of the component's checks field from the repository root; a non-zero exit of any step fails the check and the output names the commit or the command. It runs on HEAD only and writes nothing.",
+            "output": "bin/lib/check.sh sourced through PLUGIN_ROOT like the other plugin libraries.",
+            "pattern": "bin/lib/worktree.sh: the layout of a plugin library",
+            "target": "new"
+          },
+          "why": "The release requires the minimum check green on HEAD, so a broken commit message or a failing quick check stops a release before anything is written.",
+          "result": "A library that runs the commit lint and the declared quick checks for a component.",
+          "done": "On a throwaway repository a conventional history with a passing check command passes check_minimum, and after a commit with a message that breaks the rule check_minimum exits non-zero.",
+          "fails": "A release would go out over a commit that the commit-msg hook never saw, or over a failing project check.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D32"
+          ]
+        },
+        {
+          "id": "T3.6",
+          "title": "Write the release command: dry run and apply",
+          "depends": [
+            "T3.2",
+            "T3.3",
+            "T3.4",
+            "T3.5"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/component-declaration.md",
+              "why": "the release commit message, the touched files, the tag and the pre-release rules"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/token-service.md",
+              "why": "a command fetches its token before its first write and a refusal leaves nothing written; the release is idempotent"
+            },
+            {
+              "ref": "bin/modules/git/lint-commit.sh",
+              "why": "the layout of a command of the git domain"
+            },
+            {
+              "ref": "bin/modules/git/module.yaml",
+              "why": "the registry the new command is added to"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/release.sh",
+                "bin/modules/git/module.yaml"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/git-release/dry-run.sh"
+              ]
+            }
+          ],
+          "consumes": [
+            {
+              "from": "T3.2",
+              "name": "token_fetch",
+              "signature": "token_fetch <owner/repo> <permission-set>"
+            },
+            {
+              "from": "T3.3",
+              "name": "component_load",
+              "signature": "component_load <file>"
+            },
+            {
+              "from": "T3.4",
+              "name": "version_next",
+              "signature": "version_next <component> [channel]"
+            },
+            {
+              "from": "T3.4",
+              "name": "version_write",
+              "signature": "version_write <component> <version>"
+            },
+            {
+              "from": "T3.4",
+              "name": "version_tag",
+              "signature": "version_tag <component> <version>"
+            },
+            {
+              "from": "T3.5",
+              "name": "check_minimum",
+              "signature": "check_minimum <component>"
+            }
+          ],
+          "verify": {
+            "run": "bash tests/git-release/dry-run.sh && bash ${BU_ROOT}/app lint modules",
+            "from": "environment fact: the dry run prints version, tag and notes and changes nothing; the registry and the script agree"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Write app git release with the flags --dry-run, --apply, --draft and --pre <channel>, and register it in module.yaml. Both modes first load components.yaml, run check_minimum on HEAD and refuse on a red check. --dry-run prints, per released component, the next version, the tag, the files it would touch and the git-cliff notes, and changes nothing (git status stays clean, no tag, no token fetched). --apply fetches the token (token_fetch with the contents set) before its first write, writes the version files (version_write), the component's CHANGELOG from git-cliff and the README lines between <!-- release:start --> and <!-- release:end --> (decision D29 of the plan; a README without the markers is left alone and the output says so), makes one release commit `chore(<name>): release <tag>` on master, creates the tag, pushes both with the App token as an http.extraheader setting in the environment, and creates the GitHub Release as the App in the same run (--prerelease for a pre-release, unpublished with --draft, release notes from git-cliff, decision D28 of the plan); a repeated --apply finds the pushed tag and creates only what is missing. A commit outside every component releases nothing. tests/git-release/dry-run.sh builds a throwaway repository and checks the dry run end to end.",
+            "output": "bin/modules/git/release.sh, the entry in module.yaml and tests/git-release/dry-run.sh.",
+            "pattern": "bin/modules/git/lint-commit.sh: the layout of a command of the git domain",
+            "target": "new"
+          },
+          "why": "The release is the heart of the workflow: one local command that makes the release commit, the tag and the GitHub Release as the App, with a dry run that shows exactly what apply would do.",
+          "result": "The command app git release with dry run and apply that makes the release commit, the tag and the GitHub Release.",
+          "done": "The dry run on a throwaway repository prints the next version, the tag and the notes and leaves the working tree and the tags unchanged; the module registry and the script agree. The apply path is checked by the pilot of T3.8.",
+          "fails": "A release would write before its token is fetched, a dry run would differ from apply, or a repeated apply would create a second commit or release.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D28",
+            "CONCEPT-git-workflow-plugin:D30",
+            "CONCEPT-git-workflow-plugin:D32",
+            "CONCEPT-git-workflow-plugin:D33",
+            "CONCEPT-git-workflow-plugin:D40",
+            "CONCEPT-git-workflow-plugin:D41"
+          ]
+        },
+        {
+          "id": "T3.7",
+          "title": "Write the promote command",
+          "depends": [
+            "T3.2",
+            "T3.6"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "CONCEPT-git-workflow-plugin:D52",
+              "why": "promote fast-forwards the release branch to the release commit identified by its tag, never to the head of master"
+            },
+            {
+              "ref": "CONCEPT-git-workflow-plugin:D27",
+              "why": "promotion is fast-forward only and covers master and the release branch only"
+            },
+            {
+              "ref": "bin/modules/git/lint-commit.sh",
+              "why": "the layout of a command of the git domain"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/promote.sh",
+                "bin/modules/git/module.yaml"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/git-promote/ff.sh"
+              ]
+            }
+          ],
+          "consumes": [
+            {
+              "from": "T3.2",
+              "name": "token_fetch",
+              "signature": "token_fetch <owner/repo> <permission-set>"
+            }
+          ],
+          "verify": {
+            "run": "bash tests/git-promote/ff.sh && bash ${BU_ROOT}/app lint modules",
+            "from": "environment fact: the dry run computes the fast-forward to the tag and a diverged release branch is refused"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Write app git promote <tag> with --dry-run and --apply and register it in module.yaml. The release branch comes from RELEASE_BRANCH (decision D16 of the concept). Promote moves the release branch to the commit of the given release tag, never to the head of master; it refuses a tag that is not a release tag, and refuses when the move is not a fast-forward (no force, no reset). --dry-run prints the commit it would move to and changes nothing. --apply fetches the token (permission set contents) before its first write and pushes with the App token as an http.extraheader setting in the environment. When the release branch equals the main branch nothing is done and the output says so. tests/git-promote/ff.sh builds a throwaway repository with a bare remote and checks the dry run and the refusal of a diverged branch.",
+            "output": "bin/modules/git/promote.sh, the entry in module.yaml and tests/git-promote/ff.sh.",
+            "pattern": "bin/modules/git/lint-commit.sh: the layout of a command of the git domain",
+            "target": "new"
+          },
+          "why": "Master carries the release commit and the release branch follows only by promote, so a commit pushed to master after a release can never reach the release branch.",
+          "result": "The command app git promote that fast-forwards the release branch to a release tag.",
+          "done": "On a throwaway repository the dry run names the tag's commit as the target and a diverged release branch is refused; the module registry and the script agree. The push path is checked by the pilot of T3.8.",
+          "fails": "A promote would move the release branch to the head of master, or would force a diverged branch.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D27",
+            "CONCEPT-git-workflow-plugin:D30",
+            "CONCEPT-git-workflow-plugin:D41",
+            "CONCEPT-git-workflow-plugin:D52"
+          ]
+        },
+        {
+          "id": "T3.8",
+          "title": "Release and promote a pilot in the sandbox",
+          "depends": [
+            "T3.1",
+            "T3.6",
+            "T3.7"
+          ],
+          "owner": "developer",
+          "inputs": [
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/sandbox.md",
+              "why": "the repository and the test App the pilot runs against and the form of a setup note"
+            },
+            {
+              "ref": "token-service/compose.yaml",
+              "why": "starts the service with the sandbox key mounted"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                ".agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f",
+            "from": "environment fact: the note holds the two named sections"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Start the token service with the sandbox key mounted, make the sandbox repository a pilot single repository (components.yaml with one component at the root, a package.json, the README markers, conventional commits), run app git release --dry-run, then --apply, then app git promote on the resulting tag with a release branch set. Check that the release commit, the tag and the GitHub Release exist, that the GitHub Release was created by the App, that a repeated --apply creates nothing, and that the release branch sits on the tag. Write what you ran and saw.",
+            "output": "A note with the sections Repository (the pilot setup) and Result (version, tag, release commit, who created the GitHub Release, the repeated apply, the promote).",
+            "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/sandbox.md: the form of a setup note",
+            "target": "new"
+          },
+          "why": "The gate of m3-release-core asks that a pilot single repository releases locally with commit, tag and GitHub Release by the App and that promote fast-forwards the release branch; only a run against GitHub shows it.",
+          "result": "A note that records a pilot release and promote in the sandbox repository.",
+          "done": "The note names the repository and the result: the tag, the release commit, the GitHub Release made by the App, the harmless repeated apply and the release branch at the tag.",
+          "fails": "The apply and push paths, which the earlier checks cannot reach without GitHub, would first run in a consuming project.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D40",
+            "CONCEPT-git-workflow-plugin:D52"
+          ]
+        }
+      ],
+      "gate": {
+        "run": "(test -f token-service/server.js && docker compose -f token-service/compose.yaml build && bash token-service/check.sh) && (bash -n bin/lib/token.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/token.sh; declare -F token_fetch >/dev/null; declare -F token_drop >/dev/null; out=$(TOKEN_SERVICE_URL=http://127.0.0.1:9 token_fetch edotz/git-workflow-sandbox contents 2>&1) && exit 1; printf \"%s\" \"$out\" | grep -q \"service unreachable\"; test -z \"${GH_TOKEN:-}\"' ) && (bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; t=$(mktemp -d); printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > \"$t/ok.yaml\"; printf \"components:\\n  - name: web\\n    workspace: w\\n    paths: [a]\\n\" > \"$t/both.yaml\"; printf \"components:\\n  - name: web\\n    paths: [a]\\n    colour: red\\n\" > \"$t/unknown.yaml\"; component_load \"$t/ok.yaml\"; test \"$(component_names)\" = object; test \"$(component_field object version)\" = yes; ! component_load \"$t/both.yaml\" 2>/dev/null; ! component_load \"$t/unknown.yaml\" 2>/dev/null; rm -rf \"$t\"') && (bash -n bin/lib/version.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/version.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"{\\\"name\\\":\\\"o\\\",\\\"version\\\":\\\"1.0.0\\\"}\\n\" > package.json; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v1.0.0; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; test \"$(version_next object)\" = 1.1.0; test \"$(version_next object rc)\" = 1.1.0-rc.1; version_write object 1.1.0; grep -q \"\\\"version\\\": \\\"1.1.0\\\"\\|\\\"version\\\":\\\"1.1.0\\\"\" package.json; test \"$(version_tag object 1.1.0)\" = v1.1.0; cd /; rm -rf \"$t\"') && (bash -n bin/lib/check.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/check.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    checks: [\\\"true\\\"]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v0.0.1; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; check_minimum object; echo b > b; git add b; git commit -q -m \"not conventional\"; ! check_minimum object 2>/dev/null; cd /; rm -rf \"$t\"') && (bash tests/git-release/dry-run.sh && bash ${BU_ROOT}/app lint modules) && (bash tests/git-promote/ff.sh && bash ${BU_ROOT}/app lint modules) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f)"
+      }
     },
     {
       "id": "P4",
@@ -903,6 +1428,36 @@
       "date": "2026-11-03",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D27",
+      "question": "In which language the token service is written",
+      "chosen": "Node with Octokit (@octokit/auth-app): the App JWT, the installation token request and its narrowing come from the maintained library; a small HTTP server in its own image under token-service/ that holds code and configuration, the key mounted as a host file (D25); the tool image stays free of Node (concept D34)",
+      "reason": "Developer chose the recommended option on 2026-11-03: the security-critical parts are not hand-rolled.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D28",
+      "question": "Whether the release notes carry an LLM summary in P3 (concept D49)",
+      "chosen": "No: the release commit, the CHANGELOG and the GitHub Release body come from git-cliff alone and are deterministic; a summary through provider_run_prompt on the host (concept D18) is a later addition",
+      "reason": "Developer chose the recommended option on 2026-11-03: the m3 gate does not depend on an LLM.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D29",
+      "question": "What the release does to the README",
+      "chosen": "It rewrites only the lines between the markers <!-- release:start --> and <!-- release:end --> (a version badge and a release link: releases/tag/<tag> of the component, in a single repository the same link form); the rest of the README stays the author's; a README without the markers is left untouched and the release says so",
+      "reason": "Developer chose the recommended option on 2026-11-03: no template and no generation, which the concept leaves out of scope (D20).",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -1059,6 +1614,40 @@
       ],
       "reason": "Developer closed the reach question of D25",
       "by": "developer"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "P3 Release core detailed with eight tasks T3.1 to T3.8 and a gate; decisions D27 to D29 added",
+      "affects": [
+        "P3",
+        "T3.1",
+        "T3.2",
+        "T3.3",
+        "T3.4",
+        "T3.5",
+        "T3.6",
+        "T3.7",
+        "T3.8",
+        "D27",
+        "D28",
+        "D29"
+      ],
+      "reason": "Developer approved the P3 breakdown after choosing the token service language, git-cliff-only release notes and marker-line README updates",
+      "by": "developer"
+    }
+  ],
+  "dismissals": [
+    {
+      "ref": "CONCEPT-git-workflow-plugin:D10",
+      "reason": "P3 has no LLM step: the release notes come from git-cliff alone (plan decision D28)",
+      "by": "claude",
+      "date": "2026-11-03"
+    },
+    {
+      "ref": "CONCEPT-git-workflow-plugin:D18",
+      "reason": "P3 has no LLM step, so nothing runs through provider_run_prompt yet (plan decision D28)",
+      "by": "claude",
+      "date": "2026-11-03"
     }
   ]
 }
