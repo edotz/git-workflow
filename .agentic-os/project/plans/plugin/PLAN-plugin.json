@@ -893,6 +893,16 @@
       "date": "2026-11-03",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D26",
+      "question": "Who reaches the token service, which D25 left open",
+      "chosen": "Only this machine: the service listens on the local machine and is not exposed to other machines, no tunnel and no certificate; its purpose is to learn how it works and to be able to change it",
+      "reason": "Developer answer on 2026-11-03. It closes the open point of D25. Consequence: the release commands work on this machine only, and a developer on another machine cannot get a token (D5, fail closed). A shared or exposed endpoint is a later decision that supersedes this one.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -1039,6 +1049,15 @@
         "D16"
       ],
       "reason": "Developer chose the platform D15 deferred, and the mounted secret for the key",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "The token service is reachable from this machine only",
+      "affects": [
+        "D25"
+      ],
+      "reason": "Developer closed the reach question of D25",
       "by": "developer"
     }
   ]

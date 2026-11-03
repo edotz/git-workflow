@@ -39,7 +39,7 @@ Settles what the concept decisions D6 (the CLI gets a short-lived installation t
 ## Service hosting
 
 - **Platform (D25).** A Docker container on the developer's own machine, chosen 2026-11-03. The image holds the service code and its configuration: the organisation, the App ID and the permission set of each command. The private key is not in the image: it is a read-only file on the host, mounted into the container at run time. This machine is the one declared exception to "the key is not on a developer machine"; D16 holds otherwise.
-- **Open under D25.** How developers on other machines reach the endpoint of this machine (a tunnel or an exposed port with a certificate) is not settled; the hosting phase detail has to settle it. While this machine or the container is down nobody releases (D5).
+- **Reach (D26).** The service operates on this machine only, to learn how it works and to change it. It listens locally and is not exposed to other machines; a developer on another machine gets no token (D5). A shared endpoint would be a later decision.
 - **Requirements the platform has to meet:**
   - an HTTPS endpoint that developer machines can reach;
   - the App's private key only in the platform's secret store, never in a repository, an image, a log or on a developer machine (D6);
