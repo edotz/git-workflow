@@ -14,7 +14,7 @@ The test setup the GitHub App checks run against. Written by T1.0, 2026-11-03. I
 - Name: `git-workflow-sandbox`, owned by `@edotz`, installable only on that account.
 - App ID: 5593711.
 - Installed on the repository `git-workflow-sandbox` only (the developer's confirmation; not read back through the API, because the token of this session lacks the organisation scope for it).
-- Permissions as registered by the developer: Contents read and write, Pull requests read and write, Administration read-only, Metadata read-only. Every other repository permission is "No access". They were not read back through the API.
+- Permissions, read back through the API: first Contents write, Pull requests write, Administration read, Metadata read. Later raised to Administration write and Packages write, accepted on the installation 2026-11-03 11:18 UTC (see verify-github.md, rows L500 and L467). Every other repository permission is "No access".
 - Webhook inactive; no user authorization flow is used.
 - Row L500 of the verify report decides whether Administration read-only is enough for ruleset sync.
 
