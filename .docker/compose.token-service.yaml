@@ -1,6 +1,8 @@
 services:
   token-service:
-    build: .
+    build:
+      context: ..
+      dockerfile: .docker/token-service.Dockerfile
     image: edotz-git-workflow-token-service:local
     user: "${TOKEN_SERVICE_UID:-1000}:${TOKEN_SERVICE_GID:-1000}"
     environment:

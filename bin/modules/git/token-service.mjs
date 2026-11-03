@@ -1,8 +1,9 @@
+#!/usr/bin/env node
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
 import { createAppAuth } from "@octokit/auth-app";
 
-const config = JSON.parse(readFileSync(new URL("./config.json", import.meta.url), "utf8"));
+const config = JSON.parse(readFileSync(new URL("../../config/token-service.json", import.meta.url), "utf8"));
 const appId = process.env.TOKEN_SERVICE_APP_ID;
 const keyPath = process.env.TOKEN_SERVICE_KEY_PATH;
 const port = Number(process.env.TOKEN_SERVICE_PORT || 8790);

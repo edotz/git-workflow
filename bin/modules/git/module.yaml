@@ -13,6 +13,17 @@ commands:
   - name: "run-status"
     requires: [gh]
     description: "Fetch recent GitHub Actions workflow runs as JSON."
+  - name: "token-service"
+    script: "token-service.mjs"
+    requires: [node]
+    description: "Run the token service that issues narrowed one-hour installation tokens of the GitHub App to organisation members; needs TOKEN_SERVICE_APP_ID and TOKEN_SERVICE_KEY_PATH, listens on TOKEN_SERVICE_PORT (default 8790)."
+    arguments:
+      - name: "TOKEN_SERVICE_APP_ID"
+        description: "ID of the GitHub App (environment variable)"
+        required: true
+      - name: "TOKEN_SERVICE_KEY_PATH"
+        description: "Path of the private key file of the App (environment variable); the key is never copied into an image"
+        required: true
   - name: "workflow-setup"
     requires: [git, gh, envsubst]
     description: "Validate .github/workflow.env and resolve the workflow configuration."

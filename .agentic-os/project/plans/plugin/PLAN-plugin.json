@@ -633,24 +633,48 @@
           ],
           "writes": [
             {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/token-service.mjs",
+                "bin/modules/git/module.yaml"
+              ]
+            },
+            {
+              "scope": "bin/config",
+              "paths": [
+                "bin/config/token-service.json"
+              ]
+            },
+            {
+              "scope": ".docker",
+              "paths": [
+                ".docker/token-service.Dockerfile",
+                ".docker/compose.token-service.yaml"
+              ]
+            },
+            {
               "scope": ".",
               "paths": [
-                "token-service/server.js",
-                "token-service/package.json",
-                "token-service/Dockerfile",
-                "token-service/compose.yaml",
-                "token-service/check.sh"
+                "package.json",
+                "package-lock.json",
+                ".dockerignore"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/token-service/check.sh"
               ]
             }
           ],
           "verify": {
-            "run": "test -f token-service/server.js && docker compose -f token-service/compose.yaml build && bash token-service/check.sh",
+            "run": "test -x bin/modules/git/token-service.mjs && node --check bin/modules/git/token-service.mjs && docker compose -f .docker/compose.token-service.yaml build && bash tests/token-service/check.sh",
             "from": "environment fact: the service is built and answers the sandbox App with a narrowed token and refuses what the contract says"
           },
           "status": "done",
           "brief": {
-            "arguments": "Write the token service of notes/token-service.md in Node with @octokit/auth-app (decision D27): one HTTPS-less localhost endpoint (decision D26, listening on 127.0.0.1 only) that takes the developer's gh login token, the repository owner/name and the name of a permission set; checks GET /user and GET /user/memberships/orgs/<org> (active member of the configured organisation, nothing stored); then returns the installation token of the App for that one repository with only the permissions of the set and its expires_at, or a refusal with a named reason (login not accepted, not a member, repository not installed, set unknown). Permission sets by command are those of the note: contents write for release and promote, pull requests write, administration write for rules-sync. The image holds the code and the configuration (organisation, App ID, the sets); the private key is a read-only host file mounted at run time and read from the path in an environment variable, never copied into the image. No log line, response or file holds a developer token or an installation token. token-service/compose.yaml builds the image and mounts the key; token-service/check.sh runs it against the sandbox App and checks the cases.",
-            "output": "token-service/ with server.js, package.json, Dockerfile, compose.yaml and check.sh; `docker compose -f token-service/compose.yaml build` builds the image and check.sh exits 0.",
+            "arguments": "Write the token service of notes/token-service.md in Node with @octokit/auth-app (decision D27): one HTTPS-less localhost endpoint (decision D26, listening on 127.0.0.1 only) that takes the developer's gh login token, the repository owner/name and the name of a permission set; checks GET /user and GET /user/memberships/orgs/<org> (active member of the configured organisation, nothing stored); then returns the installation token of the App for that one repository with only the permissions of the set and its expires_at, or a refusal with a named reason (login not accepted, not a member, repository not installed, set unknown). Permission sets by command are those of the note: contents write for release and promote, pull requests write, administration write for rules-sync. The image holds the code and the configuration (organisation, App ID, the sets); the private key is a read-only host file mounted at run time and read from the path in an environment variable, never copied into the image. No log line, response or file holds a developer token or an installation token. .docker/compose.token-service.yaml builds the image from the root of the plugin and mounts the key; tests/token-service/check.sh runs it against the sandbox App and checks the cases. The script is a module command of the git domain (decision D30 of the plan).",
+            "output": "bin/modules/git/token-service.mjs (shebang #!/usr/bin/env node, registered as app git token-service), bin/config/token-service.json, the dependency in the root package.json, .docker/token-service.Dockerfile, .docker/compose.token-service.yaml, .dockerignore and tests/token-service/check.sh; `docker compose -f .docker/compose.token-service.yaml build` builds the image and the check exits 0.",
             "pattern": "bin/lib/tool.sh: how the plugin passes a token by variable name and never writes it",
             "target": "new"
           },
@@ -686,7 +710,7 @@
               "why": "tool_run passes GH_TOKEN by name when it is set; the token library only sets it"
             },
             {
-              "ref": "token-service/server.js",
+              "ref": "bin/modules/git/token-service.mjs",
               "why": "the endpoint, the request fields and the refusal reasons the client reads"
             }
           ],
@@ -774,7 +798,7 @@
             "run": "bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; t=$(mktemp -d); printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > \"$t/ok.yaml\"; printf \"components:\\n  - name: web\\n    workspace: w\\n    paths: [a]\\n\" > \"$t/both.yaml\"; printf \"components:\\n  - name: web\\n    paths: [a]\\n    colour: red\\n\" > \"$t/unknown.yaml\"; component_load \"$t/ok.yaml\"; test \"$(component_names)\" = object; test \"$(component_field object version)\" = yes; ! component_load \"$t/both.yaml\" 2>/dev/null; ! component_load \"$t/unknown.yaml\" 2>/dev/null; rm -rf \"$t\"'",
             "from": "environment fact: a valid declaration loads with its defaults and the refused shapes of the note are refused"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "Write bin/lib/component.sh that reads components.yaml at the repository root with the yaml library (never raw yq in a command), checks every rule of the section Fields of the note (exactly one of workspace or paths, unknown field refused, owner repo host only with split yes, split yes needs version yes and is refused in a single repository, version none needs empty version_files, name form and uniqueness) and exposes the components with their defaults (version yes, split no, host github.com). component_paths resolves a component's directories as the section Path resolution says: paths as written with . for the whole repository, only one component in a single repository; workspace through pnpm on the host (pnpm list -r --depth -1 --json --filter '<package>...'), computed on every call and never stored. component_field prints one field. Errors name the component and the rule.",
             "output": "bin/lib/component.sh sourced through PLUGIN_ROOT like the other plugin libraries.",
@@ -788,7 +812,21 @@
           "carries": [
             "CONCEPT-git-workflow-plugin:D38",
             "CONCEPT-git-workflow-plugin:D41"
-          ]
+          ],
+          "findings": [
+            {
+              "file": "bin/lib/component.sh",
+              "line": 200,
+              "severity": "style",
+              "summary": "component_field starts two jq processes per call",
+              "state": "open"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T3.3.md",
+          "last_verify": {
+            "at": "2026-11-03T16:28:04Z",
+            "exit": 0
+          }
         },
         {
           "id": "T3.4",
@@ -1109,7 +1147,7 @@
               "why": "the repository and the test App the pilot runs against and the form of a setup note"
             },
             {
-              "ref": "token-service/compose.yaml",
+              "ref": ".docker/compose.token-service.yaml",
               "why": "starts the service with the sandbox key mounted"
             }
           ],
@@ -1143,7 +1181,7 @@
         }
       ],
       "gate": {
-        "run": "(test -f token-service/server.js && docker compose -f token-service/compose.yaml build && bash token-service/check.sh) && (bash -n bin/lib/token.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/token.sh; declare -F token_fetch >/dev/null; declare -F token_drop >/dev/null; out=$(TOKEN_SERVICE_URL=http://127.0.0.1:9 token_fetch edotz/git-workflow-sandbox contents 2>&1) && exit 1; printf \"%s\" \"$out\" | grep -q \"service unreachable\"; test -z \"${GH_TOKEN:-}\"' ) && (bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; t=$(mktemp -d); printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > \"$t/ok.yaml\"; printf \"components:\\n  - name: web\\n    workspace: w\\n    paths: [a]\\n\" > \"$t/both.yaml\"; printf \"components:\\n  - name: web\\n    paths: [a]\\n    colour: red\\n\" > \"$t/unknown.yaml\"; component_load \"$t/ok.yaml\"; test \"$(component_names)\" = object; test \"$(component_field object version)\" = yes; ! component_load \"$t/both.yaml\" 2>/dev/null; ! component_load \"$t/unknown.yaml\" 2>/dev/null; rm -rf \"$t\"') && (bash -n bin/lib/version.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/version.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"{\\\"name\\\":\\\"o\\\",\\\"version\\\":\\\"1.0.0\\\"}\\n\" > package.json; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v1.0.0; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; test \"$(version_next object)\" = 1.1.0; test \"$(version_next object rc)\" = 1.1.0-rc.1; version_write object 1.1.0; grep -q \"\\\"version\\\": \\\"1.1.0\\\"\\|\\\"version\\\":\\\"1.1.0\\\"\" package.json; test \"$(version_tag object 1.1.0)\" = v1.1.0; cd /; rm -rf \"$t\"') && (bash -n bin/lib/check.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/check.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    checks: [\\\"true\\\"]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v0.0.1; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; check_minimum object; echo b > b; git add b; git commit -q -m \"not conventional\"; ! check_minimum object 2>/dev/null; cd /; rm -rf \"$t\"') && (bash tests/git-release/dry-run.sh && bash ${BU_ROOT}/app lint modules) && (bash tests/git-promote/ff.sh && bash ${BU_ROOT}/app lint modules) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f)"
+        "run": "(test -x bin/modules/git/token-service.mjs && node --check bin/modules/git/token-service.mjs && docker compose -f .docker/compose.token-service.yaml build && bash tests/token-service/check.sh) && (bash -n bin/lib/token.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/token.sh; declare -F token_fetch >/dev/null; declare -F token_drop >/dev/null; out=$(TOKEN_SERVICE_URL=http://127.0.0.1:9 token_fetch edotz/git-workflow-sandbox contents 2>&1) && exit 1; printf \"%s\" \"$out\" | grep -q \"service unreachable\"; test -z \"${GH_TOKEN:-}\"' ) && (bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; t=$(mktemp -d); printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > \"$t/ok.yaml\"; printf \"components:\\n  - name: web\\n    workspace: w\\n    paths: [a]\\n\" > \"$t/both.yaml\"; printf \"components:\\n  - name: web\\n    paths: [a]\\n    colour: red\\n\" > \"$t/unknown.yaml\"; component_load \"$t/ok.yaml\"; test \"$(component_names)\" = object; test \"$(component_field object version)\" = yes; ! component_load \"$t/both.yaml\" 2>/dev/null; ! component_load \"$t/unknown.yaml\" 2>/dev/null; rm -rf \"$t\"') && (bash -n bin/lib/version.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/version.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"{\\\"name\\\":\\\"o\\\",\\\"version\\\":\\\"1.0.0\\\"}\\n\" > package.json; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v1.0.0; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; test \"$(version_next object)\" = 1.1.0; test \"$(version_next object rc)\" = 1.1.0-rc.1; version_write object 1.1.0; grep -q \"\\\"version\\\": \\\"1.1.0\\\"\\|\\\"version\\\":\\\"1.1.0\\\"\" package.json; test \"$(version_tag object 1.1.0)\" = v1.1.0; cd /; rm -rf \"$t\"') && (bash -n bin/lib/check.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/check.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    checks: [\\\"true\\\"]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v0.0.1; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; check_minimum object; echo b > b; git add b; git commit -q -m \"not conventional\"; ! check_minimum object 2>/dev/null; cd /; rm -rf \"$t\"') && (bash tests/git-release/dry-run.sh && bash ${BU_ROOT}/app lint modules) && (bash tests/git-promote/ff.sh && bash ${BU_ROOT}/app lint modules) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f)"
       }
     },
     {
@@ -1441,7 +1479,8 @@
       "by": "developer",
       "date": "2026-11-03",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D30"
     },
     {
       "id": "D28",
@@ -1458,6 +1497,16 @@
       "question": "What the release does to the README",
       "chosen": "It rewrites only the lines between the markers <!-- release:start --> and <!-- release:end --> (a version badge and a release link: releases/tag/<tag> of the component, in a single repository the same link form); the rest of the README stays the author's; a README without the markers is left untouched and the release says so",
       "reason": "Developer chose the recommended option on 2026-11-03: no template and no generation, which the concept leaves out of scope (D20).",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D30",
+      "question": "How the token service is laid out in the plugin, after D27",
+      "chosen": "Node with Octokit as before (D27), but as a module command: bin/modules/git/token-service.mjs with the shebang #!/usr/bin/env node, registered in module.yaml as app git token-service with requires node; its dependency @octokit/auth-app in the package.json of the plugin root; its configuration in bin/config/token-service.json; its image and compose file in the .docker directory (.docker/token-service.Dockerfile, .docker/compose.token-service.yaml); its check in tests/token-service/check.sh; the key stays a mounted host file (D25)",
+      "reason": "Developer feedback on 2026-11-03: the modules may run Node through the shebang, a package.json belongs in the project directory and the Docker configuration in .docker. The dispatcher is polyglot: the interpreter comes from the shebang.",
       "by": "developer",
       "date": "2026-11-03",
       "scope": "durable",
@@ -1637,6 +1686,20 @@
         "D29"
       ],
       "reason": "Developer approved the P3 breakdown after choosing the token service language, git-cliff-only release notes and marker-line README updates",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "The token service becomes the module command app git token-service with the package in the root package.json and the Docker files in .docker",
+      "affects": [
+        "T3.1",
+        "T3.2",
+        "T3.8",
+        "P3",
+        "D27",
+        "D30"
+      ],
+      "reason": "Developer feedback: Node modules through the shebang, package.json in the project directory, Docker configuration in .docker",
       "by": "developer"
     }
   ],

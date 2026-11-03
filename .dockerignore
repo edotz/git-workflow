@@ -1,0 +1,7 @@
+.git
+.agentic-os
+.claude
+node_modules
+docs
+*.pdf
+*.png

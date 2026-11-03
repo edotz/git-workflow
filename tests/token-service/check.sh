@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # Purpose: Check the token service against the sandbox App: a narrowed token, the refusals and a log without tokens.
-# Usage: APP_KEY_PATH=<private key file of the sandbox App> bash token-service/check.sh
+# Usage: APP_KEY_PATH=<private key file of the sandbox App> bash tests/token-service/check.sh
 # Arguments: none; APP_KEY_PATH required, TOKEN_SERVICE_APP_ID optional (default 5593711, the sandbox App)
 # Output: one line per case, ok or FAIL
 # Exit codes: 0 all cases hold, 1 a case failed or the setup is missing
 set -euo pipefail
 
-here="${BASH_SOURCE[0]%/*}"
+root="${BASH_SOURCE[0]%/*}/../.."
 export TOKEN_SERVICE_KEY_FILE="${APP_KEY_PATH:?APP_KEY_PATH is required}"
 export TOKEN_SERVICE_APP_ID="${TOKEN_SERVICE_APP_ID:-5593711}"
 export TOKEN_SERVICE_PORT="${TOKEN_SERVICE_PORT:-8790}"
 export TOKEN_SERVICE_UID="$(id -u)" TOKEN_SERVICE_GID="$(id -g)"
 repo="edotz/git-workflow-sandbox"
 url="http://127.0.0.1:${TOKEN_SERVICE_PORT}/token"
-compose=(docker compose -f "${here}/compose.yaml" -p git-workflow-token-check)
+compose=(docker compose -f "${root}/.docker/compose.token-service.yaml" -p git-workflow-token-check)
 failed=0
 
 cleanup() { "${compose[@]}" down -t 2 >/dev/null 2>&1 || true; }
