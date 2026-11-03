@@ -173,7 +173,7 @@
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/verify-tools.md; for l in 237 239 390 460 595 624 786; do grep -qE \"^[|] L${l} [|][^|]*[|][^|]*[|][[:space:]]*(confirmed|refuted|changed)[[:space:]]*[|][^|]*[^|[:space:]][^|]*[|][[:space:]]*\\$\" $f || exit 1; done",
             "from": "environment fact: the report holds one row per marked line, each with a result and evidence"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "The marked lines 237 (Composer's version field and tag), 239 (ext_emconf.php writer against the real file layout), 390 (git-cliff pre-release counter), 460 (Packagist update path from a tag), 595 (glibc slim base or musl for the splitsh-lite release binary), 624 (libgit2 needed or not) and 786 (a version change in package.json touches pnpm-lock.yaml).",
             "output": "A markdown table with the header and one row per marked line in the form `| L<line> | claim | method and version checked | confirmed, refuted or changed | evidence |`. The rows for 595 and 624 name the binary version checked.",
@@ -191,7 +191,11 @@
             "CONCEPT-git-workflow-plugin:D47",
             "CONCEPT-git-workflow-plugin:D50",
             "CONCEPT-git-workflow-plugin:D55"
-          ]
+          ],
+          "last_verify": {
+            "at": "2026-11-03T13:53:09Z",
+            "exit": 0
+          }
         },
         {
           "id": "T1.3",
