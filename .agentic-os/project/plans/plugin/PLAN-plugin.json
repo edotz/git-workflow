@@ -7,7 +7,7 @@
     "B-1"
   ],
   "status": "active",
-  "mode": "inline",
+  "mode": "subagents",
   "review_focus": [
     {
       "task": "T1.1",
@@ -28,12 +28,24 @@
     {
       "task": "T1.4",
       "focus": "The declaration must hold a single source for a component's paths (the workspace graph or an explicit list per component), and its single-repository case (one component at the root) must be written out. No done check reads the note for either."
+    },
+    {
+      "task": "T2.2",
+      "focus": "The verify run proves that the pinned versions are in the image, but not that a wrong checksum fails the build. The build must stop on a mismatch, with no fallback download and no latest tag, and nothing from the old Dockerfile (Node, the Gemini and Claude installs, gh-wf, libgit2-dev, openssh-client) may remain."
+    },
+    {
+      "task": "T2.3",
+      "focus": "No done check reads the argument lists of the calls. The installation token must reach the container by environment variable name, never in an argument, a log line or a file, and there must be no fallback to a host binary (concept decision D35)."
+    },
+    {
+      "task": "T2.4",
+      "focus": "The verify run cannot show that the machine is clean in every respect, only that git-cliff and splitsh-lite are absent from the host path and that the image runs. The developer states which machine it was run on."
     }
   ],
   "abstract": {
     "summary": "The plan opens the git-workflow plugin by closing what the milestone m1-foundations asks for: every verify claim of the white paper is checked against GitHub and the real tools, the token service interface, developer authentication, hosting and key custody are settled, and the component declaration is settled. Later phases for the tool image, release core, daily loop, monorepo and retirement are outlined only, one per later milestone of the roadmap.",
     "outcome": "Five notes in the concept's notes directory, one of them recording the sandbox: one with a row per marked line of the white paper for the GitHub App behaviours, one for the tool and ecosystem claims, one for the token service contract with authentication, fallback and hosting, and one for the component declaration with its path resolution and pre-release handling. The milestone gate of m1-foundations can then be read off these notes.",
-    "cost": "Five tasks in the detailed phase, one note each: the developer's sandbox registration and four research and settling notes. The five outlined phases cost nothing until they are detailed in an amend.",
+    "cost": "Nine tasks in the detailed phases: the five tasks of P1, all done, and four in P2 (pins, Dockerfile and compose file, the library function, the clean machine check). The four outlined phases after P2 cost nothing until they are detailed in an amend.",
     "risks": "Several GitHub behaviours the release rests on are unverified and may be refuted, which would change decided concept decisions (the App as the only bypass actor, the GitHub Release created by the App, --latest=false). T1.1 needs a test GitHub App and a sandbox repository that the developer registers first. The token service has no design yet and every remote write depends on it. The white paper marks 18 lines against the concept's 13 claims; the plan covers all 18 and does not reconcile the concept's count.",
     "success": "Each marked line of the white paper has a row with a result and evidence, each refuted claim names the decision it puts in doubt, and the developer can read the token service contract and the component declaration as settled. The milestone m1-foundations gate can then be called met."
   },
@@ -315,9 +327,230 @@
     {
       "id": "P2",
       "title": "Tool image",
-      "state": "outlined",
-      "intent": "Define the pinned image with docker compose and a .docker directory, choose docker exec or an ephemeral container per call, and give the modules one library function that builds every tool call (roadmap milestone m2-tool-image).",
-      "tasks": []
+      "state": "detailed",
+      "tasks": [
+        {
+          "id": "T2.1",
+          "title": "Pin the tool versions, the base image digest and the checksums in the plugin settings",
+          "depends": [],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/verify-tools.md",
+              "why": "rows L595 and L624 give the glibc base, the amd64 only binary and the missing splitsh-lite checksum"
+            },
+            {
+              "ref": "bin/config/env.defaults",
+              "why": "the file that holds the plugin settings and gets the pins"
+            },
+            {
+              "ref": "CONCEPT-git-workflow-plugin:D55",
+              "why": "base image pinned by digest and each download by checksum"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "bin/config/env.defaults"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "f=bin/config/env.defaults; for k in IMAGE_BASE IMAGE_PLATFORM GIT_CLIFF_VERSION GIT_CLIFF_SHA512 SPLITSH_VERSION SPLITSH_SHA256 GH_VERSION GH_SHA256 GIT_APT_VERSION; do grep -qE \"^PLUGIN_EDOTZ_GIT_WORKFLOW_${k}=.+\" $f || exit 1; done; grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE=.*@sha256:[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_PLATFORM=linux/amd64$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_SHA512=[0-9a-f]{128}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_SPLITSH_SHA256=[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GH_SHA256=[0-9a-f]{64}$' $f",
+            "from": "environment fact: the settings file holds each key in the shape of its pin"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Add the keys PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE (debian:bookworm-slim pinned by digest), IMAGE_PLATFORM (linux/amd64, decision D21), GIT_CLIFF_VERSION and GIT_CLIFF_SHA512 (v2.8.0, the sha512 from the release's published .sha512 file), SPLITSH_VERSION and SPLITSH_SHA256 (v1.0.1, asset lite_linux_amd64.tar.gz, no published checksum, so compute it once from the download and record it), GH_VERSION and GH_SHA256 (from the release's published checksums file) and GIT_APT_VERSION (the Debian package version of git in the pinned base). Each key with one comment line naming where the value comes from. A project may override a key in its .env (decision D22).",
+            "output": "The new keys in bin/config/env.defaults, in the style of the existing keys.",
+            "pattern": "bin/config/env.defaults: the style of the existing keys and comments",
+            "target": "change"
+          },
+          "why": "Every later task reads these values; without them the image cannot be reproduced and the build cannot verify a download. Decision D55 asks for the base pinned by digest and each download by checksum.",
+          "result": "The settings file holds one pin per tool and the base image, each with its checksum where the tool is a download.",
+          "done": "Each of the nine keys is present, the base reference ends in a sha256 digest, the platform is linux/amd64, and each checksum has the length of its hash.",
+          "fails": "The Dockerfile would pin nothing or invent its own values, and two machines could build different tools under the same tag.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D34",
+            "CONCEPT-git-workflow-plugin:D55"
+          ]
+        },
+        {
+          "id": "T2.2",
+          "title": "Rebuild the Dockerfile and the compose file on the pinned base",
+          "depends": [
+            "T2.1"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "Dockerfile",
+              "why": "the file to rebuild: it carries the Ubuntu leftovers, the Gemini and Claude installs and the gh-wf entrypoint"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/verify-tools.md",
+              "why": "row L595: splitsh-lite needs glibc and its download is the .tar.gz asset; row L624: libgit2-dev can go"
+            },
+            {
+              "ref": "bin/config/env.defaults",
+              "why": "the pins T2.1 wrote; the build reads them as build arguments"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "Dockerfile",
+                ".docker/compose.yaml"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "set -a; . bin/config/env.defaults; set +a; docker compose -f .docker/compose.yaml build --no-cache tools && docker compose -f .docker/compose.yaml run --rm tools git-cliff --version | grep -q \"git-cliff ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools gh --version | grep -q \"gh version ${PLUGIN_EDOTZ_GIT_WORKFLOW_GH_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools dpkg -s git | grep -q \"^Version: ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_APT_VERSION}$\" && docker compose -f .docker/compose.yaml run --rm -e GIT_AUTHOR_NAME=t -e GIT_AUTHOR_EMAIL=t@example.com -e GIT_COMMITTER_NAME=t -e GIT_COMMITTER_EMAIL=t@example.com tools sh -c 'cd /tmp && git init -q r && cd r && mkdir p && echo a > p/f && git add . && git commit -q -m x && splitsh-lite --prefix=p 2>/dev/null' | grep -qE '^[0-9a-f]{40}$' && ! docker compose -f .docker/compose.yaml run --rm tools sh -c 'command -v node || command -v claude || command -v gemini'",
+            "from": "environment fact: the image builds from the pins and runs each tool"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Rewrite the Dockerfile as one stage on the base of PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE with git (the pinned apt version), gh, git-cliff and splitsh-lite; download each tool from its release URL and verify the checksum from the pins, failing the build on a mismatch; no Node, no Gemini or Claude install, no gh-wf copy, no entrypoint, no libgit2-dev, no openssh-client; the splitsh-lite asset is lite_linux_amd64.tar.gz. Add .docker/compose.yaml with the service tools that builds this Dockerfile, takes every pin as a build argument from the environment, sets the platform from IMAGE_PLATFORM and names the image from an optional tag variable. Decisions D20 to D22.",
+            "output": "The Dockerfile and .docker/compose.yaml; `docker compose -f .docker/compose.yaml build tools` builds with the pins in the environment.",
+            "pattern": "Dockerfile: the current file, whose pinned downloads and gh install are kept in spirit",
+            "target": "change"
+          },
+          "why": "The image is the single toolbox of every release and split; the present Dockerfile cannot build (its splitsh-lite URL returns 404) and contradicts decisions D34 and D55.",
+          "result": "A Dockerfile and a compose file that build the pinned toolbox: git, gh, git-cliff and splitsh-lite on a glibc slim base, nothing else.",
+          "done": "The image builds without cache from the pins, git-cliff, gh and git report the pinned versions, splitsh-lite splits a test repository, and the image holds no Node and no provider CLI.",
+          "fails": "The library function would call an image that does not build, and the first release would fail at its tool call.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D34",
+            "CONCEPT-git-workflow-plugin:D55"
+          ]
+        },
+        {
+          "id": "T2.3",
+          "title": "Write the library function that runs a tool through the image",
+          "depends": [
+            "T2.1",
+            "T2.2"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/lib/worktree.sh",
+              "why": "the layout of a plugin library: guard variable, sourced core, private helpers"
+            },
+            {
+              "ref": "bin/config/env.defaults",
+              "why": "the pins and the settings the function loads before the project's .env"
+            },
+            {
+              "ref": "CONCEPT-git-workflow-plugin:D35",
+              "why": "every tool call goes through docker, no host fallback, built by one library function"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/token-service.md",
+              "why": "the token reaches a tool call by environment variable name and is never written to disk"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/lib",
+              "paths": [
+                "bin/lib/tool.sh"
+              ]
+            }
+          ],
+          "produces": [
+            {
+              "name": "tool_run",
+              "signature": "tool_run <tool> [args...]"
+            },
+            {
+              "name": "tool_image_ensure",
+              "signature": "tool_image_ensure"
+            }
+          ],
+          "verify": {
+            "run": "bash -n bin/lib/tool.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/tool.sh; tool_run git --version | grep -q \"^git version\"; tool_run git-cliff --version | grep -q \"^git-cliff\"; t=$(mktemp -d); git -C \"$t\" init -q r; git -C \"$t/r\" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x; git -C \"$t/r\" worktree add -q \"$t/w\" -b w; (cd \"$t/w\" && tool_run git rev-parse --is-inside-work-tree | grep -q true); rm -rf \"$t\"'",
+            "from": "environment fact: the function runs git and git-cliff through the image inside a plain repository and a worktree"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Write bin/lib/tool.sh with tool_run and tool_image_ensure. tool_run runs one tool in an ephemeral container (docker run --rm, decision D20) of the image for the current content hash, with the working directory and the common git directory mounted at their host paths, the host user, a writable HOME, safe.directory set, the platform from the pins, and GH_TOKEN passed by variable name when it is set; no host-binary fallback (D35), no write of the token anywhere. tool_image_ensure loads the settings (env.defaults, then the .env of the project root, decision D22), tags the image with a hash of the Dockerfile and the pins, and builds it through .docker/compose.yaml when it is missing. Docker missing is an error that says Docker is a prerequisite.",
+            "output": "bin/lib/tool.sh sourced through PLUGIN_ROOT like the other plugin libraries; shellcheck clean per the scope check.",
+            "pattern": "bin/lib/worktree.sh: the layout of a plugin library",
+            "target": "new"
+          },
+          "why": "One function builds every tool call, so the version pins, the mounts and the token handling exist in one place; the release, split and rules-sync commands of later phases call it.",
+          "result": "A library function that runs git, gh, git-cliff and splitsh-lite through the pinned image in an ephemeral container, in a repository and in a worktree.",
+          "done": "tool_run runs git and git-cliff through the image in a plain repository and in a worktree, passes bash -n, and builds the image on first use when it is missing.",
+          "fails": "Each command would assemble its own docker call, the mounts and the token handling would diverge, and a worktree would fail with 'not a git repository'.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D35",
+            "CONCEPT-git-workflow-plugin:D55"
+          ]
+        },
+        {
+          "id": "T2.4",
+          "title": "Run the tools on a machine that has neither the tools nor the image",
+          "depends": [
+            "T2.3"
+          ],
+          "owner": "developer",
+          "inputs": [
+            {
+              "ref": "bin/lib/tool.sh",
+              "why": "the function the check runs, which builds the image on first use"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/sandbox.md",
+              "why": "the form of a note that names the setup a check ran on"
+            }
+          ],
+          "consumes": [
+            {
+              "from": "T2.3",
+              "name": "tool_run",
+              "signature": "tool_run <tool> [args...]"
+            },
+            {
+              "from": "T2.3",
+              "name": "tool_image_ensure",
+              "signature": "tool_image_ensure"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".agentic-os/project",
+              "paths": [
+                ".agentic-os/project/concepts/git-workflow-plugin/notes/tool-image-check.md"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/tool-image-check.md; test -s $f && grep -q '^## Machine' $f && grep -q '^## Result' $f && ! command -v git-cliff >/dev/null && ! command -v splitsh-lite >/dev/null",
+            "from": "environment fact: the note names the machine and the result, and the host has neither tool on its path"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "On a machine with Docker and without git-cliff, splitsh-lite and any earlier build of the image (remove the image first on a used machine), source bin/lib/tool.sh and run tool_run for git-cliff --version, gh --version and a split of a test repository; the first call builds the image. Write what you ran.",
+            "output": "A note with the sections Machine (operating system, Docker version, whether it is a second machine or this one with the image removed) and Result (the versions printed and the time of the first call).",
+            "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/sandbox.md: the form of a note that names its setup",
+            "target": "new"
+          },
+          "why": "The gate of the milestone asks for the tools to run through docker on a clean machine at the pinned versions; only a machine that never built the image shows that the build is reproducible.",
+          "result": "A note that names the machine and shows the three tools running at the pinned versions after a first build.",
+          "done": "The note names the machine and the result, and the host path holds neither git-cliff nor splitsh-lite.",
+          "fails": "The reproducibility would rest on the machine that wrote the Dockerfile, where a local cache or an installed tool can hide a missing pin.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D34",
+            "CONCEPT-git-workflow-plugin:D55"
+          ]
+        }
+      ],
+      "gate": {
+        "run": "(f=bin/config/env.defaults; for k in IMAGE_BASE IMAGE_PLATFORM GIT_CLIFF_VERSION GIT_CLIFF_SHA512 SPLITSH_VERSION SPLITSH_SHA256 GH_VERSION GH_SHA256 GIT_APT_VERSION; do grep -qE \"^PLUGIN_EDOTZ_GIT_WORKFLOW_${k}=.+\" $f || exit 1; done; grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE=.*@sha256:[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_PLATFORM=linux/amd64$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_SHA512=[0-9a-f]{128}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_SPLITSH_SHA256=[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GH_SHA256=[0-9a-f]{64}$' $f) && (set -a; . bin/config/env.defaults; set +a; docker compose -f .docker/compose.yaml build --no-cache tools && docker compose -f .docker/compose.yaml run --rm tools git-cliff --version | grep -q \"git-cliff ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools gh --version | grep -q \"gh version ${PLUGIN_EDOTZ_GIT_WORKFLOW_GH_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools dpkg -s git | grep -q \"^Version: ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_APT_VERSION}$\" && docker compose -f .docker/compose.yaml run --rm -e GIT_AUTHOR_NAME=t -e GIT_AUTHOR_EMAIL=t@example.com -e GIT_COMMITTER_NAME=t -e GIT_COMMITTER_EMAIL=t@example.com tools sh -c 'cd /tmp && git init -q r && cd r && mkdir p && echo a > p/f && git add . && git commit -q -m x && splitsh-lite --prefix=p 2>/dev/null' | grep -qE '^[0-9a-f]{40}$' && ! docker compose -f .docker/compose.yaml run --rm tools sh -c 'command -v node || command -v claude || command -v gemini') && (bash -n bin/lib/tool.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/tool.sh; tool_run git --version | grep -q \"^git version\"; tool_run git-cliff --version | grep -q \"^git-cliff\"; t=$(mktemp -d); git -C \"$t\" init -q r; git -C \"$t/r\" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x; git -C \"$t/r\" worktree add -q \"$t/w\" -b w; (cd \"$t/w\" && tool_run git rev-parse --is-inside-work-tree | grep -q true); rm -rf \"$t\"') && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/tool-image-check.md; test -s $f && grep -q '^## Machine' $f && grep -q '^## Result' $f && ! command -v git-cliff >/dev/null && ! command -v splitsh-lite >/dev/null)"
+      }
     },
     {
       "id": "P3",
@@ -437,7 +670,8 @@
       "by": "developer",
       "date": "2026-11-03",
       "scope": "plan-only",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D23"
     },
     {
       "id": "D10",
@@ -539,6 +773,46 @@
       "date": "2026-11-03",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D20",
+      "question": "How modules call the tool image (the plan part of concept decision D55)",
+      "chosen": "An ephemeral container per call (docker run --rm), with the mounts of the call; no long-running container",
+      "reason": "Measured on 2026-11-03: about 0.5 s per ephemeral call against about 0.1 s per docker exec. Mounts of a long-running container are fixed at its start, so a worktree outside them breaks, and the plugin would have to manage that container and replace it when the image changes. Developer answer, recommended option.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D21",
+      "question": "Which platforms the tool image supports",
+      "chosen": "linux/amd64 only, pinned in the compose file; an arm64 host runs it through Docker's emulation, which is not measured",
+      "reason": "The only splitsh-lite release (v1.0.1) has a linux amd64 binary and none for arm64 (row L595 of verify-tools.md), and the arm64 download of the Dockerfile returns 404. Developer answer, recommended option.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D22",
+      "question": "Where the pinned versions, the base image digest and the checksums live",
+      "chosen": "In the plugin settings bin/config/env.defaults with keys PLUGIN_EDOTZ_GIT_WORKFLOW_*, overridable by the .env file in the project root; the compose file and the library function read the same values",
+      "reason": "Developer answer in free text: use the plugin config and its corresponding overwrite .env in the project root. Read as the existing file env.defaults, not as a new file with a leading dot; to be confirmed with the approval of this amendment.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D23",
+      "question": "Who carries out the tasks of P2 (supersedes D9 for this plan)",
+      "chosen": "The bash tasks go to bash-author through /aos:bash-authoring with a review; the Dockerfile, the compose file and the pins are written inline; the clean machine check is the developer's. The mode header of the plan becomes subagents.",
+      "reason": "The framework prescribes the authoring pipeline for bash code; the tasks of P1 were research notes, which fitted inline. Developer answer, recommended option.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "plan-only",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -622,6 +896,24 @@
         "D19"
       ],
       "reason": "The developer answered the two open points of the component declaration; D8 had deferred the pre-release rule to the T1.2 result",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "Detail P2 Tool image with the tasks T2.1 to T2.4, record D20 to D23, supersede D9 by D23 and set the mode header to subagents",
+      "affects": [
+        "P2",
+        "T2.1",
+        "T2.2",
+        "T2.3",
+        "T2.4",
+        "D9",
+        "D20",
+        "D21",
+        "D22",
+        "D23"
+      ],
+      "reason": "The developer asked to detail the tool image now that the T1.2 findings are known; D20 to D23 are the developer's answers on the call model, the platforms, the place of the pins and the owners",
       "by": "claude"
     }
   ]
