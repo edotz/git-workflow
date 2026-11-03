@@ -71,7 +71,7 @@
     },
     {
       "name": "commit-msg/conventional",
-      "enabled": false
+      "enabled": true
     }
   ],
   "claude": []
