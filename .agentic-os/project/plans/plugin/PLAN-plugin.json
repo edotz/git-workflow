@@ -226,23 +226,27 @@
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/token-service.md; test -s $f && grep -q '^## Client contract' $f && grep -q '^## Authentication' $f && grep -q '^## Fallback' $f && grep -q '^## Service hosting' $f && grep -q 'L500' $f && ! grep -qiE 'TBD|TODO|open question' $f",
             "from": "environment fact: the note holds the four named sections"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
-            "arguments": "Plan decision D4 (developer authentication: gh login checked against organisation membership), plan decision D5 (fallback: fail closed), plan decision D10 (the note also names where the service runs and who holds the App key), and the App permissions confirmed in report row L500.",
-            "output": "A note with the sections Client contract (what the CLI sends, what it gets back, the token lifetime and how the token reaches a tool call), Authentication, Fallback and Service hosting (where the service runs and who holds the App private key). No service code.",
+            "arguments": "Plan decision D4 (developer authentication: gh login checked against organisation membership), plan decision D5 (fallback: fail closed), plan decision D15 (the hosting platform is deferred and the note fixes its requirements), plan decision D16 (key custody: service store only, no backup), plan decision D17 (the contract and the token delivery), and the App permissions confirmed in report row L500.",
+            "output": "A note with the sections Client contract (what the CLI sends, what it gets back, the token lifetime and how the token reaches a tool call), Authentication, Fallback and Service hosting (the requirements of the platform, the key custody and the deferral of the platform by D15). No service code.",
             "pattern": ".agentic-os/project/concepts/261102-git-workflow-plugin-review-4.md: the layout of a findings note, with a finding followed by its settlement",
             "target": "new"
           },
           "why": "Every remote write (release, promote, split, rules-sync) needs a token from the service; without a settled contract the library that fetches the token cannot be planned.",
           "result": "A note that states the contract between the CLI and the token service, how a developer is authenticated, what happens when the service is unavailable, and where the service runs.",
-          "done": "The note exists with the four sections, cites the App permissions of row L500, and each section states a decided answer and not an open choice.",
+          "done": "The note exists with the four sections and cites the App permissions of row L500; Client contract, Authentication, Fallback and the key custody state decided answers, and Service hosting states the platform requirements and names the platform as deferred by decision D15.",
           "fails": "The GitHub library cannot be designed, and the first release would stall on the question of where its token comes from.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D4",
             "CONCEPT-git-workflow-plugin:D6",
             "CONCEPT-git-workflow-plugin:D23",
             "CONCEPT-git-workflow-plugin:D48"
-          ]
+          ],
+          "last_verify": {
+            "at": "2026-11-03T12:24:55Z",
+            "exit": 0
+          }
         },
         {
           "id": "T1.4",
@@ -435,7 +439,8 @@
       "by": "developer",
       "date": "2026-11-03",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D15"
     },
     {
       "id": "D11",
@@ -475,6 +480,36 @@
       "by": "developer",
       "date": "2026-11-03",
       "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D15",
+      "question": "Where the token service runs (corrects D10, which had the note name the hosting)",
+      "chosen": "The platform is not chosen now: the note fixes the requirements the platform must meet (HTTPS endpoint, private key only in the service's secret store, no logging of tokens, rejection of non-members) and the platform is chosen before the release core phase (P3) is detailed",
+      "reason": "The developer chose to name the hosting later and gave no infrastructure to name. Consequence: the milestone gate m1-foundations is met for the contract, the authentication, the fallback and the key custody, not for the hosting platform.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D16",
+      "question": "Who holds the production App private key",
+      "chosen": "The key exists only in the service's secret store, with no backup; an org owner generates it and rotates it by generating a new key and deleting the old one; a lost key is replaced, not recovered",
+      "reason": "Fewest copies, least exposure; GitHub lets an org owner generate a new key at any time and keep several keys active. Developer answer, recommended option.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D17",
+      "question": "The contract between the CLI and the token service",
+      "chosen": "The CLI sends the developer's gh login token, the repository and the permission set the command needs; the service checks the login and the organisation membership and returns an installation token narrowed to that repository and permission set, valid for the one hour GitHub fixes; the CLI keeps it in memory, hands it to the tool container as an environment variable by name, never writes it to disk and drops it after the command",
+      "reason": "The one-hour lifetime and the narrowing by repository and permissions were measured on 2026-11-03; a membership check works with the developer's repo-scoped login. Developer answer, approved as stated.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
       "status": "decided"
     }
   ],
@@ -535,6 +570,19 @@
         "D14"
       ],
       "reason": "Review finding of the lens proofs: the gate could not see the coverage gap or the missing sandbox note, settled with the developer in round 2",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "T1.3 defers the hosting platform and fixes its requirements; D10 is superseded by D15; D16 records the key custody and D17 the contract",
+      "affects": [
+        "T1.3",
+        "D10",
+        "D15",
+        "D16",
+        "D17"
+      ],
+      "reason": "The developer chose to name the hosting platform later, so the plan records the deferral instead of leaving the done wording unmet",
       "by": "claude"
     }
   ]
