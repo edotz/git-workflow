@@ -585,7 +585,7 @@
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/tool-image-check.md; test -s $f && grep -q '^## Machine' $f && grep -q '^## Result' $f && ! command -v git-cliff >/dev/null && ! command -v splitsh-lite >/dev/null",
             "from": "environment fact: the note names the machine and the result, and the host has neither tool on its path"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "On a machine with Docker and without git-cliff, splitsh-lite and any earlier build of the image (remove the image first on a used machine), source bin/lib/tool.sh and run tool_run for git-cliff --version, gh --version and a split of a test repository; the first call builds the image. Write what you ran.",
             "output": "A note with the sections Machine (operating system, Docker version, whether it is a second machine or this one with the image removed) and Result (the versions printed and the time of the first call).",
@@ -599,7 +599,11 @@
           "carries": [
             "CONCEPT-git-workflow-plugin:D34",
             "CONCEPT-git-workflow-plugin:D55"
-          ]
+          ],
+          "last_verify": {
+            "at": "2026-11-03T16:00:55Z",
+            "exit": 0
+          }
         }
       ],
       "gate": {
