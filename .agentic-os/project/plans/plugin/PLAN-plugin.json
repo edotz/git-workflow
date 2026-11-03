@@ -285,9 +285,9 @@
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/component-declaration.md; test -s $f && grep -q '^## Fields' $f && grep -q '^## Path resolution' $f && grep -q '^## Pre-releases' $f && grep -q '^## Single repository' $f && grep -q 'L390' $f && ! grep -qiE 'TBD|TODO|open question' $f",
             "from": "environment fact: the note holds the four named sections"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
-            "arguments": "Plan decisions D6 (one structured file at the repository root, explicit lists, no kind field), D7 (JS components take paths from the workspace graph, others list paths) and D8 (pre-release handling settled from the T1.2 result for white paper line 390), and the white paper's field table (name, paths, version, version_files, split).",
+            "arguments": "Plan decisions D6 (one structured file at the repository root, explicit lists, no kind field), D7 (JS components take paths from the workspace graph, others list paths), D8 (pre-release handling settled from the T1.2 result for white paper line 390), D18 (a pre-release has a release commit, the CLI starts the line, git-cliff counts) and D19 (the file is components.yaml at the root), and the white paper's field table (name, paths, version, version_files, split).",
             "output": "A note with the sections Fields (each field with its type and default), Path resolution, Pre-releases and Single repository (one component at the root, tag vX.Y.Z); a component with split: yes needs owner and repository name fields.",
             "pattern": ".agentic-os/project/concepts/261102-git-workflow-plugin-review-4.md: the layout of a findings note, with a finding followed by its settlement",
             "target": "new"
@@ -301,7 +301,11 @@
             "CONCEPT-git-workflow-plugin:D44",
             "CONCEPT-git-workflow-plugin:D46",
             "CONCEPT-git-workflow-plugin:D47"
-          ]
+          ],
+          "last_verify": {
+            "at": "2026-11-03T13:59:51Z",
+            "exit": 0
+          }
         }
       ],
       "gate": {
@@ -515,6 +519,26 @@
       "date": "2026-11-03",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D18",
+      "question": "How pre-releases are handled in detail (the answer D8 deferred to the result of T1.2)",
+      "chosen": "A pre-release has a release commit like a final release, made by `release <component> --pre <channel>`; the version files carry the pre-release version; the CLI composes the first -<channel>.1 from the base version and git-cliff counts the following ones",
+      "reason": "git-cliff 2.8.0 has no --pre and cannot start a pre-release line, but increments an existing one (row L390); one mechanism keeps the tag equal to package.json. Developer answer, recommended option.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D19",
+      "question": "Name and syntax of the component declaration file",
+      "chosen": "components.yaml at the repository root, YAML, read on the host with yq",
+      "reason": "Matches the white paper's sketch in Appendix B and decision D6 (a structured file at the repository root); the tool image needs no parser. Developer answer, recommended option.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -587,6 +611,17 @@
         "D17"
       ],
       "reason": "The developer chose to name the hosting platform later, so the plan records the deferral instead of leaving the done wording unmet",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "Record D18 (pre-release rule) and D19 (components.yaml) as the developer's answers for T1.4",
+      "affects": [
+        "T1.4",
+        "D18",
+        "D19"
+      ],
+      "reason": "The developer answered the two open points of the component declaration; D8 had deferred the pre-release rule to the T1.2 result",
       "by": "claude"
     }
   ]
