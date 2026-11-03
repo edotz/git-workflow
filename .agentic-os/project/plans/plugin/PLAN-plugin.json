@@ -360,7 +360,7 @@
             "run": "f=bin/config/env.defaults; for k in IMAGE_BASE IMAGE_PLATFORM GIT_CLIFF_VERSION GIT_CLIFF_SHA512 SPLITSH_VERSION SPLITSH_SHA256 GH_VERSION GH_SHA256 GIT_APT_VERSION; do grep -qE \"^PLUGIN_EDOTZ_GIT_WORKFLOW_${k}=.+\" $f || exit 1; done; grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE=.*@sha256:[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_PLATFORM=linux/amd64$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_SHA512=[0-9a-f]{128}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_SPLITSH_SHA256=[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GH_SHA256=[0-9a-f]{64}$' $f",
             "from": "environment fact: the settings file holds each key in the shape of its pin"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "Add the keys PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE (debian:bookworm-slim pinned by digest), IMAGE_PLATFORM (linux/amd64, decision D21), GIT_CLIFF_VERSION and GIT_CLIFF_SHA512 (v2.8.0, the sha512 from the release's published .sha512 file), SPLITSH_VERSION and SPLITSH_SHA256 (v1.0.1, asset lite_linux_amd64.tar.gz, no published checksum, so compute it once from the download and record it), GH_VERSION and GH_SHA256 (from the release's published checksums file) and GIT_APT_VERSION (the Debian package version of git in the pinned base). Each key with one comment line naming where the value comes from. A project may override a key in its .env (decision D22).",
             "output": "The new keys in bin/config/env.defaults, in the style of the existing keys.",
@@ -374,7 +374,11 @@
           "carries": [
             "CONCEPT-git-workflow-plugin:D34",
             "CONCEPT-git-workflow-plugin:D55"
-          ]
+          ],
+          "last_verify": {
+            "at": "2026-11-03T15:31:19Z",
+            "exit": 0
+          }
         },
         {
           "id": "T2.2",
