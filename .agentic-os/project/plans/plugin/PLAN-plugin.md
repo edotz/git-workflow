@@ -50,7 +50,7 @@ Each marked line of the white paper has a row with a result and evidence, each r
 | Title | Task | Owner | Depends | Status |
 |---|---|---|---|---|
 | Register the test GitHub App and sandbox repository | T1.0 | developer | - | done |
-| Check the GitHub App behaviours the release depends on in a sandbox repository | T1.1 | developer | T1.0 | pending |
+| Check the GitHub App behaviours the release depends on in a sandbox repository | T1.1 | developer | T1.0 | done |
 | Check the tool and ecosystem claims of the white paper against current documentation and the real tools | T1.2 | inline | - | pending |
 | Settle the token service contract, developer authentication, fallback and hosting | T1.3 | inline | T1.1 | pending |
 | Settle the component declaration, its path resolution and pre-release handling | T1.4 | inline | T1.2 | pending |

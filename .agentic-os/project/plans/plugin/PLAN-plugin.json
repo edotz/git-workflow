@@ -83,7 +83,7 @@
           "fails": "T1.1 would start without an App or a repository, or run against settings that differ from the consuming projects without saying so.",
           "carries": [],
           "last_verify": {
-            "at": "2026-11-03T11:49:10Z",
+            "at": "2026-11-03T12:19:54Z",
             "exit": 0
           }
         },
@@ -124,7 +124,7 @@
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/verify-github.md; for l in 261 316 411 441 467 470 491 500 520 523 654; do grep -qE \"^[|] L${l} [|][^|]*[|][^|]*[|][[:space:]]*(confirmed|refuted|changed)[[:space:]]*[|][^|]*[^|[:space:]][^|]*[|][[:space:]]*\\$\" $f || exit 1; done; [ \"$(grep -E '^[|] L[0-9]+ [|][^|]*[|][^|]*[|][[:space:]]*(refuted|changed)[[:space:]]*[|]' $f | grep -cvE 'D[0-9]+')\" = 0 ]",
             "from": "environment fact: the report holds one row per marked line, each with a result, evidence and, when refuted or changed, a named decision"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "The marked lines 261 (ruleset bypass for the App with an atomic push of release commit and tag), 316 and 520 (skipped jobs count as passed for a required check), 411 (releases/latest keeps pointing at the last stable version), 441 (gh release create <tag> --target <sha> -R <repo>, plus --latest=false, with an App installation token), 467 (GitHub Packages npm and an App token), 470 and 491 (a Release created with an App token starts release workflows), 500 (App permissions suffice for ruleset sync), 523 (name and values of the repository setting that makes the PR title the squash commit title) and 654 (Q-Q: --latest=false on creation, one latest release per repository with several components). Run each against the sandbox repository and the test App named in sandbox.md.",
             "output": "A markdown table with the header and one row per marked line in the form `| L<line> | claim | method and settings used | confirmed, refuted or changed | evidence |`. A refuted or changed row names the concept decision it puts in doubt.",
@@ -140,7 +140,11 @@
             "CONCEPT-git-workflow-plugin:D30",
             "CONCEPT-git-workflow-plugin:D40",
             "CONCEPT-git-workflow-plugin:D56"
-          ]
+          ],
+          "last_verify": {
+            "at": "2026-11-03T12:19:55Z",
+            "exit": 0
+          }
         },
         {
           "id": "T1.2",
