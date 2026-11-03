@@ -96,7 +96,7 @@ Gate: (f=.agentic-os/project/concepts/git-workflow-plugin/notes/sandbox.md; test
 | Title | Task | Owner | Depends | Status |
 |---|---|---|---|---|
 | Pin the tool versions, the base image digest and the checksums in the plugin settings | T2.1 | inline | - | done |
-| Rebuild the Dockerfile and the compose file on the pinned base | T2.2 | inline | T2.1 | pending |
+| Rebuild the Dockerfile and the compose file on the pinned base | T2.2 | inline | T2.1 | done |
 | Write the library function that runs a tool through the image | T2.3 | bash-author | T2.1, T2.2 | pending |
 | Run the tools on a machine that has neither the tools nor the image | T2.4 | developer | T2.3 | pending |
 

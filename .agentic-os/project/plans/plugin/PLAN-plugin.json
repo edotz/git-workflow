@@ -414,7 +414,7 @@
             "run": "set -a; . bin/config/env.defaults; set +a; docker compose -f .docker/compose.yaml build --no-cache tools && docker compose -f .docker/compose.yaml run --rm tools git-cliff --version | grep -q \"git-cliff ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools gh --version | grep -q \"gh version ${PLUGIN_EDOTZ_GIT_WORKFLOW_GH_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools dpkg -s git | grep -q \"^Version: ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_APT_VERSION}$\" && docker compose -f .docker/compose.yaml run --rm -e GIT_AUTHOR_NAME=t -e GIT_AUTHOR_EMAIL=t@example.com -e GIT_COMMITTER_NAME=t -e GIT_COMMITTER_EMAIL=t@example.com tools sh -c 'cd /tmp && git init -q r && cd r && mkdir p && echo a > p/f && git add . && git commit -q -m x && splitsh-lite --prefix=p 2>/dev/null' | grep -qE '^[0-9a-f]{40}$' && ! docker compose -f .docker/compose.yaml run --rm tools sh -c 'command -v node || command -v claude || command -v gemini'",
             "from": "environment fact: the image builds from the pins and runs each tool"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "Rewrite the Dockerfile as one stage on the base of PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE with git (the pinned apt version), gh, git-cliff and splitsh-lite; download each tool from its release URL and verify the checksum from the pins, failing the build on a mismatch; no Node, no Gemini or Claude install, no gh-wf copy, no entrypoint, no libgit2-dev, no openssh-client; the splitsh-lite asset is lite_linux_amd64.tar.gz. Add .docker/compose.yaml with the service tools that builds this Dockerfile, takes every pin as a build argument from the environment, sets the platform from IMAGE_PLATFORM and names the image from an optional tag variable. Decisions D20 to D22.",
             "output": "The Dockerfile and .docker/compose.yaml; `docker compose -f .docker/compose.yaml build tools` builds with the pins in the environment.",
@@ -428,7 +428,11 @@
           "carries": [
             "CONCEPT-git-workflow-plugin:D34",
             "CONCEPT-git-workflow-plugin:D55"
-          ]
+          ],
+          "last_verify": {
+            "at": "2026-11-03T15:35:49Z",
+            "exit": 0
+          }
         },
         {
           "id": "T2.3",
