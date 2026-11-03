@@ -52,7 +52,7 @@
     {
       "name": "bash-authoring",
       "enabled": true,
-      "description": "Use when tasks of a plan must be written and reviewed as bash code, one or a group of related ones, be it a library function, module command, hook script or adapter; takes plan task ids.",
+      "description": "Use when tasks of a plan must be written and reviewed as bash code, one or a group of related ones, be it a library function, module command or adapter; takes plan task ids.",
       "origin": "framework"
     },
     {
@@ -83,6 +83,12 @@
       "name": "backlog",
       "enabled": true,
       "description": "Use when an item must be added to the backlog, or the title, goal or milestone of an item changed; takes the mode add or edit.",
+      "origin": "framework"
+    },
+    {
+      "name": "hook-authoring",
+      "enabled": true,
+      "description": "Use when tasks of a plan must be written and reviewed as hook scripts, one hook per task; takes plan task ids.",
       "origin": "framework"
     }
   ],
