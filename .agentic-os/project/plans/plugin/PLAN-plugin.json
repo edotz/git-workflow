@@ -1178,10 +1178,78 @@
             "CONCEPT-git-workflow-plugin:D40",
             "CONCEPT-git-workflow-plugin:D52"
           ]
+        },
+        {
+          "id": "T3.9",
+          "title": "Write the Node lint command with Biome",
+          "depends": [
+            "T3.1",
+            "T3.4"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "/home/ohoeft/workspace/edotz.claude-code/bin/modules/lint/shell.sh",
+              "why": "the layout of a lint command: it hands the modes staged, changed, full and specific to lint_run_generic of lib/lint.sh"
+            },
+            {
+              "ref": "bin/lib/tool.sh",
+              "why": "the layout of a plugin library and how the plugin keeps tools out of the host path"
+            },
+            {
+              "ref": "bin/modules/git/token-service.mjs",
+              "why": "the Node file the linter has to pass today"
+            },
+            {
+              "ref": "package.json",
+              "why": "the root package whose devDependencies get Biome next to commitlint"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/lint",
+              "paths": [
+                "bin/modules/lint/node.sh",
+                "bin/modules/lint/module.yaml"
+              ]
+            },
+            {
+              "scope": ".",
+              "paths": [
+                "biome.json",
+                "package.json",
+                "package-lock.json"
+              ]
+            },
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/token-service.mjs"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "npm ci --ignore-scripts >/dev/null 2>&1 && bash -n bin/modules/lint/node.sh && test -x bin/modules/lint/node.sh && bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app lint node full && t=$(mktemp -d) && printf 'var unused = 1\\nif (unused == 2) { debugger }\\n' > \"$t/bad.mjs\" && ! bash ${BU_ROOT}/app lint node specific \"$t/bad.mjs\" >/dev/null 2>&1; ec=$?; rm -rf \"$t\"; exit $ec",
+            "from": "environment fact: the real file passes, a file with known Biome findings fails, and the registry and the script agree"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Write bin/modules/lint/node.sh and bin/modules/lint/module.yaml (domain lint with the one command node; the plugin tier adds it to the lint domain of the framework, so the other lint commands keep their specs). The command runs Biome (decision D31 of the plan) over *.js, *.mjs and *.cjs files in the modes of app lint shell: staged (default), changed, full and specific <files>, through lint_run_generic of lib/lint.sh when it fits (check lib info), with the same report header and footer. Biome is run from node_modules/.bin/biome of the plugin root; when it is missing the command stops with a message that says to run npm ci; module.yaml declares requires: [node]. Add @biomejs/biome 2.6.4 as an exact devDependency to the root package.json (npm install --save-dev --save-exact, lockfile updated, scripts ignored) and write biome.json at the root with the recommended rules, ignoring node_modules. Bring bin/modules/git/token-service.mjs to a clean Biome run without changing what it does.",
+            "output": "bin/modules/lint/node.sh, bin/modules/lint/module.yaml, biome.json, the devDependency in package.json and package-lock.json, and a Biome-clean token-service.mjs; `bash ${BU_ROOT}/app lint node full` exits 0.",
+            "pattern": "/home/ohoeft/workspace/edotz.claude-code/bin/modules/lint/shell.sh: the layout of a lint command",
+            "target": "change"
+          },
+          "why": "The plugin now holds Node code (the token service) that the framework's lint commands do not check; one Biome command keeps it linted the same way as the shell scripts and the way the consuming projects already lint theirs.",
+          "result": "A lint command app lint node that runs Biome over the Node files of the plugin in the usual modes.",
+          "done": "app lint node full exits 0 on the plugin as it stands, a throwaway file with known Biome findings makes app lint node specific exit non-zero, and the registry and the script agree.",
+          "fails": "Node files would go unlinted, or the command would pass a file with findings, or a host Biome of another version would give different results on two machines.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D41"
+          ]
         }
       ],
       "gate": {
-        "run": "(test -x bin/modules/git/token-service.mjs && node --check bin/modules/git/token-service.mjs && docker compose -f .docker/compose.token-service.yaml build && bash tests/token-service/check.sh) && (bash -n bin/lib/token.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/token.sh; declare -F token_fetch >/dev/null; declare -F token_drop >/dev/null; out=$(TOKEN_SERVICE_URL=http://127.0.0.1:9 token_fetch edotz/git-workflow-sandbox contents 2>&1) && exit 1; printf \"%s\" \"$out\" | grep -q \"service unreachable\"; test -z \"${GH_TOKEN:-}\"' ) && (bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; t=$(mktemp -d); printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > \"$t/ok.yaml\"; printf \"components:\\n  - name: web\\n    workspace: w\\n    paths: [a]\\n\" > \"$t/both.yaml\"; printf \"components:\\n  - name: web\\n    paths: [a]\\n    colour: red\\n\" > \"$t/unknown.yaml\"; component_load \"$t/ok.yaml\"; test \"$(component_names)\" = object; test \"$(component_field object version)\" = yes; ! component_load \"$t/both.yaml\" 2>/dev/null; ! component_load \"$t/unknown.yaml\" 2>/dev/null; rm -rf \"$t\"') && (bash -n bin/lib/version.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/version.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"{\\\"name\\\":\\\"o\\\",\\\"version\\\":\\\"1.0.0\\\"}\\n\" > package.json; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v1.0.0; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; test \"$(version_next object)\" = 1.1.0; test \"$(version_next object rc)\" = 1.1.0-rc.1; version_write object 1.1.0; grep -q \"\\\"version\\\": \\\"1.1.0\\\"\\|\\\"version\\\":\\\"1.1.0\\\"\" package.json; test \"$(version_tag object 1.1.0)\" = v1.1.0; cd /; rm -rf \"$t\"') && (bash -n bin/lib/check.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/check.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    checks: [\\\"true\\\"]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v0.0.1; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; check_minimum object; echo b > b; git add b; git commit -q -m \"not conventional\"; ! check_minimum object 2>/dev/null; cd /; rm -rf \"$t\"') && (bash tests/git-release/dry-run.sh && bash ${BU_ROOT}/app lint modules) && (bash tests/git-promote/ff.sh && bash ${BU_ROOT}/app lint modules) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f)"
+        "run": "(test -x bin/modules/git/token-service.mjs && node --check bin/modules/git/token-service.mjs && docker compose -f .docker/compose.token-service.yaml build && bash tests/token-service/check.sh) && (bash -n bin/lib/token.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/token.sh; declare -F token_fetch >/dev/null; declare -F token_drop >/dev/null; out=$(TOKEN_SERVICE_URL=http://127.0.0.1:9 token_fetch edotz/git-workflow-sandbox contents 2>&1) && exit 1; printf \"%s\" \"$out\" | grep -q \"service unreachable\"; test -z \"${GH_TOKEN:-}\"' ) && (bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; t=$(mktemp -d); printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > \"$t/ok.yaml\"; printf \"components:\\n  - name: web\\n    workspace: w\\n    paths: [a]\\n\" > \"$t/both.yaml\"; printf \"components:\\n  - name: web\\n    paths: [a]\\n    colour: red\\n\" > \"$t/unknown.yaml\"; component_load \"$t/ok.yaml\"; test \"$(component_names)\" = object; test \"$(component_field object version)\" = yes; ! component_load \"$t/both.yaml\" 2>/dev/null; ! component_load \"$t/unknown.yaml\" 2>/dev/null; rm -rf \"$t\"') && (bash -n bin/lib/version.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/version.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"{\\\"name\\\":\\\"o\\\",\\\"version\\\":\\\"1.0.0\\\"}\\n\" > package.json; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v1.0.0; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; test \"$(version_next object)\" = 1.1.0; test \"$(version_next object rc)\" = 1.1.0-rc.1; version_write object 1.1.0; grep -q \"\\\"version\\\": \\\"1.1.0\\\"\\|\\\"version\\\":\\\"1.1.0\\\"\" package.json; test \"$(version_tag object 1.1.0)\" = v1.1.0; cd /; rm -rf \"$t\"') && (bash -n bin/lib/check.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/check.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    checks: [\\\"true\\\"]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v0.0.1; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; check_minimum object; echo b > b; git add b; git commit -q -m \"not conventional\"; ! check_minimum object 2>/dev/null; cd /; rm -rf \"$t\"') && (bash tests/git-release/dry-run.sh && bash ${BU_ROOT}/app lint modules) && (bash tests/git-promote/ff.sh && bash ${BU_ROOT}/app lint modules) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f) && (npm ci --ignore-scripts >/dev/null 2>&1 && bash -n bin/modules/lint/node.sh && test -x bin/modules/lint/node.sh && bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app lint node full && t=$(mktemp -d) && printf 'var unused = 1\\nif (unused == 2) { debugger }\\n' > \"$t/bad.mjs\" && ! bash ${BU_ROOT}/app lint node specific \"$t/bad.mjs\" >/dev/null 2>&1; ec=$?; rm -rf \"$t\"; exit $ec)"
       }
     },
     {
@@ -1511,6 +1579,16 @@
       "date": "2026-11-03",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D31",
+      "question": "Which linter the Node lint command runs",
+      "chosen": "Biome: the command app lint node of the plugin tier (bin/modules/lint/node.sh, added to the framework's lint domain) runs Biome over the Node files in the modes staged, changed, full and specific; Biome is an exactly pinned devDependency (@biomejs/biome 2.6.4) in the package.json of the plugin root with its configuration in biome.json at the root",
+      "reason": "Developer answer on 2026-11-03, recommended option: the old status-checks.yml already runs biome in the consuming projects, so one tool and one configuration. app lint all is a framework command and does not run the Node linter; it has to be called on its own.",
+      "by": "developer",
+      "date": "2026-11-03",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -1700,6 +1778,26 @@
         "D30"
       ],
       "reason": "Developer feedback: Node modules through the shebang, package.json in the project directory, Docker configuration in .docker",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "T3.9 added: the Node lint command app lint node with Biome; decision D31",
+      "affects": [
+        "P3",
+        "T3.9",
+        "D31"
+      ],
+      "reason": "Developer asked for a Node linter under bin/modules/lint and chose Biome",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "T3.9 waits for T3.4 and takes target change, because it edits package.json and token-service.mjs",
+      "affects": [
+        "T3.9"
+      ],
+      "reason": "lint plans: T3.9 and T3.4 shared a group and T3.4's verify names package.json; the entry check refuses target new over existing paths",
       "by": "developer"
     }
   ],
