@@ -5,7 +5,7 @@ How the project is worked on, from the conventions the reports cite and the deve
 ## Conventions
 
 - Commit messages are conventional commits, enforced by commitlint locally (commit-msg hook) and in CI (commitlint.config.mjs; bin/hooks/commit-msg/conventional; .github/workflows/_callable-status-checks.yml).
-- Repositories allow merge commits only (bin/modules/git/templates/branch-protection.sh).
+- Repositories allow merge commits only today (bin/modules/git/templates/branch-protection.sh); the concept moves master to squash merge in the production phase.
 - Bash under `set -euo pipefail`; a change to bin/lib or bin/modules is done when shellcheck is clean (confirmed).
 - Plugin settings carry the prefix `PLUGIN_EDOTZ_GIT_WORKFLOW_`; a project declares its branches in `.github/workflow.env` and env.defaults holds the defaults (bin/config/env.defaults; confirmed).
 

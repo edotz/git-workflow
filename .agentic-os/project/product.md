@@ -20,18 +20,21 @@ What the plugin provides today (`plugin.yaml`: `provides: [modules, hooks]`), mo
 Why it exists: the git ecosystem is a separate concern with its own release cycle, and the framework stays provider-
 and workflow-agnostic. Parts of the moved ecosystem are stale; they stay unchanged until the redesign replaces them.
 
-Direction (concept document `260903-git-workflow.md`, not built yet): a local CLI (working title `gh-wf`) replaces the
-cascading GitHub Actions. Split of a monorepo with `splitsh-lite` and push to the child repositories from the
-developer machine, changelog with `git-cliff`, commit message and changelog summary from a headless LLM call
-(`claude -p`, `gemini -p`), rulesets synced through the GitHub API, release as one atomic commit with tag, promotion
-between `master`, the release branch and legacy branches. The toolchain ships in a Docker image with a host wrapper
-(`git-wf`), so every developer runs the same binaries. GitHub Actions keep only the status checks of a pull request.
+Direction (concept `git-workflow-plugin`, decided, not built yet): a local workflow behind `app git <command>` replaces
+the cascading GitHub Actions. A release is made on `master` as one commit with its tag, previewed by a dry run and
+pushed by a GitHub App, the only actor that releases; the release branch follows by a separate fast-forward `promote`,
+and legacy branches change by PR. Changelog with `git-cliff`, rulesets synced through the GitHub API. A monorepo is a set
+of components that are released on their own, and a component marked `split` is split with `splitsh-lite` and pushed to
+its repository from the developer machine. The commit message and the changelog summary come from `provider_run_prompt`
+on the host session, so the plugin bundles no LLM CLI. The tools run from a pinned image through docker, so every
+developer uses the same binaries. GitHub Actions keep only the status checks of a pull request.
 
 ## Stack
 
 - Bash on the agentic-os framework: modules, hooks and plugin-local libraries; `git`, `gh`, `jq`, `yq`, `envsubst`.
 - Node packages for commit validation: `@commitlint/cli` and `@commitlint/config-conventional` (20.x).
-- Planned by the concept document: `splitsh-lite`, `git-cliff`, Node 22 LTS, `claude` and `gemini` CLI, Docker.
+- Planned by the concept: `splitsh-lite`, `git-cliff` and `gh` in a pinned image built with docker compose; no LLM CLI and
+  no Node in the image.
 
 ## Conventions
 

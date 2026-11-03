@@ -14,8 +14,8 @@ Shell command modules of the plugin: git (workflow-setup, branch protection, wor
 - Plugin setting keys start with `PLUGIN_EDOTZ_GIT_WORKFLOW_` (bin/config/env.defaults:1).
 
 ## Decisions
-- workflow-setup renders branch protection, workflow callers and release-please config from `.github/workflow.env` (types single, monorepo, package) through shell heredoc templates; both the source and the template form are inherited from the framework and not re-decided (developer's answer).
-- Generated branch protection allows merge commits only, with auto-merge and delete-branch-on-merge; inherited from the framework, not re-decided (developer's answer).
+- workflow-setup renders branch protection, workflow callers and release-please config from `.github/workflow.env` (types single, monorepo, package) through shell heredoc templates; both the source and the template form are inherited from the framework and not re-decided (developer's answer). The concept shrinks workflow-setup to config validation and `status-checks.yml`.
+- Generated branch protection allows merge commits only, with auto-merge and delete-branch-on-merge; inherited from the framework (developer's answer). The concept replaces it by rulesets (`rules-sync`) with squash merge in the production phase.
 - The branch source is `.github/workflow.env` where a project declares it, with env.defaults as the default; branch-cleanup reads only the plugin keys and has to follow this (developer's answer).
 - vscode-setup prefers the vscode-server Project Manager path over the native one because the team works in WSL and remote (developer's answer).
 - Commit lint must behave like CI: the Merge and Revert bypass in lint-commit.sh:13 is to be removed (developer's answer).

@@ -23,7 +23,7 @@
 - Worktrees live in /home/ohoeft/worktrees; bin/lib/worktree.sh:22 still uses `${PROVIDER_CONFIG_DIR}/worktrees`. Reason: the developer's answer.
 - github.sh and worktree.sh stay plugin-local by design, not in the framework lib. Reason: the developer's answer.
 - The module.yaml-per-domain layout is a framework requirement. Reason: the developer's answer.
-- Heredoc templates, `.github/workflow.env` as the single source with the types single, monorepo and package, and merge-commit-only branch protection are inherited from the framework and were not re-decided (developer's answer). Evidence: bin/modules/git/templates/*.sh, workflow-setup.sh, templates/branch-protection.sh.
+- Heredoc templates and `.github/workflow.env` as the single source with the types single, monorepo and package are inherited from the framework and were not re-decided (developer's answer). The concept shrinks workflow-setup to config validation and `status-checks.yml`, and replaces the merge-commit-only branch protection by rulesets with squash merge in the production phase. Evidence: bin/modules/git/templates/*.sh, workflow-setup.sh, templates/branch-protection.sh.
 - vscode-setup prefers the vscode-server Project Manager path over the native one. Reason: the team works in WSL and remote (vscode-setup.sh, vscode-teardown.sh).
 - Commitlint is installed per plugin root and run from node_modules/.bin. Reason: the lockfile pins the version (lint-commit.sh:16-19; developer's answer).
 - The ten commit types, the disabled subject-case rule and the subject length of 100 are the team convention (commitlint.config.mjs; developer's answer).
@@ -32,8 +32,8 @@
 - The vscode-profiles.json mention in the vscode-setup.sh header is stale; the profiles directory is the only mechanism (developer's answer).
 - The worktree.sh header requirement list (core.sh, json.sh) is stale from the move (worktree.sh:3; developer's answer).
 - Module versions follow no convention (developer's answer).
-- Docker: the node-slim variant is the intended one and the Ubuntu variant and the duplicated Alpine builder stages are leftovers; the container runs as the node user; `bin/gh-wf` is replaced by the framework `app`; the container is a standing part of the project and the doc names (Dockerfile.git-workflow, git-workflow-suite:latest) are outdated (Dockerfile; 260903-git-workflow.md; developer's answer).
-- Pinned prebuilt tool binaries and bundling both LLM CLIs (Gemini CLI via npm, Claude Code via install script) were not decided; they came with the draft (Dockerfile:9-16, 53-55; developer's answer).
+- Docker: the container is a standing part of the project and the doc names (Dockerfile.git-workflow, git-workflow-suite:latest) are outdated (developer's answer). By the concept it carries only git, gh, git-cliff and splitsh-lite, has no entrypoint because `app` runs on the host, is defined with docker compose and a `.docker` config directory, and modules call it through docker. The Ubuntu variant, the duplicated Alpine builder stages and the `bin/gh-wf` copy of the Dockerfile are leftovers, and the base image is settled by the plan (Dockerfile; 260903-git-workflow.md; concept).
+- The plugin bundles no LLM CLI: the commit message and the changelog summary come from `provider_run_prompt` on the host session, and the tool binaries are pinned by checksum. The Gemini CLI and Claude Code installs of the Dockerfile are leftovers (Dockerfile:9-16, 53-55; concept).
 
 ## Environment
 
@@ -41,7 +41,7 @@
 - `bash bin/app git workflow-setup [--apply] [--check]` validates or applies the generated files (workflow-setup.sh:3-4).
 - Commit messages are linted with `app git lint-commit <file>`; commitlint is installed with `npm install` in the plugin root (lint-commit.sh:17).
 - CI: the job commit-lint uses `wagoid/commitlint-github-action@v6` with `commitlint.config.mjs` and `commitDepth: 1` (.github/workflows/_callable-status-checks.yml:20-34).
-- Container: node:22-bookworm-slim, WORKDIR /workspace, git-cliff v2.8.0 and splitsh-lite v1.0.1 pinned in the download URLs (Dockerfile:9-16, 99-126).
+- Container today: node:22-bookworm-slim, WORKDIR /workspace, git-cliff v2.8.0 and splitsh-lite v1.0.1 pinned in the download URLs (Dockerfile:9-16, 99-126).
 - Required status check names the git module knows: commit-lint, biome, php-cs-fixer, shellcheck, eslint (workflow-setup.sh:STATUS_CHECK_DISPLAY_NAMES).
 
 ## Constraints
@@ -53,4 +53,4 @@
 - Commit messages follow the rules of commitlint.config.mjs: type enum, lower-case type and scope, subject non-empty, no trailing full stop, at most 100 characters (proven; CI job in _callable-status-checks.yml:31-34).
 - Each library is sourced once through its guard variable, worktree.sh needs git on PATH at load time, and a worktree is created only when the local base branch equals `origin/<base>` unless origin cannot be resolved (proven: github.sh:7-11, worktree.sh:7-11, 16, 119-121).
 - branch-cleanup never deletes the main and release branches, main, master, develop, development, staging, production, `release-please--*` and `backport/*` (confirmed; branch-cleanup.sh:is_protected).
-- Container: all developers use identical tool versions (confirmed); Node major version 22 and base images pinned by tag (proven: Dockerfile:1, 19, 67, 85, 99).
+- Container: all developers use identical tool versions (confirmed); the base image is pinned by digest and each download by checksum (concept), while the Dockerfile still pins Node 22 and the base images by tag (Dockerfile:1, 19, 67, 85, 99).
