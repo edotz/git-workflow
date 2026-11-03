@@ -357,12 +357,12 @@
             }
           ],
           "verify": {
-            "run": "f=.env.defaults; for k in IMAGE_BASE IMAGE_PLATFORM GIT_CLIFF_VERSION GIT_CLIFF_SHA512 SPLITSH_VERSION SPLITSH_SHA256 GH_VERSION GH_SHA256 GIT_APT_VERSION; do grep -qE \"^PLUGIN_EDOTZ_GIT_WORKFLOW_${k}=.+\" $f || exit 1; done; grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE=.*@sha256:[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_PLATFORM=linux/amd64$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_SHA512=[0-9a-f]{128}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_SPLITSH_SHA256=[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GH_SHA256=[0-9a-f]{64}$' $f",
+            "run": "f=.env.defaults; for k in IMAGE_BASE IMAGE_PLATFORM GIT_CLIFF_VERSION GIT_CLIFF_SHA512 SPLITSH_VERSION SPLITSH_SHA256 GH_VERSION GH_SHA256 GIT_APT_VERSION; do grep -qE \"^${k}=.+\" $f || exit 1; done; grep -qE '^IMAGE_BASE=.*@sha256:[0-9a-f]{64}$' $f && grep -qE '^IMAGE_PLATFORM=linux/amd64$' $f && grep -qE '^GIT_CLIFF_SHA512=[0-9a-f]{128}$' $f && grep -qE '^SPLITSH_SHA256=[0-9a-f]{64}$' $f && grep -qE '^GH_SHA256=[0-9a-f]{64}$' $f",
             "from": "environment fact: the settings file holds each key in the shape of its pin"
           },
           "status": "done",
           "brief": {
-            "arguments": "Add the keys PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE (debian:bookworm-slim pinned by digest), IMAGE_PLATFORM (linux/amd64, decision D21), GIT_CLIFF_VERSION and GIT_CLIFF_SHA512 (v2.8.0, the sha512 from the release's published .sha512 file), SPLITSH_VERSION and SPLITSH_SHA256 (v1.0.1, asset lite_linux_amd64.tar.gz, no published checksum, so compute it once from the download and record it), GH_VERSION and GH_SHA256 (from the release's published checksums file) and GIT_APT_VERSION (the Debian package version of git in the pinned base). Each key with one comment line naming where the value comes from. A project does not override a key (decision D24).",
+            "arguments": "Add the keys IMAGE_BASE (debian:bookworm-slim pinned by digest), IMAGE_PLATFORM (linux/amd64, decision D21), GIT_CLIFF_VERSION and GIT_CLIFF_SHA512 (v2.8.0, the sha512 from the release's published .sha512 file), SPLITSH_VERSION and SPLITSH_SHA256 (v1.0.1, asset lite_linux_amd64.tar.gz, no published checksum, so compute it once from the download and record it), GH_VERSION and GH_SHA256 (from the release's published checksums file) and GIT_APT_VERSION (the Debian package version of git in the pinned base). Each key with one comment line naming where the value comes from. A project does not override a key (decision D24).",
             "output": "The new keys in .env.defaults, in the style of the existing keys.",
             "pattern": ".env.defaults: the style of the existing keys and comments",
             "target": "change"
@@ -411,12 +411,12 @@
             }
           ],
           "verify": {
-            "run": "set -a; . ./.env.defaults; set +a; docker compose -f .docker/compose.yaml build --no-cache tools && docker compose -f .docker/compose.yaml run --rm tools git-cliff --version | grep -q \"git-cliff ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools gh --version | grep -q \"gh version ${PLUGIN_EDOTZ_GIT_WORKFLOW_GH_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools dpkg -s git | grep -q \"^Version: ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_APT_VERSION}$\" && docker compose -f .docker/compose.yaml run --rm -e GIT_AUTHOR_NAME=t -e GIT_AUTHOR_EMAIL=t@example.com -e GIT_COMMITTER_NAME=t -e GIT_COMMITTER_EMAIL=t@example.com tools sh -c 'cd /tmp && git init -q r && cd r && mkdir p && echo a > p/f && git add . && git commit -q -m x && splitsh-lite --prefix=p 2>/dev/null' | grep -qE '^[0-9a-f]{40}$' && ! docker compose -f .docker/compose.yaml run --rm tools sh -c 'command -v node || command -v claude || command -v gemini'",
+            "run": "set -a; . ./.env.defaults; set +a; docker compose -f .docker/compose.yaml build --no-cache tools && docker compose -f .docker/compose.yaml run --rm tools git-cliff --version | grep -q \"git-cliff ${GIT_CLIFF_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools gh --version | grep -q \"gh version ${GH_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools dpkg -s git | grep -q \"^Version: ${GIT_APT_VERSION}$\" && docker compose -f .docker/compose.yaml run --rm -e GIT_AUTHOR_NAME=t -e GIT_AUTHOR_EMAIL=t@example.com -e GIT_COMMITTER_NAME=t -e GIT_COMMITTER_EMAIL=t@example.com tools sh -c 'cd /tmp && git init -q r && cd r && mkdir p && echo a > p/f && git add . && git commit -q -m x && splitsh-lite --prefix=p 2>/dev/null' | grep -qE '^[0-9a-f]{40}$' && ! docker compose -f .docker/compose.yaml run --rm tools sh -c 'command -v node || command -v claude || command -v gemini'",
             "from": "environment fact: the image builds from the pins and runs each tool"
           },
           "status": "done",
           "brief": {
-            "arguments": "Rewrite the Dockerfile as one stage on the base of PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE with git (the pinned apt version), gh, git-cliff and splitsh-lite; download each tool from its release URL and verify the checksum from the pins, failing the build on a mismatch; no Node, no Gemini or Claude install, no gh-wf copy, no entrypoint, no libgit2-dev, no openssh-client; the splitsh-lite asset is lite_linux_amd64.tar.gz. Add .docker/compose.yaml with the service tools that builds this Dockerfile, takes every pin as a build argument from the environment (.env.defaults of the plugin root, sourced or passed with --env-file), sets the platform from IMAGE_PLATFORM and names the image from an optional tag variable. Decisions D20 to D22.",
+            "arguments": "Rewrite the Dockerfile as one stage on the base of IMAGE_BASE with git (the pinned apt version), gh, git-cliff and splitsh-lite; download each tool from its release URL and verify the checksum from the pins, failing the build on a mismatch; no Node, no Gemini or Claude install, no gh-wf copy, no entrypoint, no libgit2-dev, no openssh-client; the splitsh-lite asset is lite_linux_amd64.tar.gz. Add .docker/compose.yaml with the service tools that builds this Dockerfile, takes every pin as a build argument from the environment (.env.defaults of the plugin root, sourced or passed with --env-file), sets the platform from IMAGE_PLATFORM and names the image from an optional tag variable. Decisions D20 to D22.",
             "output": "The Dockerfile and .docker/compose.yaml; `docker compose -f .docker/compose.yaml build tools` builds with the pins in the environment.",
             "pattern": "Dockerfile: the current file, whose pinned downloads and gh install are kept in spirit",
             "target": "change"
@@ -561,7 +561,7 @@
         }
       ],
       "gate": {
-        "run": "(f=.env.defaults; for k in IMAGE_BASE IMAGE_PLATFORM GIT_CLIFF_VERSION GIT_CLIFF_SHA512 SPLITSH_VERSION SPLITSH_SHA256 GH_VERSION GH_SHA256 GIT_APT_VERSION; do grep -qE \"^PLUGIN_EDOTZ_GIT_WORKFLOW_${k}=.+\" $f || exit 1; done; grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_BASE=.*@sha256:[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_IMAGE_PLATFORM=linux/amd64$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_SHA512=[0-9a-f]{128}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_SPLITSH_SHA256=[0-9a-f]{64}$' $f && grep -qE '^PLUGIN_EDOTZ_GIT_WORKFLOW_GH_SHA256=[0-9a-f]{64}$' $f) && (set -a; . ./.env.defaults; set +a; docker compose -f .docker/compose.yaml build --no-cache tools && docker compose -f .docker/compose.yaml run --rm tools git-cliff --version | grep -q \"git-cliff ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_CLIFF_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools gh --version | grep -q \"gh version ${PLUGIN_EDOTZ_GIT_WORKFLOW_GH_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools dpkg -s git | grep -q \"^Version: ${PLUGIN_EDOTZ_GIT_WORKFLOW_GIT_APT_VERSION}$\" && docker compose -f .docker/compose.yaml run --rm -e GIT_AUTHOR_NAME=t -e GIT_AUTHOR_EMAIL=t@example.com -e GIT_COMMITTER_NAME=t -e GIT_COMMITTER_EMAIL=t@example.com tools sh -c 'cd /tmp && git init -q r && cd r && mkdir p && echo a > p/f && git add . && git commit -q -m x && splitsh-lite --prefix=p 2>/dev/null' | grep -qE '^[0-9a-f]{40}$' && ! docker compose -f .docker/compose.yaml run --rm tools sh -c 'command -v node || command -v claude || command -v gemini') && (bash -n bin/lib/tool.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/tool.sh; tool_run git --version | grep -q \"^git version\"; tool_run git-cliff --version | grep -q \"^git-cliff\"; t=$(mktemp -d); git -C \"$t\" init -q r; git -C \"$t/r\" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x; git -C \"$t/r\" worktree add -q \"$t/w\" -b w; (cd \"$t/w\" && tool_run git rev-parse --is-inside-work-tree | grep -q true); rm -rf \"$t\"') && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/tool-image-check.md; test -s $f && grep -q '^## Machine' $f && grep -q '^## Result' $f && ! command -v git-cliff >/dev/null && ! command -v splitsh-lite >/dev/null)"
+        "run": "(f=.env.defaults; for k in IMAGE_BASE IMAGE_PLATFORM GIT_CLIFF_VERSION GIT_CLIFF_SHA512 SPLITSH_VERSION SPLITSH_SHA256 GH_VERSION GH_SHA256 GIT_APT_VERSION; do grep -qE \"^${k}=.+\" $f || exit 1; done; grep -qE '^IMAGE_BASE=.*@sha256:[0-9a-f]{64}$' $f && grep -qE '^IMAGE_PLATFORM=linux/amd64$' $f && grep -qE '^GIT_CLIFF_SHA512=[0-9a-f]{128}$' $f && grep -qE '^SPLITSH_SHA256=[0-9a-f]{64}$' $f && grep -qE '^GH_SHA256=[0-9a-f]{64}$' $f) && (set -a; . ./.env.defaults; set +a; docker compose -f .docker/compose.yaml build --no-cache tools && docker compose -f .docker/compose.yaml run --rm tools git-cliff --version | grep -q \"git-cliff ${GIT_CLIFF_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools gh --version | grep -q \"gh version ${GH_VERSION#v}\" && docker compose -f .docker/compose.yaml run --rm tools dpkg -s git | grep -q \"^Version: ${GIT_APT_VERSION}$\" && docker compose -f .docker/compose.yaml run --rm -e GIT_AUTHOR_NAME=t -e GIT_AUTHOR_EMAIL=t@example.com -e GIT_COMMITTER_NAME=t -e GIT_COMMITTER_EMAIL=t@example.com tools sh -c 'cd /tmp && git init -q r && cd r && mkdir p && echo a > p/f && git add . && git commit -q -m x && splitsh-lite --prefix=p 2>/dev/null' | grep -qE '^[0-9a-f]{40}$' && ! docker compose -f .docker/compose.yaml run --rm tools sh -c 'command -v node || command -v claude || command -v gemini') && (bash -n bin/lib/tool.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/tool.sh; tool_run git --version | grep -q \"^git version\"; tool_run git-cliff --version | grep -q \"^git-cliff\"; t=$(mktemp -d); git -C \"$t\" init -q r; git -C \"$t/r\" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x; git -C \"$t/r\" worktree add -q \"$t/w\" -b w; (cd \"$t/w\" && tool_run git rev-parse --is-inside-work-tree | grep -q true); rm -rf \"$t\"') && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/tool-image-check.md; test -s $f && grep -q '^## Machine' $f && grep -q '^## Result' $f && ! command -v git-cliff >/dev/null && ! command -v splitsh-lite >/dev/null)"
       }
     },
     {
@@ -830,7 +830,7 @@
     {
       "id": "D24",
       "question": "Where the pinned versions, the base image digest and the checksums live, after D22",
-      "chosen": "In .env.defaults in the plugin root, with the keys PLUGIN_EDOTZ_GIT_WORKFLOW_*; a consuming project does not override them, and bin/config/env.defaults keeps only the settings a project may override through its .env",
+      "chosen": "In .env.defaults in the plugin root, with unprefixed keys (IMAGE_BASE, GH_VERSION and so on); a consuming project does not override them, and bin/config/env.defaults keeps only the settings a project may override through its .env",
       "reason": "Developer correction on 2026-11-03: the pins are plugin internals read by the compose file and the library function, while the plugin config in bin/config is the overridable part. The framework loads only the file name env.defaults from bin/config, so that file keeps its name.",
       "by": "developer",
       "date": "2026-11-03",
@@ -949,6 +949,29 @@
         "P2"
       ],
       "reason": "Developer correction: bin/config holds only the settings a project may override",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "The pins in .env.defaults lose the PLUGIN_EDOTZ_GIT_WORKFLOW_ prefix",
+      "affects": [
+        "T2.1",
+        "T2.2",
+        "T2.3",
+        "P2",
+        "D24"
+      ],
+      "reason": "Developer correction: the root .env.defaults is not a framework plugin file, so the plugin prefix does not apply",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "The T2.1 verify and the phase gate read the unprefixed pin keys",
+      "affects": [
+        "T2.1",
+        "P2"
+      ],
+      "reason": "The key loop built the prefix from a variable, so the first rewrite missed it",
       "by": "developer"
     }
   ]
