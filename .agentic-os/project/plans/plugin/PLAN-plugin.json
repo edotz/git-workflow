@@ -486,7 +486,7 @@
             "run": "bash -n bin/lib/tool.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/tool.sh; tool_run git --version | grep -q \"^git version\"; tool_run git-cliff --version | grep -q \"^git-cliff\"; t=$(mktemp -d); git -C \"$t\" init -q r; git -C \"$t/r\" -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m x; git -C \"$t/r\" worktree add -q \"$t/w\" -b w; (cd \"$t/w\" && tool_run git rev-parse --is-inside-work-tree | grep -q true); rm -rf \"$t\"'",
             "from": "environment fact: the function runs git and git-cliff through the image inside a plain repository and a worktree"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "Write bin/lib/tool.sh with tool_run and tool_image_ensure. tool_run runs one tool in an ephemeral container (docker run --rm, decision D20) of the image for the current content hash, with the working directory and the common git directory mounted at their host paths, the host user, a writable HOME, safe.directory set, the platform from the pins, and GH_TOKEN passed by variable name when it is set; no host-binary fallback (D35), no write of the token anywhere. tool_image_ensure loads the pins from .env.defaults in the plugin root (decision D24) and the settings from bin/config/env.defaults, then the .env of the project root, tags the image with a hash of the Dockerfile and the pins, and builds it through .docker/compose.yaml when it is missing. Docker missing is an error that says Docker is a prerequisite.",
             "output": "bin/lib/tool.sh sourced through PLUGIN_ROOT like the other plugin libraries; shellcheck clean per the scope check.",
@@ -500,7 +500,49 @@
           "carries": [
             "CONCEPT-git-workflow-plugin:D35",
             "CONCEPT-git-workflow-plugin:D55"
-          ]
+          ],
+          "findings": [
+            {
+              "file": "bin/lib/tool.sh",
+              "line": 98,
+              "severity": "wrong result",
+              "summary": "Pins did not override a variable set before bootstrap",
+              "state": "open"
+            },
+            {
+              "file": "bin/lib/tool.sh",
+              "line": 160,
+              "severity": "wrong result",
+              "summary": "Stdin was not forwarded to the container",
+              "state": "open"
+            },
+            {
+              "file": "bin/lib/tool.sh",
+              "line": 81,
+              "severity": "convention",
+              "summary": "Env files were parsed again in every call",
+              "state": "open"
+            },
+            {
+              "file": "bin/lib/tool.sh",
+              "line": 161,
+              "severity": "wrong result",
+              "summary": "A colon in a path breaks the -v mount",
+              "state": "open"
+            },
+            {
+              "file": "bin/lib/tool.sh",
+              "line": 155,
+              "severity": "convention",
+              "summary": "Forwarded stdin truncates a while-read loop; documented in the header",
+              "state": "open"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T2.3.md",
+          "last_verify": {
+            "at": "2026-11-03T15:52:21Z",
+            "exit": 0
+          }
         },
         {
           "id": "T2.4",
