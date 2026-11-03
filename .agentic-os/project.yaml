@@ -12,7 +12,7 @@ technology: []
 # Toolchain — commands that verify work; the planner reads them from this file.
 # Empty string = step is skipped.
 toolchain:
-  lint:  ""  
+  lint: "bash ${BU_ROOT}/app lint all"
 
 # Plugins the project uses, in precedence order (a later entry wins over an earlier one).
 # Each plugin needs a plugin.yaml at its root. `bash bin/app plugins list` shows the registry.
