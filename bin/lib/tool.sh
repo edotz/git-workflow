@@ -72,6 +72,24 @@ _tool_find_repo() {
   return 0
 }
 
+# Add the KEY=value lines of one file to _TOOL_PINS, a later file overriding an earlier one.
+# Args:
+#   $1 - path of the file
+#   $2 - which keys to take: any, or pins for the nine pin keys only
+# Sets: _TOOL_PINS
+_tool_read_pins() {
+  local file="$1" take="$2" line key
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" =~ ^([A-Z][A-Z0-9_]*)=(.*)$ ]]; then
+      key="${BASH_REMATCH[1]}"
+      if [[ "$take" == "any" ]] || [[ " ${TOOL_PIN_KEYS[*]} " == *" ${key} "* ]]; then
+        _TOOL_PINS["$key"]="${BASH_REMATCH[2]}"
+      fi
+    fi
+  done < "$file"
+  return 0
+}
+
 # Read the nine pins into _TOOL_PINS: the plugin's .env.defaults gives the defaults and the .env of the plugin root,
 # when it exists, overrides them key by key (D33). A key of the .env that is no pin is ignored.
 # env_parse_file is not used: it exports into the environment and skips a key that was set before bootstrap, so a
@@ -82,19 +100,12 @@ _tool_find_repo() {
 #   $2 - path of the overriding .env, optional
 # Sets: _TOOL_PINS
 _tool_load_pins() {
-  local defaults="$1" override="${2:-}" file line key
+  local defaults="$1" override="${2:-}" key
   _TOOL_PINS=()
-  for file in "$defaults" "$override"; do
-    [[ -n "$file" && -f "$file" ]] || continue
-    while IFS= read -r line || [[ -n "$line" ]]; do
-      if [[ "$line" =~ ^([A-Z][A-Z0-9_]*)=(.*)$ ]]; then
-        key="${BASH_REMATCH[1]}"
-        if [[ "$file" == "$defaults" ]] || [[ " ${TOOL_PIN_KEYS[*]} " == *" ${key} "* ]]; then
-          _TOOL_PINS["$key"]="${BASH_REMATCH[2]}"
-        fi
-      fi
-    done < "$file"
-  done
+  _tool_read_pins "$defaults" any
+  if [[ -n "$override" && -f "$override" ]]; then
+    _tool_read_pins "$override" pins
+  fi
   for key in "${TOOL_PIN_KEYS[@]}"; do
     if [[ -z "${_TOOL_PINS[$key]:-}" ]]; then
       die "tool: the pin ${key} is missing in ${defaults}"

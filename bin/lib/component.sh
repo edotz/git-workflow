@@ -1,7 +1,7 @@
 #!/bin/bash
 # Component Declaration Library
 # Requires: core.sh, yaml.sh, json.sh, jq 1.5+, yq 4.0+
-# Provides: component_load, component_names, component_paths, component_field — the components of
+# Provides: component_load, component_names, component_root, component_tag_prefix, component_paths, component_field — the components of
 #           components.yaml (repository root), checked against the declaration rules, with defaults
 #           (version yes, split no, host github.com); the paths of a workspace component come from pnpm.
 
@@ -178,6 +178,36 @@ component_load() {
 component_names() {
   _component_require_loaded "component_names"
   json_query "$_COMPONENT_JSON" '.[].name'  # out:return
+}
+
+# Print the repository root of the loaded components: the physical path of the directory that holds the file.
+# Returns: path (stdout)
+# Example: root="$(component_root)"
+component_root() {
+  _component_require_loaded "component_root"
+  printf '%s\n' "$_COMPONENT_ROOT"  # out:return
+  return 0
+}
+
+# Print the tag prefix of a component: nothing with one component (v1.2.3), "<name>/" with two or more (web/v1.2.3).
+# Args:
+#   $1 - name: Component name
+# Returns: prefix (stdout), an empty line for the empty prefix
+# Exits: 2 when no name is given, 4 on an unknown component
+# Example: prefix="$(component_tag_prefix web)"
+component_tag_prefix() {
+  local name="${1:-}"
+  [[ -n "$name" ]] || die_with "$BU_EXIT_USAGE" "component_tag_prefix: name required"
+  _component_require_loaded "component_tag_prefix"
+
+  local result
+  result="$(json_query "$_COMPONENT_JSON" \
+    'if any(.[]; .name == $n) | not then "E" elif length == 1 then "O" else "O" + $n + "/" end' --arg n "$name")"
+  if [[ "${result:0:1}" == "E" ]]; then
+    die_with "$BU_EXIT_NOT_FOUND" "component '${name}': not declared"
+  fi
+  printf '%s\n' "${result:1}"  # out:return
+  return 0
 }
 
 # Print one field of a component. A list prints one entry per line, a field the component does not
