@@ -10,11 +10,15 @@ root="${BASH_SOURCE[0]%/*}/../.."
 export TOKEN_SERVICE_KEY_FILE="${APP_KEY_PATH:?APP_KEY_PATH is required}"
 export TOKEN_SERVICE_APP_ID="${TOKEN_SERVICE_APP_ID:-5593711}"
 export TOKEN_SERVICE_PORT="${TOKEN_SERVICE_PORT:-8790}"
-export TOKEN_SERVICE_UID="$(id -u)" TOKEN_SERVICE_GID="$(id -g)"
+TOKEN_SERVICE_UID="$(id -u)"
+TOKEN_SERVICE_GID="$(id -g)"
+export TOKEN_SERVICE_UID TOKEN_SERVICE_GID
 repo="edotz/git-workflow-sandbox"
 url="http://127.0.0.1:${TOKEN_SERVICE_PORT}/token"
 env_files=(--env-file "${root}/.env.defaults")
-[[ -f "${root}/.env" ]] && env_files+=(--env-file "${root}/.env")
+if [[ -f "${root}/.env" ]]; then
+  env_files+=(--env-file "${root}/.env")
+fi
 compose=(docker compose "${env_files[@]}" -f "${root}/docker-compose.yaml" -p git-workflow-token-check)
 failed=0
 
@@ -39,7 +43,8 @@ post() {
 }
 
 work=$(mktemp -d)
-trap 'rm -rf "$work"; cleanup' EXIT
+finish() { rm -rf "$work"; cleanup; }
+trap finish EXIT
 developer_token=$(gh auth token)
 
 "${compose[@]}" up -d --build token-service >/dev/null 2>&1
