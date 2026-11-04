@@ -94,6 +94,32 @@ ok=no
 if [[ "$rc" -ne 0 && "$out" == *"minimum check is red"* ]]; then ok=yes; fi
 case_result "a red minimum check refuses the release" "$ok"
 
+# The release commit runs in the tool container without the hooks of the repository: a hook that needs the host
+# (agentic-os) fails there, and core.hooksPath=/dev/null lets the commit through.
+git -C "$repo" config --unset core.hooksPath
+mkdir -p "${repo}/.git/hooks"
+printf '#!/bin/sh\nexit 1\n' > "${repo}/.git/hooks/pre-commit"
+chmod +x "${repo}/.git/hooks/pre-commit"
+git -C "$repo" reset -q --hard HEAD~1
+echo c > "${repo}/c"
+git -C "$repo" add c
+
+tool_git() {
+  (cd "$repo" && PLUGIN_ROOT="$root" bash -c 'source "${BU_ROOT}/lib/core.sh"; source "${PLUGIN_ROOT}/bin/lib/tool.sh"; tool_run git "$@" </dev/null' _ "$@" >/dev/null 2>&1)
+}
+
+rc=0
+tool_git -c user.name=t -c user.email=t@example.com commit -q -m "feat: c" || rc=$?
+ok=no
+if [[ "$rc" -ne 0 ]]; then ok=yes; fi
+case_result "a failing repository hook blocks a commit in the container" "$ok"
+
+rc=0
+tool_git -c user.name=t -c user.email=t@example.com -c core.hooksPath=/dev/null commit -q -m "feat: c" || rc=$?
+ok=no
+if [[ "$rc" -eq 0 && "$(git -C "$repo" log -1 --format=%s)" == "feat: c" ]]; then ok=yes; fi
+case_result "core.hooksPath=/dev/null lets the release commit through" "$ok"
+
 if [[ "$failed" -ne 0 ]]; then
   exit 1
 fi

@@ -81,7 +81,8 @@ _release_home_file() {
 #   $1 - component name
 #   $2 - prefix: tag prefix of the component
 #   $3 - tag: the tag of the release
-#   $4 - mode: new (the commits since the latest tag, as the release tag) or latest (the latest release)
+#   $4 - mode: new (the commits since the latest tag, as the release tag) or latest (the notes of the existing tag,
+#        without its own release commit)
 #   $5 - version: decides the tag pattern, all tags of the component for a pre-release, stable tags otherwise
 _release_cliff_args() {
   local name="$1" prefix="$2" tag="$3" mode="$4" version="$5" pattern dir
@@ -95,7 +96,9 @@ _release_cliff_args() {
   if [[ "$mode" == "new" ]]; then
     _RELEASE_CLIFF+=(--unreleased --tag "$tag")
   else
-    _RELEASE_CLIFF+=(--latest)
+    local sha
+    sha="$(tool_run git rev-parse "refs/tags/${tag}^{commit}" </dev/null)" || die "release: the tag ${tag} does not exist"
+    _RELEASE_CLIFF+=(--latest --skip-commit "$sha")
   fi
   for dir in "${_RELEASE_DIRS[@]}"; do
     _RELEASE_CLIFF+=(--include-path "${dir}/**")
@@ -260,7 +263,26 @@ _release_show() {
   return 0
 }
 
+# Restore the files a failed release commit left behind: a file in HEAD returns to it, a new file is removed.
+# Args: the files of the release commit
+_release_rollback() {
+  local file
+  for file in "$@"; do
+    if [[ -z "$file" ]]; then
+      continue
+    fi
+    if tool_run git cat-file -e "HEAD:${file}" </dev/null 2>/dev/null; then
+      tool_run git restore --source=HEAD --staged --worktree -- "$file" </dev/null
+    else
+      tool_run git rm -f -q -- "$file" </dev/null
+    fi
+  done
+  return 0
+}
+
 # Write the release commit of one component: version files, CHANGELOG and README, one commit, one tag.
+# The commit runs without the hooks of the repository: they run on the host and are not in the tool image, and the
+# message is generated and conventional (the minimum check linted the commits before).
 # Args: $1 - index into the RELEASE_ arrays
 _release_commit() {
   local i="$1" name prefix version tag changelog readme file
@@ -298,7 +320,10 @@ _release_commit() {
     fi
     tool_run git add -- "$file" </dev/null
   done
-  tool_run git "${_RELEASE_ID[@]}" commit -q -m "chore(${name}): release ${tag}" </dev/null
+  if ! tool_run git "${_RELEASE_ID[@]}" -c core.hooksPath=/dev/null commit -q -m "chore(${name}): release ${tag}" </dev/null; then
+    _release_rollback "${staged[@]}"
+    die "release: the release commit failed, the files of the release were restored"
+  fi
   tool_run git tag "$tag" </dev/null
   print_item ok "release commit" "chore(${name}): release ${tag}"
   return 0
@@ -313,7 +338,8 @@ _release_push() {
 }
 
 # Create the GitHub Release of one tag when it does not exist yet.
-# Args: $1 name  $2 prefix  $3 tag  $4 mode (new or latest)  $5 draft (yes or no)  $6 several (yes or no)
+# The notes are those of the tag, read after the tag exists (mode latest).
+# Args: $1 name  $2 prefix  $3 tag  $4 mode (latest)  $5 draft (yes or no)  $6 several (yes or no)
 _release_publish() {
   local name="$1" prefix="$2" tag="$3" mode="$4" draft="$5" several="$6" version
   version="${tag#"${prefix}"v}"
@@ -362,7 +388,7 @@ _release_apply() {
   for i in "${!RELEASE_NAMES[@]}"; do
     _release_commit "$i"
     _release_push "$main_branch" "${RELEASE_TAGS[$i]}"
-    _release_publish "${RELEASE_NAMES[$i]}" "${RELEASE_PREFIXES[$i]}" "${RELEASE_TAGS[$i]}" new "$draft" "$several"
+    _release_publish "${RELEASE_NAMES[$i]}" "${RELEASE_PREFIXES[$i]}" "${RELEASE_TAGS[$i]}" latest "$draft" "$several"
   done
   for i in "${!PENDING_NAMES[@]}"; do
     _release_push "$main_branch" "${PENDING_TAGS[$i]}"
