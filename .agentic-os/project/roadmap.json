@@ -11,19 +11,19 @@
           "id": "m1-foundations",
           "name": "Foundations",
           "gate": "Every verify claim of the white paper is checked, and the token service and the component declaration are settled.",
-          "status": "planned"
+          "status": "done"
         },
         {
           "id": "m2-tool-image",
           "name": "Tool image",
           "gate": "git-cliff, splitsh-lite and gh run through docker on a clean machine at the pinned versions.",
-          "status": "planned"
+          "status": "done"
         },
         {
           "id": "m3-release-core",
           "name": "Release core",
           "gate": "A pilot single repo releases locally with commit, tag and GitHub Release by the App, and promote fast-forwards the release branch to the tag.",
-          "status": "planned"
+          "status": "active"
         },
         {
           "id": "m4-daily-loop",
@@ -155,6 +155,30 @@
         "r-1-0-0"
       ],
       "reason": "Closes the redesign once every project runs on the new workflow and the old CI and protection code are gone."
+    },
+    {
+      "date": "2026-11-03",
+      "change": "Set milestone m1-foundations to done",
+      "affects": [
+        "m1-foundations"
+      ],
+      "reason": "P1 of PLAN-plugin is done: the white-paper claims are checked against GitHub and the tools, the token service contract and its hosting (a container on this machine, reachable from here only) and the component declaration are settled"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "Set milestone m2-tool-image to done",
+      "affects": [
+        "m2-tool-image"
+      ],
+      "reason": "P2 of PLAN-plugin is done: the pins in .env.defaults, the Dockerfile and compose file, bin/lib/tool.sh and the clean-machine check note"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "Set milestone m3-release-core to active",
+      "affects": [
+        "m3-release-core"
+      ],
+      "reason": "P3 of PLAN-plugin, the release core, is detailed and its first tasks are under way: the token service, the component library and the token, version and check libraries"
     }
   ]
 }
