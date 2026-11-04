@@ -72,23 +72,32 @@ _tool_find_repo() {
   return 0
 }
 
-# Read the nine pins of the plugin's .env.defaults into _TOOL_PINS.
+# Read the nine pins into _TOOL_PINS: the plugin's .env.defaults gives the defaults and the .env of the plugin root,
+# when it exists, overrides them key by key (D33). A key of the .env that is no pin is ignored.
 # env_parse_file is not used: it exports into the environment and skips a key that was set before bootstrap, so a
-# pin could differ between a top-level shell and a child process (D24). The pins stay in this array and reach compose
+# pin could differ between a top-level shell and a child process. The pins stay in this array and reach compose
 # and docker through local exports only.
-# Args: $1 - path of the pins file
+# Args:
+#   $1 - path of the defaults file
+#   $2 - path of the overriding .env, optional
 # Sets: _TOOL_PINS
 _tool_load_pins() {
-  local file="$1" line key
+  local defaults="$1" override="${2:-}" file line key
   _TOOL_PINS=()
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    if [[ "$line" =~ ^([A-Z][A-Z0-9_]*)=(.*)$ ]]; then
-      _TOOL_PINS["${BASH_REMATCH[1]}"]="${BASH_REMATCH[2]}"
-    fi
-  done < "$file"
+  for file in "$defaults" "$override"; do
+    [[ -n "$file" && -f "$file" ]] || continue
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      if [[ "$line" =~ ^([A-Z][A-Z0-9_]*)=(.*)$ ]]; then
+        key="${BASH_REMATCH[1]}"
+        if [[ "$file" == "$defaults" ]] || [[ " ${TOOL_PIN_KEYS[*]} " == *" ${key} "* ]]; then
+          _TOOL_PINS["$key"]="${BASH_REMATCH[2]}"
+        fi
+      fi
+    done < "$file"
+  done
   for key in "${TOOL_PIN_KEYS[@]}"; do
     if [[ -z "${_TOOL_PINS[$key]:-}" ]]; then
-      die "tool: the pin ${key} is missing in ${file}"
+      die "tool: the pin ${key} is missing in ${defaults}"
     fi
   done
   return 0
@@ -99,9 +108,10 @@ _tool_load_pins() {
 # ============================================
 
 # Load the pins, then make sure the image of the current content hash exists.
-# The pins come from .env.defaults in the plugin root only: neither the project .env nor the process environment
-# changes them (D24). The project .env and the plugin settings are already loaded by the bootstrap.
-# The image is tagged with a hash of the Dockerfile and the pins and is built through docker-compose.yaml when
+# The pins come from .env.defaults in the plugin root, overridden key by key by the .env of the plugin root when it
+# exists (D33); the process environment and the .env of a consuming project do not change them. The plugin settings
+# are already loaded by the bootstrap.
+# The image is tagged with a hash of the Dockerfile and the resolved pins and is built through docker-compose.yaml when
 # the tag is missing.
 # Args: none
 # Sets: TOOL_IMAGE, _TOOL_PINS
@@ -115,23 +125,27 @@ tool_image_ensure() {
   require_config "PLUGIN_ROOT" "set for the scripts a plugin supplies"
 
   local pins="${PLUGIN_ROOT}/.env.defaults"
+  local override="${PLUGIN_ROOT}/.env"
   local dockerfile="${PLUGIN_ROOT}/.docker/Dockerfile"
   local compose="${PLUGIN_ROOT}/docker-compose.yaml"
   require_file "$pins" "tool image pins"
   require_file "$dockerfile" "tool image Dockerfile"
   require_file "$compose" "tool image compose file"
 
-  _tool_load_pins "$pins"
+  _tool_load_pins "$pins" "$override"
 
   cache_hash_forget
-  cache_hash_files "$dockerfile" "$pins"
-  cache_hash_text "${CACHE_HASHES[$dockerfile]}:${CACHE_HASHES[$pins]}"
+  cache_hash_files "$dockerfile"
+  local resolved="${CACHE_HASHES[$dockerfile]}" key
+  for key in "${TOOL_PIN_KEYS[@]}"; do
+    resolved+=":${key}=${_TOOL_PINS[$key]}"
+  done
+  cache_hash_text "$resolved"
   local hash="${CACHE_HASH_TEXT:0:12}"
   local image="${TOOL_IMAGE_NAME}:${hash}"
 
   if ! docker image inspect "$image" >/dev/null 2>&1; then
     logger_info "Building tool image ${image}"
-    local key
     for key in "${TOOL_PIN_KEYS[@]}"; do
       local -x "${key}=${_TOOL_PINS[$key]}"
     done

@@ -13,7 +13,9 @@ export TOKEN_SERVICE_PORT="${TOKEN_SERVICE_PORT:-8790}"
 export TOKEN_SERVICE_UID="$(id -u)" TOKEN_SERVICE_GID="$(id -g)"
 repo="edotz/git-workflow-sandbox"
 url="http://127.0.0.1:${TOKEN_SERVICE_PORT}/token"
-compose=(docker compose --env-file "${root}/.env.defaults" -f "${root}/docker-compose.yaml" -p git-workflow-token-check)
+env_files=(--env-file "${root}/.env.defaults")
+[[ -f "${root}/.env" ]] && env_files+=(--env-file "${root}/.env")
+compose=(docker compose "${env_files[@]}" -f "${root}/docker-compose.yaml" -p git-workflow-token-check)
 failed=0
 
 cleanup() { "${compose[@]}" down -t 2 >/dev/null 2>&1 || true; }

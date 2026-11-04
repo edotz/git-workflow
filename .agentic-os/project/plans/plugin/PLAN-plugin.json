@@ -1517,7 +1517,8 @@
       "by": "developer",
       "date": "2026-11-03",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D33"
     },
     {
       "id": "D25",
@@ -1596,6 +1597,17 @@
       "question": "How the images and compose services are laid out after D30",
       "chosen": "One central .docker/Dockerfile holds a stage per image (tool, token-service); one docker-compose.yaml in the plugin root builds both services with context . and dockerfile .docker/Dockerfile, a target per service and IMAGE_BASE as build arg on both; compose commands take --env-file .env.defaults, which replaces the default .env so that a project .env cannot change the pins (D24). The root Dockerfile, .docker/compose.yaml, .docker/compose.token-service.yaml and .docker/token-service.Dockerfile are removed; the rest of D30 (module command, root package.json, bin/config/token-service.json, tests/token-service/check.sh, key as mounted host file) stands.",
       "reason": "Developer instruction on 2026-11-04: set a central Dockerfile in .docker and integrate the root docker-compose.yaml for tools and token service.",
+      "by": "developer",
+      "date": "2026-11-04",
+      "scope": "durable",
+      "status": "superseded",
+      "superseded_by": "D33"
+    },
+    {
+      "id": "D33",
+      "question": "Whether a .env can override the pins of .env.defaults, after D24 and D32",
+      "chosen": "The pins live in .env.defaults of the plugin root as the fallback; the .env of the plugin root, when it exists, overrides a pin key by key; the .env of a consuming project and the process environment do not change them, and bin/config/env.defaults keeps the settings a project may override. Compose commands take --env-file .env.defaults followed by --env-file .env when that exists, and tool_image_ensure merges the same two files and hashes the Dockerfile with the resolved pins. The layout of D32 stands: one central .docker/Dockerfile with the stages tool and token-service, one root docker-compose.yaml.",
+      "reason": "Developer correction on 2026-11-04: .env.defaults is the fallback of .env, not a fixed set; the developer chose the .env of the plugin root as the overriding file.",
       "by": "developer",
       "date": "2026-11-04",
       "scope": "durable",
@@ -1822,6 +1834,17 @@
         "D32"
       ],
       "reason": "Developer instruction on 2026-11-04 to set a central Dockerfile in .docker and integrate the root docker-compose.yaml; done tasks keep their record",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-04",
+      "change": "Pins in .env.defaults become the fallback of the .env of the plugin root: D33 supersedes D24 and D32",
+      "affects": [
+        "D24",
+        "D32",
+        "D33"
+      ],
+      "reason": "Developer correction on 2026-11-04: .env.defaults is the fallback of .env; the plugin-root .env overrides pins key by key",
       "by": "developer"
     }
   ],
