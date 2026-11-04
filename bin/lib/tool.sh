@@ -101,7 +101,7 @@ _tool_load_pins() {
 # Load the pins, then make sure the image of the current content hash exists.
 # The pins come from .env.defaults in the plugin root only: neither the project .env nor the process environment
 # changes them (D24). The project .env and the plugin settings are already loaded by the bootstrap.
-# The image is tagged with a hash of the Dockerfile and the pins and is built through .docker/compose.yaml when
+# The image is tagged with a hash of the Dockerfile and the pins and is built through docker-compose.yaml when
 # the tag is missing.
 # Args: none
 # Sets: TOOL_IMAGE, _TOOL_PINS
@@ -115,8 +115,8 @@ tool_image_ensure() {
   require_config "PLUGIN_ROOT" "set for the scripts a plugin supplies"
 
   local pins="${PLUGIN_ROOT}/.env.defaults"
-  local dockerfile="${PLUGIN_ROOT}/Dockerfile"
-  local compose="${PLUGIN_ROOT}/.docker/compose.yaml"
+  local dockerfile="${PLUGIN_ROOT}/.docker/Dockerfile"
+  local compose="${PLUGIN_ROOT}/docker-compose.yaml"
   require_file "$pins" "tool image pins"
   require_file "$dockerfile" "tool image Dockerfile"
   require_file "$compose" "tool image compose file"

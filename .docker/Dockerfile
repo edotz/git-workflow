@@ -25,7 +25,7 @@ RUN set -eu; \
     echo "${GH_SHA256}  gh_${GH_VERSION}_linux_amd64.tar.gz" | sha256sum -c -; \
     tar -xzf "gh_${GH_VERSION}_linux_amd64.tar.gz" -C /out --strip-components=2 "gh_${GH_VERSION}_linux_amd64/bin/gh"
 
-FROM ${IMAGE_BASE}
+FROM ${IMAGE_BASE} AS tool
 ARG GIT_APT_VERSION
 
 RUN set -eu; \
@@ -38,3 +38,13 @@ RUN set -eu; \
 COPY --from=fetch /out/git-cliff /out/splitsh-lite /out/gh /usr/local/bin/
 
 WORKDIR /workspace
+
+FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS token-service
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --ignore-scripts
+COPY bin/modules/git/token-service.mjs ./bin/modules/git/token-service.mjs
+COPY bin/config/token-service.json ./bin/config/token-service.json
+USER node
+EXPOSE 8790
+CMD ["node", "bin/modules/git/token-service.mjs"]

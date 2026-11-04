@@ -13,7 +13,7 @@ export TOKEN_SERVICE_PORT="${TOKEN_SERVICE_PORT:-8790}"
 export TOKEN_SERVICE_UID="$(id -u)" TOKEN_SERVICE_GID="$(id -g)"
 repo="edotz/git-workflow-sandbox"
 url="http://127.0.0.1:${TOKEN_SERVICE_PORT}/token"
-compose=(docker compose -f "${root}/.docker/compose.token-service.yaml" -p git-workflow-token-check)
+compose=(docker compose --env-file "${root}/.env.defaults" -f "${root}/docker-compose.yaml" -p git-workflow-token-check)
 failed=0
 
 cleanup() { "${compose[@]}" down -t 2 >/dev/null 2>&1 || true; }
@@ -40,7 +40,7 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"; cleanup' EXIT
 developer_token=$(gh auth token)
 
-"${compose[@]}" up -d --build >/dev/null 2>&1
+"${compose[@]}" up -d --build token-service >/dev/null 2>&1
 for _ in $(seq 1 30); do
   if curl -s -o /dev/null "$url"; then break; fi
   sleep 1
