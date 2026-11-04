@@ -10,6 +10,37 @@ commands:
     description: "Manage GitHub branch protection rules from declarative YAML."
   - name: "lint-commit"
     description: "Validate a commit message file against the conventional commit config of the plugin."
+  - name: "promote"
+    requires: [git, docker]
+    description: "Fast-forward the release branch to the commit of a release tag; never to the head of master, never a force."
+    when: "A release is made and the release branch has to follow it"
+    examples:
+      - "bash $BU_ROOT/app git promote v1.2.0 --dry-run"
+      - "bash $BU_ROOT/app git promote v1.2.0 --apply"
+    arguments:
+      - name: "tag"
+        description: "Release tag whose commit is the release commit of that tag"
+        required: true
+      - name: "--dry-run"
+        description: "Print the commit the release branch would move to and change nothing"
+      - name: "--apply"
+        description: "Push the commit of the tag to the release branch as the App"
+  - name: "release"
+    requires: [git, docker]
+    description: "Release the components that changed since their latest tag: release commit, tag and GitHub Release as the App."
+    when: "Master holds changes of a component that are ready to be released"
+    examples:
+      - "bash $BU_ROOT/app git release --dry-run"
+      - "bash $BU_ROOT/app git release --apply --pre rc"
+    arguments:
+      - name: "--dry-run"
+        description: "Print per component the next version, the tag, the files and the notes and change nothing"
+      - name: "--apply"
+        description: "Make the release commit, the tag, the push and the GitHub Release"
+      - name: "--draft"
+        description: "Leave the GitHub Release unpublished"
+      - name: "--pre"
+        description: "Make a pre-release of this channel: lower case letters, for example alpha, beta or rc"
   - name: "run-status"
     requires: [gh]
     description: "Fetch recent GitHub Actions workflow runs as JSON."
