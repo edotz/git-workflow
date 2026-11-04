@@ -1083,8 +1083,7 @@
             {
               "scope": "bin/modules/git",
               "paths": [
-                "bin/modules/git/release.sh",
-                "bin/modules/git/module.yaml"
+                "bin/modules/git/release.sh"
               ]
             },
             {
@@ -1127,19 +1126,19 @@
             }
           ],
           "verify": {
-            "run": "bash tests/git-release/dry-run.sh && bash ${BU_ROOT}/app lint modules",
-            "from": "environment fact: the dry run prints version, tag and notes and changes nothing; the registry and the script agree"
+            "run": "bash -n bin/modules/git/release.sh && bash tests/git-release/dry-run.sh",
+            "from": "environment fact: the dry run prints version, tag and notes and changes nothing"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
-            "arguments": "Write app git release with the flags --dry-run, --apply, --draft and --pre <channel>, and register it in module.yaml. Both modes first load components.yaml, run check_minimum on HEAD and refuse on a red check. --dry-run prints, per released component, the next version, the tag, the files it would touch and the git-cliff notes, and changes nothing (git status stays clean, no tag, no token fetched). --apply fetches the token (token_fetch with the contents set) before its first write, writes the version files (version_write), the component's CHANGELOG from git-cliff and the README lines between <!-- release:start --> and <!-- release:end --> (decision D29 of the plan; a README without the markers is left alone and the output says so), makes one release commit `chore(<name>): release <tag>` on master, creates the tag, pushes both with the App token as an http.extraheader setting in the environment, and creates the GitHub Release as the App in the same run (--prerelease for a pre-release, unpublished with --draft, release notes from git-cliff, decision D28 of the plan); a repeated --apply finds the pushed tag and creates only what is missing. A commit outside every component releases nothing. tests/git-release/dry-run.sh builds a throwaway repository and checks the dry run end to end.",
-            "output": "bin/modules/git/release.sh, the entry in module.yaml and tests/git-release/dry-run.sh.",
+            "arguments": "Write app git release with the flags --dry-run, --apply, --draft and --pre <channel>. Both modes first load components.yaml, run check_minimum on HEAD and refuse on a red check. --dry-run prints, per released component, the next version, the tag, the files it would touch and the git-cliff notes, and changes nothing (git status stays clean, no tag, no token fetched). --apply fetches the token (token_fetch with the contents set) before its first write, writes the version files (version_write), the component's CHANGELOG from git-cliff and the README lines between <!-- release:start --> and <!-- release:end --> (decision D29 of the plan; a README without the markers is left alone and the output says so), makes one release commit `chore(<name>): release <tag>` on master, creates the tag, pushes both with the App token as an http.extraheader setting in the environment, and creates the GitHub Release as the App in the same run (--prerelease for a pre-release, unpublished with --draft, release notes from git-cliff, decision D28 of the plan); a repeated --apply finds the pushed tag and creates only what is missing. A commit outside every component releases nothing. tests/git-release/dry-run.sh builds a throwaway repository and checks the dry run end to end.",
+            "output": "bin/modules/git/release.sh and tests/git-release/dry-run.sh; the registration in module.yaml is the task T3.10.",
             "pattern": "bin/modules/git/lint-commit.sh: the layout of a command of the git domain",
             "target": "new"
           },
           "why": "The release is the heart of the workflow: one local command that makes the release commit, the tag and the GitHub Release as the App, with a dry run that shows exactly what apply would do.",
           "result": "The command app git release with dry run and apply that makes the release commit, the tag and the GitHub Release.",
-          "done": "The dry run on a throwaway repository prints the next version, the tag and the notes and leaves the working tree and the tags unchanged; the module registry and the script agree. The apply path is checked by the pilot of T3.8.",
+          "done": "The dry run on a throwaway repository prints the next version, the tag and the notes and leaves the working tree and the tags unchanged. The apply path is checked by the pilot of T3.8.",
           "fails": "A release would write before its token is fetched, a dry run would differ from apply, or a repeated apply would create a second commit or release.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D28",
@@ -1150,14 +1149,55 @@
             "CONCEPT-git-workflow-plugin:D41",
             "CONCEPT-git-workflow-plugin:D7",
             "CONCEPT-git-workflow-plugin:D15"
-          ]
+          ],
+          "findings": [
+            {
+              "file": "bin/modules/git/release.sh",
+              "line": 196,
+              "severity": "wrong result",
+              "summary": "with two components a failed push strands the earlier component's tag",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/release.sh",
+              "line": 196,
+              "severity": "wrong result",
+              "summary": "a pre-release tag on HEAD makes a stable run treat the component as pending",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/module.yaml",
+              "line": 1,
+              "severity": "style",
+              "summary": "the --pre values list disagrees with the code",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/release.sh",
+              "line": 134,
+              "severity": "convention",
+              "summary": "two raw git config calls for the identity",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/release.sh",
+              "line": 116,
+              "severity": "style",
+              "summary": "the remote slug helper is duplicated in promote.sh",
+              "state": "open"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T3.6.md",
+          "last_verify": {
+            "at": "2026-11-04T11:44:40Z",
+            "exit": 0
+          }
         },
         {
           "id": "T3.7",
           "title": "Write the promote command",
           "depends": [
-            "T3.2",
-            "T3.6"
+            "T3.2"
           ],
           "owner": "bash-author",
           "inputs": [
@@ -1178,8 +1218,7 @@
             {
               "scope": "bin/modules/git",
               "paths": [
-                "bin/modules/git/promote.sh",
-                "bin/modules/git/module.yaml"
+                "bin/modules/git/promote.sh"
               ]
             },
             {
@@ -1197,19 +1236,19 @@
             }
           ],
           "verify": {
-            "run": "bash tests/git-promote/ff.sh && bash ${BU_ROOT}/app lint modules",
+            "run": "bash -n bin/modules/git/promote.sh && bash tests/git-promote/ff.sh",
             "from": "environment fact: the dry run computes the fast-forward to the tag and a diverged release branch is refused"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
-            "arguments": "Write app git promote <tag> with --dry-run and --apply and register it in module.yaml. The release branch comes from RELEASE_BRANCH (decision D16 of the concept). Promote moves the release branch to the commit of the given release tag, never to the head of master; it refuses a tag that is not a release tag, and refuses when the move is not a fast-forward (no force, no reset). --dry-run prints the commit it would move to and changes nothing. --apply fetches the token (permission set contents) before its first write and pushes with the App token as an http.extraheader setting in the environment. When the release branch equals the main branch nothing is done and the output says so. tests/git-promote/ff.sh builds a throwaway repository with a bare remote and checks the dry run and the refusal of a diverged branch.",
-            "output": "bin/modules/git/promote.sh, the entry in module.yaml and tests/git-promote/ff.sh.",
+            "arguments": "Write app git promote <tag> with --dry-run and --apply. The release branch comes from RELEASE_BRANCH (decision D16 of the concept). Promote moves the release branch to the commit of the given release tag, never to the head of master; it refuses a tag that is not a release tag, and refuses when the move is not a fast-forward (no force, no reset). --dry-run prints the commit it would move to and changes nothing. --apply fetches the token (permission set contents) before its first write and pushes with the App token as an http.extraheader setting in the environment. When the release branch equals the main branch nothing is done and the output says so. tests/git-promote/ff.sh builds a throwaway repository with a bare remote and checks the dry run and the refusal of a diverged branch.",
+            "output": "bin/modules/git/promote.sh and tests/git-promote/ff.sh; the registration in module.yaml is the task T3.10.",
             "pattern": "bin/modules/git/lint-commit.sh: the layout of a command of the git domain",
             "target": "new"
           },
           "why": "Master carries the release commit and the release branch follows only by promote, so a commit pushed to master after a release can never reach the release branch.",
           "result": "The command app git promote that fast-forwards the release branch to a release tag.",
-          "done": "On a throwaway repository the dry run names the tag's commit as the target and a diverged release branch is refused; the module registry and the script agree. The push path is checked by the pilot of T3.8.",
+          "done": "On a throwaway repository the dry run names the tag's commit as the target and a diverged release branch is refused. The push path is checked by the pilot of T3.8.",
           "fails": "A promote would move the release branch to the head of master, or would force a diverged branch.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D27",
@@ -1217,7 +1256,89 @@
             "CONCEPT-git-workflow-plugin:D41",
             "CONCEPT-git-workflow-plugin:D52",
             "CONCEPT-git-workflow-plugin:D16"
-          ]
+          ],
+          "findings": [
+            {
+              "file": "bin/modules/git/promote.sh",
+              "line": 139,
+              "severity": "wrong result",
+              "summary": "the tracking ref of the release branch stays stale after a successful push",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/promote.sh",
+              "line": 41,
+              "severity": "style",
+              "summary": "tool_run in subshells repeats the image check on every call",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/promote.sh",
+              "line": 135,
+              "severity": "wrong result",
+              "summary": "any fetch failure is reported as a branch that may not exist yet",
+              "state": "open"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T3.7.md",
+          "last_verify": {
+            "at": "2026-11-04T11:44:53Z",
+            "exit": 0
+          }
+        },
+        {
+          "id": "T3.10",
+          "title": "Register the release and promote commands in the git module registry",
+          "depends": [
+            "T3.6",
+            "T3.7"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/module.yaml",
+              "why": "the registry the two commands join, with the entries of the existing commands as the form"
+            },
+            {
+              "ref": "bin/modules/git/release.sh",
+              "why": "the script of the release command, its flags and its description"
+            },
+            {
+              "ref": "bin/modules/git/promote.sh",
+              "why": "the script of the promote command, its flags and its description"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/module.yaml"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "the registry and the scripts agree and the dispatcher prints the usage of both commands",
+            "run": "bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git release --help | grep -q dry-run && bash ${BU_ROOT}/app git promote --help | grep -q dry-run"
+          },
+          "status": "done",
+          "brief": {
+            "arguments": "Add the commands release (script release.sh) and promote (script promote.sh) to bin/modules/git/module.yaml, each with its description and an example line in the form of the existing entries, and no other change to the file.",
+            "output": "The two entries in bin/modules/git/module.yaml; `bash ${BU_ROOT}/app lint modules` exits 0 and `bash ${BU_ROOT}/app git release --help` and `bash ${BU_ROOT}/app git promote --help` print the usage.",
+            "pattern": "bin/modules/git/module.yaml: the entries of the existing commands",
+            "target": "change"
+          },
+          "why": "The scripts of T3.6 and T3.7 are checked directly; the registry entry makes them commands of the dispatcher, which the pilot of T3.8 runs.",
+          "result": "The commands app git release and app git promote are registered and found by the dispatcher.",
+          "done": "The module registry and the two scripts agree and both commands print their usage through the dispatcher.",
+          "fails": "A command would exist as a script and stay unknown to app git, or the registry and the scripts would disagree.",
+          "carries": [],
+          "produces": [],
+          "consumes": [],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T3.10.md",
+          "last_verify": {
+            "at": "2026-11-04T11:45:00Z",
+            "exit": 0
+          }
         },
         {
           "id": "T3.8",
@@ -1225,7 +1346,8 @@
           "depends": [
             "T3.1",
             "T3.6",
-            "T3.7"
+            "T3.7",
+            "T3.10"
           ],
           "owner": "developer",
           "inputs": [
@@ -1270,8 +1392,7 @@
           "id": "T3.9",
           "title": "Write the Node lint command with Biome",
           "depends": [
-            "T3.1",
-            "T3.4"
+            "T3.1"
           ],
           "owner": "bash-author",
           "inputs": [
@@ -1282,14 +1403,6 @@
             {
               "ref": "bin/lib/tool.sh",
               "why": "the layout of a plugin library and how the plugin keeps tools out of the host path"
-            },
-            {
-              "ref": "bin/modules/git/token-service.mjs",
-              "why": "the Node file the linter has to pass today"
-            },
-            {
-              "ref": "package.json",
-              "why": "the root package whose devDependencies get Biome next to commitlint"
             }
           ],
           "writes": [
@@ -1303,7 +1416,77 @@
             {
               "scope": ".",
               "paths": [
-                "biome.json",
+                "biome.json"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "the script parses and is executable, biome.json is valid JSON and the registry and the script agree; the run on real files needs Biome and is the check of T3.11",
+            "run": "bash -n bin/modules/lint/node.sh && test -x bin/modules/lint/node.sh && jq -e . biome.json >/dev/null && bash ${BU_ROOT}/app lint modules"
+          },
+          "status": "done",
+          "brief": {
+            "arguments": "Write bin/modules/lint/node.sh and bin/modules/lint/module.yaml (domain lint with one command node; the plugin tier adds it to the lint domain of the framework, so the other lint commands keep their specs). The command runs Biome (decision D31 of the plan) over the *.js, *.mjs and *.cjs files in the modes of the lint commands of the framework (staged, changed, full and specific), through lint_run_generic of lib/lint.sh when it fits (check lib info), with the same report header and footer. Biome is run from node_modules/.bin/biome in the plugin root; when it is missing the command stops and the message says to run npm ci; module.yaml declares requires: [node]. Write biome.json in the plugin root with the recommended rules, ignoring node_modules. The dependency and the clean token service are the task T3.11.",
+            "output": "bin/modules/lint/node.sh, bin/modules/lint/module.yaml and biome.json; the registry and the script agree.",
+            "pattern": "/home/ohoeft/workspace/edotz.claude-code/bin/modules/lint/shell.sh: the layout of a lint command",
+            "target": "new"
+          },
+          "why": "The plugin now holds Node code (the token service) that the framework's lint commands do not check; one Biome command keeps it linted the same way as the shell scripts and the way the consuming projects already lint theirs.",
+          "result": "The lint command app lint node as a script and a registry entry, with the Biome configuration of the plugin.",
+          "done": "The command is syntactically correct and executable, biome.json is valid JSON, and the registry and the script agree; the run on real files is checked by T3.11.",
+          "fails": "The command would not load, or biome.json would be invalid, or the registry and the script would disagree.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D41"
+          ],
+          "findings": [
+            {
+              "file": "bin/modules/lint/module.yaml",
+              "line": 1,
+              "severity": "wrong result",
+              "summary": "the plugin lint domain shadows the framework listing, so app lint list shows one row",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/lint/node.sh",
+              "line": 34,
+              "severity": "wrong result",
+              "summary": "the strip pattern of ./ never matched, so only the first entry lost it",
+              "state": "open"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T3.9.md",
+          "last_verify": {
+            "at": "2026-11-04T11:44:56Z",
+            "exit": 0
+          }
+        },
+        {
+          "id": "T3.11",
+          "title": "Add Biome as a pinned devDependency and make the token service clean",
+          "depends": [
+            "T3.1",
+            "T3.4",
+            "T3.9"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/token-service.mjs",
+              "why": "the Node file the linter has to pass today"
+            },
+            {
+              "ref": "package.json",
+              "why": "the root package whose devDependencies get Biome next to commitlint"
+            },
+            {
+              "ref": "bin/modules/lint/node.sh",
+              "why": "the command that runs Biome and the only way the result is read"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
                 "package.json",
                 "package-lock.json"
               ]
@@ -1316,27 +1499,27 @@
             }
           ],
           "verify": {
-            "run": "npm ci --ignore-scripts >/dev/null 2>&1 && bash -n bin/modules/lint/node.sh && test -x bin/modules/lint/node.sh && bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app lint node full && t=$(mktemp -d) && printf 'var unused = 1\\nif (unused == 2) { debugger }\\n' > \"$t/bad.mjs\" && ! bash ${BU_ROOT}/app lint node specific \"$t/bad.mjs\" >/dev/null 2>&1; ec=$?; rm -rf \"$t\"; exit $ec",
-            "from": "environment fact: the real file passes, a file with known Biome findings fails, and the registry and the script agree"
+            "from": "a real file passes, a file with known Biome findings fails",
+            "run": "npm ci --ignore-scripts >/dev/null 2>&1 && bash -n bin/modules/lint/node.sh && test -x bin/modules/lint/node.sh && bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app lint node full && t=$(mktemp -d) && printf 'var unused = 1\\nif (unused == 2) { debugger }\\n' > \"$t/bad.mjs\" && ! bash ${BU_ROOT}/app lint node specific \"$t/bad.mjs\" >/dev/null 2>&1; ec=$?; rm -rf \"$t\"; exit $ec"
           },
           "status": "pending",
           "brief": {
-            "arguments": "Write bin/modules/lint/node.sh and bin/modules/lint/module.yaml (domain lint with the one command node; the plugin tier adds it to the lint domain of the framework, so the other lint commands keep their specs). The command runs Biome (decision D31 of the plan) over *.js, *.mjs and *.cjs files in the modes of app lint shell: staged (default), changed, full and specific <files>, through lint_run_generic of lib/lint.sh when it fits (check lib info), with the same report header and footer. Biome is run from node_modules/.bin/biome of the plugin root; when it is missing the command stops with a message that says to run npm ci; module.yaml declares requires: [node]. Add @biomejs/biome 2.6.4 as an exact devDependency to the root package.json (npm install --save-dev --save-exact, lockfile updated, scripts ignored) and write biome.json at the root with the recommended rules, ignoring node_modules. Bring bin/modules/git/token-service.mjs to a clean Biome run without changing what it does.",
-            "output": "bin/modules/lint/node.sh, bin/modules/lint/module.yaml, biome.json, the devDependency in package.json and package-lock.json, and a Biome-clean token-service.mjs; `bash ${BU_ROOT}/app lint node full` exits 0.",
-            "pattern": "/home/ohoeft/workspace/edotz.claude-code/bin/modules/lint/shell.sh: the layout of a lint command",
+            "arguments": "Add @biomejs/biome 2.6.4 as an exact devDependency of the root package.json (npm install --save-dev --save-exact --ignore-scripts, lockfile updated). Bring bin/modules/git/token-service.mjs clean under the biome.json of T3.9 without changing what it does. Run app lint node full and a throwaway file with known Biome findings through app lint node specific.",
+            "output": "the devDependency in package.json and package-lock.json and a Biome-clean token-service.mjs; `bash ${BU_ROOT}/app lint node full` exits 0.",
+            "pattern": "package.json: the root package whose devDependencies get Biome next to commitlint",
             "target": "change"
           },
           "why": "The plugin now holds Node code (the token service) that the framework's lint commands do not check; one Biome command keeps it linted the same way as the shell scripts and the way the consuming projects already lint theirs.",
-          "result": "A lint command app lint node that runs Biome over the Node files of the plugin in the usual modes.",
-          "done": "app lint node full exits 0 on the plugin as it stands, a throwaway file with known Biome findings makes app lint node specific exit non-zero, and the registry and the script agree.",
-          "fails": "Node files would go unlinted, or the command would pass a file with findings, or a host Biome of another version would give different results on two machines.",
+          "result": "Biome pinned at an exact version in the root package, and the token service passes the lint command.",
+          "done": "app lint node full exits 0 on the plugin as it stands and a throwaway file with known Biome findings makes app lint node specific exit non-zero.",
+          "fails": "The command would pass a file with findings, or a host Biome of another version would give different results on two machines.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D41"
           ]
         }
       ],
       "gate": {
-        "run": "(test -x bin/modules/git/token-service.mjs && node --check bin/modules/git/token-service.mjs && docker compose --env-file .env.defaults build token-service && bash tests/token-service/check.sh) && (bash -n bin/lib/token.sh && d=$(mktemp -d) && printf '#!/bin/sh\\necho devtoken\\n' > \"$d/gh\" && chmod +x \"$d/gh\" && PATH=\"$d:$PATH\" env -u GH_TOKEN PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/token.sh; declare -F token_fetch >/dev/null; declare -F token_drop >/dev/null; out=$(TOKEN_SERVICE_URL=http://127.0.0.1:9 token_fetch edotz/git-workflow-sandbox contents 2>&1) && exit 1; printf \"%s\" \"$out\" | grep -q \"service unreachable\"; test -z \"${GH_TOKEN:-}\"'; ec=$?; rm -rf \"$d\"; exit $ec) && (bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; t=$(mktemp -d); printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > \"$t/ok.yaml\"; printf \"components:\\n  - name: web\\n    workspace: w\\n    paths: [a]\\n\" > \"$t/both.yaml\"; printf \"components:\\n  - name: web\\n    paths: [a]\\n    colour: red\\n\" > \"$t/unknown.yaml\"; component_load \"$t/ok.yaml\"; test \"$(component_names)\" = object; test \"$(component_field object version)\" = yes; ! component_load \"$t/both.yaml\" 2>/dev/null; ! component_load \"$t/unknown.yaml\" 2>/dev/null; rm -rf \"$t\"') && (bash -n bin/lib/version.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/version.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"{\\\"name\\\":\\\"o\\\",\\\"version\\\":\\\"1.0.0\\\"}\\n\" > package.json; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v1.0.0; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; test \"$(version_next object)\" = 1.1.0; test \"$(version_next object rc)\" = 1.1.0-rc.1; version_write object 1.1.0; grep -q \"\\\"version\\\": \\\"1.1.0\\\"\\|\\\"version\\\":\\\"1.1.0\\\"\" package.json; test \"$(version_tag object 1.1.0)\" = v1.1.0; cd /; rm -rf \"$t\"') && (bash -n bin/lib/check.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/check.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    checks: [\\\"true\\\"]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v0.0.1; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; check_minimum object; echo b > b; git add b; git commit -q -m \"not conventional\"; ! check_minimum object 2>/dev/null; cd /; rm -rf \"$t\"') && (bash tests/git-release/dry-run.sh && bash ${BU_ROOT}/app lint modules) && (bash tests/git-promote/ff.sh && bash ${BU_ROOT}/app lint modules) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f) && (npm ci --ignore-scripts >/dev/null 2>&1 && bash -n bin/modules/lint/node.sh && test -x bin/modules/lint/node.sh && bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app lint node full && t=$(mktemp -d) && printf 'var unused = 1\\nif (unused == 2) { debugger }\\n' > \"$t/bad.mjs\" && ! bash ${BU_ROOT}/app lint node specific \"$t/bad.mjs\" >/dev/null 2>&1; ec=$?; rm -rf \"$t\"; exit $ec)"
+        "run": "(test -x bin/modules/git/token-service.mjs && node --check bin/modules/git/token-service.mjs && docker compose -f .docker/compose.token-service.yaml build && bash tests/token-service/check.sh) && (bash -n bin/lib/token.sh && d=$(mktemp -d) && printf '#!/bin/sh\\necho devtoken\\n' > \"$d/gh\" && chmod +x \"$d/gh\" && PATH=\"$d:$PATH\" env -u GH_TOKEN PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/token.sh; declare -F token_fetch >/dev/null; declare -F token_drop >/dev/null; out=$(TOKEN_SERVICE_URL=http://127.0.0.1:9 token_fetch edotz/git-workflow-sandbox contents 2>&1) && exit 1; printf \"%s\" \"$out\" | grep -q \"service unreachable\"; test -z \"${GH_TOKEN:-}\"'; ec=$?; rm -rf \"$d\"; exit $ec) && (bash -n bin/lib/component.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; t=$(mktemp -d); printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > \"$t/ok.yaml\"; printf \"components:\\n  - name: web\\n    workspace: w\\n    paths: [a]\\n\" > \"$t/both.yaml\"; printf \"components:\\n  - name: web\\n    paths: [a]\\n    colour: red\\n\" > \"$t/unknown.yaml\"; component_load \"$t/ok.yaml\"; test \"$(component_names)\" = object; test \"$(component_field object version)\" = yes; ! component_load \"$t/both.yaml\" 2>/dev/null; ! component_load \"$t/unknown.yaml\" 2>/dev/null; rm -rf \"$t\"') && (bash -n bin/lib/version.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/version.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"{\\\"name\\\":\\\"o\\\",\\\"version\\\":\\\"1.0.0\\\"}\\n\" > package.json; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    version_files: [package.json]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v1.0.0; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; test \"$(version_next object)\" = 1.1.0; test \"$(version_next object rc)\" = 1.1.0-rc.1; version_write object 1.1.0; grep -q \"\\\"version\\\": \\\"1.1.0\\\"\\|\\\"version\\\":\\\"1.1.0\\\"\" package.json; test \"$(version_tag object 1.1.0)\" = v1.1.0; cd /; rm -rf \"$t\"') && (bash -n bin/lib/check.sh && PLUGIN_ROOT=$PWD bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/component.sh; source bin/lib/check.sh; t=$(mktemp -d); cd \"$t\"; git init -q r; cd r; git config user.name t; git config user.email t@example.com; printf \"components:\\n  - name: object\\n    paths: [\\\".\\\"]\\n    checks: [\\\"true\\\"]\\n\" > components.yaml; git add .; git commit -q -m \"chore: init\"; git tag v0.0.1; echo a > a; git add a; git commit -q -m \"feat: add a\"; component_load components.yaml; check_minimum object; echo b > b; git add b; git commit -q -m \"not conventional\"; ! check_minimum object 2>/dev/null; cd /; rm -rf \"$t\"') && (bash -n bin/modules/git/release.sh && bash tests/git-release/dry-run.sh) && (bash -n bin/modules/git/promote.sh && bash tests/git-promote/ff.sh) && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git release --help | grep -q dry-run && bash ${BU_ROOT}/app git promote --help | grep -q dry-run) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f) && (bash -n bin/modules/lint/node.sh && test -x bin/modules/lint/node.sh && jq -e . biome.json >/dev/null && bash ${BU_ROOT}/app lint modules) && (npm ci --ignore-scripts >/dev/null 2>&1 && bash -n bin/modules/lint/node.sh && test -x bin/modules/lint/node.sh && bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app lint node full && t=$(mktemp -d) && printf 'var unused = 1\\nif (unused == 2) { debugger }\\n' > \"$t/bad.mjs\" && ! bash ${BU_ROOT}/app lint node specific \"$t/bad.mjs\" >/dev/null 2>&1; ec=$?; rm -rf \"$t\"; exit $ec)"
       }
     },
     {
@@ -1988,6 +2171,21 @@
       ],
       "reason": "lint chain named nine durable decisions that no task carries or dismisses; claude chose carry or dismissal by phase, for the developer to revise",
       "by": "claude"
+    },
+    {
+      "date": "2026-11-04",
+      "change": "T3.6, T3.7 and T3.9 keep only new files, the registration of release and promote becomes T3.10 and Biome with the clean token service becomes T3.11, the P3 gate follows the task verifies",
+      "affects": [
+        "P3",
+        "T3.6",
+        "T3.7",
+        "T3.8",
+        "T3.9",
+        "T3.10",
+        "T3.11"
+      ],
+      "reason": "plan ready refused T3.6 and T3.9: the entry check compares one brief target with every writable path, so a task cannot mix new and existing files; developer approved the split on 2026-11-04",
+      "by": "developer"
     }
   ],
   "dismissals": [
