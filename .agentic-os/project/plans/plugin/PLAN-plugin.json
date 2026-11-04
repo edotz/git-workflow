@@ -1131,15 +1131,15 @@
           },
           "status": "done",
           "brief": {
-            "arguments": "Write app git release with the flags --dry-run, --apply, --draft and --pre <channel>. Both modes first load components.yaml, run check_minimum on HEAD and refuse on a red check. --dry-run prints, per released component, the next version, the tag, the files it would touch and the git-cliff notes, and changes nothing (git status stays clean, no tag, no token fetched). --apply fetches the token (token_fetch with the contents set) before its first write, writes the version files (version_write), the component's CHANGELOG from git-cliff and the README lines between <!-- release:start --> and <!-- release:end --> (decision D29 of the plan; a README without the markers is left alone and the output says so), makes one release commit `chore(<name>): release <tag>` on master, creates the tag, pushes both with the App token as an http.extraheader setting in the environment, and creates the GitHub Release as the App in the same run (--prerelease for a pre-release, unpublished with --draft, release notes from git-cliff, decision D28 of the plan); a repeated --apply finds the pushed tag and creates only what is missing. A commit outside every component releases nothing. tests/git-release/dry-run.sh builds a throwaway repository and checks the dry run end to end.",
+            "arguments": "Write app git release with the flags --dry-run, --apply, --draft and --pre <channel>. Both modes first load components.yaml, run check_minimum on HEAD and refuse on a red check. --dry-run prints, per released component, the next version, the tag, the files it would touch and the git-cliff notes, and changes nothing (git status stays clean, no tag, no token fetched). --apply fetches the token (token_fetch with the contents set) before its first write, writes the version files (version_write), the component's CHANGELOG from git-cliff and the README lines between <!-- release:start --> and <!-- release:end --> (the lines read \"Version <version>\" and a release link; decision D29 of the plan; a README without the markers is left alone and the output says so), makes one release commit `chore(<name>): release <tag>` on master without the hooks of the repository (core.hooksPath=/dev/null: they run on the host and are not in the tool image) and restores the files it wrote when the commit fails, creates the tag, pushes the main branch and the tag with the App token through the credential helper of gh (-c credential.helper=!gh auth git-credential, which reads GH_TOKEN, so the token is on no command line), and creates the GitHub Release as the App, one component after the other: the commit, the push and the GitHub Release of a component come before the next component (--prerelease for a pre-release, unpublished with --draft, release notes from git-cliff, read from the existing tag without its own release commit, decision D28 of the plan); a repeated --apply, or one after a failed push, finds the tag on HEAD as pending (a stable tag, any tag with --pre) and creates only what is missing. A commit outside every component releases nothing. tests/git-release/dry-run.sh builds a throwaway repository and checks the dry run end to end.",
             "output": "bin/modules/git/release.sh and tests/git-release/dry-run.sh; the registration in module.yaml is the task T3.10.",
             "pattern": "bin/modules/git/lint-commit.sh: the layout of a command of the git domain",
             "target": "new"
           },
           "why": "The release is the heart of the workflow: one local command that makes the release commit, the tag and the GitHub Release as the App, with a dry run that shows exactly what apply would do.",
-          "result": "The command app git release with dry run and apply that makes the release commit, the tag and the GitHub Release.",
-          "done": "The dry run on a throwaway repository prints the next version, the tag and the notes and leaves the working tree and the tags unchanged. The apply path is checked by the pilot of T3.8.",
-          "fails": "A release would write before its token is fetched, a dry run would differ from apply, or a repeated apply would create a second commit or release.",
+          "result": "The command app git release with dry run and apply that makes the release commit without repository hooks, the tag, the push and the GitHub Release as the App.",
+          "done": "The dry run on a throwaway repository prints the next version, the tag and the notes and leaves the working tree and the tags unchanged. The apply path was run by the pilot of T3.8 (notes/pilot-release.md): release commit, tag, push and GitHub Release by the App, a repeated apply that creates nothing, and the recovery after a failed push.",
+          "fails": "A release would write before its token is fetched, a dry run would differ from apply, or a repeated apply would create a second commit or release, or a failed commit would leave the written files behind.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D28",
             "CONCEPT-git-workflow-plugin:D30",
@@ -1156,35 +1156,35 @@
               "line": 196,
               "severity": "wrong result",
               "summary": "with two components a failed push strands the earlier component's tag",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/release.sh",
               "line": 196,
               "severity": "wrong result",
               "summary": "a pre-release tag on HEAD makes a stable run treat the component as pending",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/module.yaml",
               "line": 1,
               "severity": "style",
               "summary": "the --pre values list disagrees with the code",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/release.sh",
               "line": 134,
               "severity": "convention",
               "summary": "two raw git config calls for the identity",
-              "state": "open"
+              "state": "dismissed"
             },
             {
               "file": "bin/modules/git/release.sh",
               "line": 116,
               "severity": "style",
               "summary": "the remote slug helper is duplicated in promote.sh",
-              "state": "open"
+              "state": "dismissed"
             }
           ],
           "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T3.6.md",
@@ -1263,21 +1263,21 @@
               "line": 139,
               "severity": "wrong result",
               "summary": "the tracking ref of the release branch stays stale after a successful push",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/promote.sh",
               "line": 41,
               "severity": "style",
               "summary": "tool_run in subshells repeats the image check on every call",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/promote.sh",
               "line": 135,
               "severity": "wrong result",
               "summary": "any fetch failure is reported as a branch that may not exist yet",
-              "state": "open"
+              "state": "accepted"
             }
           ],
           "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T3.7.md",
@@ -1372,7 +1372,7 @@
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f",
             "from": "environment fact: the note holds the two named sections"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "Start the token service with the sandbox key mounted, make the sandbox repository a pilot single repository (components.yaml with one component at the root, a package.json, the README markers, conventional commits), run app git release --dry-run, then --apply, then app git promote on the resulting tag with a release branch set. Check that the release commit, the tag and the GitHub Release exist, that the GitHub Release was created by the App, that a repeated --apply creates nothing, and that the release branch sits on the tag. Write what you ran and saw.",
             "output": "A note with the sections Repository (the pilot setup) and Result (version, tag, release commit, who created the GitHub Release, the repeated apply, the promote).",
@@ -1386,7 +1386,12 @@
           "carries": [
             "CONCEPT-git-workflow-plugin:D40",
             "CONCEPT-git-workflow-plugin:D52"
-          ]
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md",
+          "last_verify": {
+            "at": "2026-11-04T12:48:51Z",
+            "exit": 0
+          }
         },
         {
           "id": "T3.9",
@@ -1444,14 +1449,14 @@
               "line": 1,
               "severity": "wrong result",
               "summary": "the plugin lint domain shadows the framework listing, so app lint list shows one row",
-              "state": "open"
+              "state": "dismissed"
             },
             {
               "file": "bin/modules/lint/node.sh",
               "line": 34,
               "severity": "wrong result",
               "summary": "the strip pattern of ./ never matched, so only the first entry lost it",
-              "state": "open"
+              "state": "accepted"
             }
           ],
           "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T3.9.md",
@@ -1502,7 +1507,7 @@
             "from": "a real file passes, a file with known Biome findings fails",
             "run": "npm ci --ignore-scripts >/dev/null 2>&1 && bash -n bin/modules/lint/node.sh && test -x bin/modules/lint/node.sh && bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app lint node full && t=$(mktemp -d) && printf 'var unused = 1\\nif (unused == 2) { debugger }\\n' > \"$t/bad.mjs\" && ! bash ${BU_ROOT}/app lint node specific \"$t/bad.mjs\" >/dev/null 2>&1; ec=$?; rm -rf \"$t\"; exit $ec"
           },
-          "status": "pending",
+          "status": "done",
           "brief": {
             "arguments": "Add @biomejs/biome 2.6.4 as an exact devDependency of the root package.json (npm install --save-dev --save-exact --ignore-scripts, lockfile updated). Bring bin/modules/git/token-service.mjs clean under the biome.json of T3.9 without changing what it does. Run app lint node full and a throwaway file with known Biome findings through app lint node specific.",
             "output": "the devDependency in package.json and package-lock.json and a Biome-clean token-service.mjs; `bash ${BU_ROOT}/app lint node full` exits 0.",
@@ -1515,7 +1520,12 @@
           "fails": "The command would pass a file with findings, or a host Biome of another version would give different results on two machines.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D41"
-          ]
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T3.11.md",
+          "last_verify": {
+            "at": "2026-11-04T12:48:50Z",
+            "exit": 0
+          }
         }
       ],
       "gate": {
@@ -1525,9 +1535,668 @@
     {
       "id": "P4",
       "title": "Daily loop and guards",
-      "state": "outlined",
+      "state": "detailed",
       "intent": "Build start, commit and pr, the aggregate status check, rules-sync with the STAGE switch, the pre-push guard and the adapted workflow-status and branch-cleanup (roadmap milestone m4-daily-loop).",
-      "tasks": []
+      "tasks": [
+        {
+          "id": "T4.1",
+          "title": "Write the check command: the minimum check of every component",
+          "depends": [
+            "T3.3",
+            "T3.5"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/lib/check.sh",
+              "why": "check_minimum, the check this command runs per component"
+            },
+            {
+              "ref": "bin/lib/component.sh",
+              "why": "component_load, component_names"
+            },
+            {
+              "ref": "bin/modules/git/promote.sh",
+              "why": "the layout of a command of the git domain"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/check.sh"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/git-check/run.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: a green repository passes, a repository with a non-conventional commit or a failing declared check fails, and the output names the component",
+            "run": "bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh"
+          },
+          "status": "pending",
+          "why": "The aggregate status check on a PR and the pre-push guard must run the same check the release requires, from one command, so the three cannot disagree (decision D41 of the plan).",
+          "result": "The command app git check that runs check_minimum for every component, or for the one named.",
+          "done": "On a throwaway repository with components.yaml the command exits 0 for conventional commits and passing checks, exits non-zero naming the component for a bad commit or a failing check, and writes nothing.",
+          "fails": "The pre-push guard or the PR check would run a different rule from the release, or a red component would be hidden behind a green one.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D32"
+          ],
+          "brief": {
+            "arguments": "Write app git check [component]: it loads components.yaml from the project root, runs check_minimum for the component named or for every component, prints one line per component (ok or the failure) and exits non-zero when any component is red. It writes nothing and fetches no token. tests/git-check/run.sh builds a throwaway repository with two components and checks the cases: all green, a commit that is not conventional, a failing declared check, an unknown component.",
+            "output": "bin/modules/git/check.sh and tests/git-check/run.sh; the registration in module.yaml is the task T4.7.",
+            "pattern": "bin/modules/git/promote.sh: the layout of a command of the git domain",
+            "target": "new"
+          },
+          "consumes": [
+            {
+              "from": "T3.3",
+              "name": "component_load",
+              "signature": "component_load <file>"
+            },
+            {
+              "from": "T3.5",
+              "name": "check_minimum",
+              "signature": "check_minimum <component>"
+            }
+          ]
+        },
+        {
+          "id": "T4.2",
+          "title": "Write the start command: a worktree and a branch from master",
+          "depends": [
+            "T3.3"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/lib/worktree.sh",
+              "why": "worktree_create and worktree_resolve_base_branch, the worktree operations this command uses"
+            },
+            {
+              "ref": "bin/modules/git/worktree.sh",
+              "why": "the existing worktree command and how it names branches"
+            },
+            {
+              "ref": "commitlint.config.mjs",
+              "why": "the types a branch name may start with"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/start.sh"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/git-start/run.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: start makes a worktree on a new branch of the right name from the up-to-date main branch and refuses a bad name or an existing branch",
+            "run": "bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh"
+          },
+          "status": "pending",
+          "why": "A developer should start work with one command and never think about how the change is incorporated (decision D8 of the concept).",
+          "result": "The command app git start that makes a worktree and a branch <type>/<name> from the main branch.",
+          "done": "On a throwaway repository start <type> <name> creates the worktree and the branch from the main branch, refuses a type outside the conventional types and refuses a branch that exists, and prints the path.",
+          "fails": "A branch would start from a stale master or with a name that the commit and PR rules reject later.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D8",
+            "CONCEPT-git-workflow-plugin:D41"
+          ],
+          "brief": {
+            "arguments": "Write app git start <type> <name>: the type is one of the conventional commit types of commitlint.config.mjs, the name is lower case with hyphens; it makes the branch <type>/<name> and its worktree from the main branch (MAIN_BRANCH) through worktree_create, prints the path of the worktree and refuses an existing branch. tests/git-start/run.sh checks it on a throwaway repository: a good start, a bad type, a bad name, an existing branch.",
+            "output": "bin/modules/git/start.sh and tests/git-start/run.sh; the registration in module.yaml is the task T4.7.",
+            "pattern": "bin/modules/git/worktree.sh: the layout of a command that uses the worktree library",
+            "target": "new"
+          },
+          "consumes": []
+        },
+        {
+          "id": "T4.3",
+          "title": "Write the commit command: a conventional message drafted by the provider",
+          "depends": [
+            "T4.1"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/lib/provider.sh",
+              "why": "provider_run_prompt and provider_available, how the host session drafts text"
+            },
+            {
+              "ref": "bin/modules/git/lint-commit.sh",
+              "why": "the lint every message passes"
+            },
+            {
+              "ref": "bin/lib/tool.sh",
+              "why": "tool_run, which runs the commit in the tool image"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/commit.sh"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/git-commit/run.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: a given message is linted and committed, a bad message is refused, and the drafted message is shown and committed only after the confirmation",
+            "run": "bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh"
+          },
+          "status": "pending",
+          "why": "A developer commits with a conventional message without writing it by hand, and no message reaches the history unseen (decisions D8, D10 and D18 of the concept).",
+          "result": "The command app git commit that stages the named paths, drafts or takes a conventional message, lints it and commits.",
+          "done": "With --message the command lints that message and commits; without it the command asks provider_run_prompt for a draft from the staged diff, shows it and commits only after the developer confirmed; a message that fails lint-commit is never committed.",
+          "fails": "A message would be committed that the conventional rule rejects, or a drafted message would be committed without the developer seeing it, or the plugin would call a provider binary directly.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D10",
+            "CONCEPT-git-workflow-plugin:D18",
+            "CONCEPT-git-workflow-plugin:D8"
+          ],
+          "brief": {
+            "arguments": "Write app git commit [--message <text>] [--yes] <paths>: it stages the paths named, takes the message from --message or asks provider_run_prompt for a conventional message from the staged diff (D18; the plugin calls no provider binary, and when no provider is available it says so and asks for --message), shows the message, lints it with the lint-commit command, asks the developer to confirm unless --yes is given with --message, and makes the commit through tool_run with the identity of the developer and without the hooks of the repository (decision D37 of the plan: the message was linted here). A refused lint or a declined confirmation commits nothing and leaves the index as it was. tests/git-commit/run.sh runs it with a stub provider command on a throwaway repository.",
+            "output": "bin/modules/git/commit.sh and tests/git-commit/run.sh; the registration in module.yaml is the task T4.7.",
+            "pattern": "bin/modules/git/release.sh: the layout of a command that commits through tool_run",
+            "target": "new"
+          },
+          "consumes": []
+        },
+        {
+          "id": "T4.4",
+          "title": "Write the pr command: push the branch and open the pull request as the developer",
+          "depends": [
+            "T4.1"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/release.sh",
+              "why": "the layout of a command that pushes and calls gh through tool_run"
+            },
+            {
+              "ref": "bin/lib/check.sh",
+              "why": "check_minimum, run before the pull request"
+            },
+            {
+              "ref": "bin/lib/tool.sh",
+              "why": "tool_run"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/pr.sh"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/git-pr/dry-run.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: the dry run prints the branch, the title and the body, and pr refuses the main branch and a red minimum check",
+            "run": "bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh"
+          },
+          "status": "pending",
+          "why": "A change reaches the main branch by a pull request the developer opens with one command, with the check already green (decision D8 of the concept).",
+          "result": "The command app git pr that pushes the branch and opens the pull request as the developer.",
+          "done": "On a throwaway repository the dry run prints the branch, the title taken from the commits and the body and changes nothing; pr refuses the main branch and a branch whose minimum check is red.",
+          "fails": "A pull request would be opened from the main branch, with a red check, or by the App instead of the developer.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D8",
+            "CONCEPT-git-workflow-plugin:D41"
+          ],
+          "brief": {
+            "arguments": "Write app git pr [--dry-run] [--draft]: it refuses the main branch, runs check_minimum for every component and refuses a red check, then pushes the current branch and opens the pull request with gh through tool_run as the developer (the developer login in GH_TOKEN, not the App token; the push uses -c credential.helper=!gh auth git-credential as release.sh does). The title is the subject of the only commit, or the branch name made readable when there are several; the body lists the commit subjects. --dry-run prints the branch, the title and the body and changes nothing. tests/git-pr/dry-run.sh checks the dry run, the refusal of the main branch and the refusal of a red check on a throwaway repository.",
+            "output": "bin/modules/git/pr.sh and tests/git-pr/dry-run.sh; the registration in module.yaml is the task T4.7.",
+            "pattern": "bin/modules/git/release.sh: the layout of a command that pushes and calls gh through tool_run",
+            "target": "new"
+          },
+          "consumes": [
+            {
+              "from": "T3.5",
+              "name": "check_minimum",
+              "signature": "check_minimum <component>"
+            }
+          ]
+        },
+        {
+          "id": "T4.5",
+          "title": "Write the rules library: the rulesets of the master, release and legacy branches",
+          "depends": [
+            "T3.2"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/branch-protection.sh",
+              "why": "the classic rules this library replaces and the declarative YAML it read"
+            },
+            {
+              "ref": "adapters/git/branch-protection.yaml",
+              "why": "the declaration the classic code read"
+            },
+            {
+              "ref": "bin/lib/token.sh",
+              "why": "the permission sets the token service knows"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/lib",
+              "paths": [
+                "bin/lib/rules.sh"
+              ]
+            },
+            {
+              "scope": "bin/config",
+              "paths": [
+                "bin/config/rulesets.yaml"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/git-rules/build.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: the master ruleset differs between development and production, the release and legacy rulesets carry the App as the only bypass, and an unknown stage is refused",
+            "run": "bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh"
+          },
+          "status": "pending",
+          "why": "Rulesets replace the classic branch protection and the Stage Guard, so the rules of a repository are one declared set the developer reads and the App applies (decisions D17, D26 and D31).",
+          "result": "A library that builds the three rulesets as GitHub ruleset JSON from one declaration and the STAGE switch.",
+          "done": "rules_json master development gives a ruleset without required checks, master production requires a pull request, the aggregate check and squash merge, release and legacy give pull request, linear history and the App as the only bypass actor, and an unknown name or stage is refused.",
+          "fails": "The development phase would require checks that block direct pushes, or the production rules would not require the aggregate check, or a human could push to the release branch.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D17",
+            "CONCEPT-git-workflow-plugin:D31",
+            "CONCEPT-git-workflow-plugin:D29",
+            "CONCEPT-git-workflow-plugin:D30"
+          ],
+          "brief": {
+            "arguments": "Write bin/lib/rules.sh with rules_load <file>, rules_json <name> <stage> and rules_names, and bin/config/rulesets.yaml with the three rulesets: master (stage development: no pull request and no required check, direct pushes allowed; stage production: pull request, the aggregate check named check, squash merge only, linear history), release (pull request, linear history, no deletion, no force push, the App as the only bypass actor) and legacy (the release rules for the branch patterns the project names). Every ruleset is plain GitHub ruleset JSON built with the library json functions; the stage comes from the setting STAGE, default development, and an unknown stage is refused. The App id is a placeholder the command fills from its configuration. tests/git-rules/build.sh checks the JSON of every name and stage with jq.",
+            "output": "bin/lib/rules.sh, bin/config/rulesets.yaml and tests/git-rules/build.sh.",
+            "pattern": "bin/lib/tool.sh: the layout of a plugin library",
+            "target": "new"
+          },
+          "consumes": [],
+          "produces": [
+            {
+              "name": "rules_load",
+              "signature": "rules_load <file>"
+            },
+            {
+              "name": "rules_json",
+              "signature": "rules_json <name> <stage>"
+            },
+            {
+              "name": "rules_names",
+              "signature": "rules_names"
+            }
+          ]
+        },
+        {
+          "id": "T4.6",
+          "title": "Write the rules-sync command: apply the rulesets as the App",
+          "depends": [
+            "T3.2",
+            "T4.5"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/lib/rules.sh",
+              "why": "rules_json and rules_names, the rulesets this command applies"
+            },
+            {
+              "ref": "bin/lib/token.sh",
+              "why": "token_fetch, the token with the administration set"
+            },
+            {
+              "ref": "bin/modules/git/branch-protection.sh",
+              "why": "the classic command this one replaces"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/rules-sync.sh"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/git-rules/sync.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: the dry run prints the rulesets it would create or update and changes nothing, and a repository outside the organisation is refused by the token service",
+            "run": "bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh"
+          },
+          "status": "pending",
+          "why": "The rulesets reach GitHub from one command with the App as the writer, in both phases (decisions D26 and D30 of the concept).",
+          "result": "The command app git rules-sync that creates or updates the rulesets of a repository.",
+          "done": "The dry run prints per ruleset whether it would be created or updated and sends nothing; the apply fetches the token with the administration set before its first write and creates or updates each ruleset by name; a second apply changes nothing.",
+          "fails": "The rulesets would be applied with a personal token, a repeated apply would create duplicates, or the master ruleset of the wrong stage would be applied.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D30",
+            "CONCEPT-git-workflow-plugin:D17"
+          ],
+          "brief": {
+            "arguments": "Write app git rules-sync [--dry-run|--apply] [--stage <stage>]: for the repository of the remote origin it builds the rulesets with rules_json, reads the existing rulesets of the repository through gh by name, and prints per ruleset create, update or unchanged. --apply fetches the token (permission set administration) before its first write and creates or updates the rulesets through the Rulesets API, never deleting a ruleset it did not name. tests/git-rules/sync.sh runs the dry run against a stub gh that returns canned ruleset lists and checks the three outcomes.",
+            "output": "bin/modules/git/rules-sync.sh and tests/git-rules/sync.sh; the registration in module.yaml is the task T4.7. branch-protection.sh stays until the retirement phase.",
+            "pattern": "bin/modules/git/promote.sh: the layout of a command that fetches a token and calls the API",
+            "target": "new"
+          },
+          "consumes": [
+            {
+              "from": "T3.2",
+              "name": "token_fetch",
+              "signature": "token_fetch <owner/repo> <permission-set>"
+            },
+            {
+              "from": "T4.5",
+              "name": "rules_json",
+              "signature": "rules_json <name> <stage>"
+            }
+          ]
+        },
+        {
+          "id": "T4.7",
+          "title": "Register the daily-loop commands in the git module registry",
+          "depends": [
+            "T4.1",
+            "T4.2",
+            "T4.3",
+            "T4.4",
+            "T4.6"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/module.yaml",
+              "why": "the registry the commands join, with the entries of release and promote as the form"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/module.yaml"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "the registry and the scripts agree and the dispatcher prints the usage of the five commands",
+            "run": "bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage"
+          },
+          "status": "pending",
+          "why": "The scripts of T4.1 to T4.6 are checked directly; the registry entries make them commands of the dispatcher.",
+          "result": "The commands app git check, start, commit, pr and rules-sync are registered and found by the dispatcher.",
+          "done": "The module registry and the five scripts agree and each command prints its usage through the dispatcher.",
+          "fails": "A command would exist as a script and stay unknown to app git, or the registry and the scripts would disagree.",
+          "carries": [],
+          "brief": {
+            "arguments": "Add the commands check, start, commit, pr and rules-sync to bin/modules/git/module.yaml, each with its description, requires, an example line and the arguments of its script, in the form of the entries of release and promote, and no other change to the file.",
+            "output": "The five entries in bin/modules/git/module.yaml; lint modules exits 0 and each command prints its usage through the dispatcher.",
+            "pattern": "bin/modules/git/module.yaml: the entries of the existing commands",
+            "target": "change"
+          },
+          "consumes": []
+        },
+        {
+          "id": "T4.8",
+          "title": "Replace the status checks workflow with one aggregate check",
+          "depends": [
+            "T4.1"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": ".github/workflows/status-checks.yml",
+              "why": "the generated workflow this task replaces"
+            },
+            {
+              "ref": "commitlint.config.mjs",
+              "why": "the commit rule the job applies"
+            },
+            {
+              "ref": "bin/lib/check.sh",
+              "why": "check_minimum, whose two steps the job repeats"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".github/workflows",
+              "paths": [
+                ".github/workflows/status-checks.yml"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: the workflow is valid YAML, has the one job named check and no Stage Guard",
+            "run": "yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml"
+          },
+          "status": "pending",
+          "why": "The master ruleset requires one aggregate check, and the only GitHub Action keeps the PR checks (decisions D19 and D45 of the concept).",
+          "result": "A static status-checks.yml with one job named check that lints the commits of the pull request and runs the checks of components.yaml.",
+          "done": "The workflow is valid YAML, has the one job check on pull requests, no stage-guard job and no generated-file header.",
+          "fails": "The ruleset would wait for a check that no job reports, or the job would run a second definition of the checks that drifts from components.yaml.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D19"
+          ],
+          "consumes": []
+        },
+        {
+          "id": "T4.9",
+          "title": "Write the pre-push guard hook",
+          "depends": [
+            "T4.1"
+          ],
+          "owner": "hook-author",
+          "inputs": [
+            {
+              "ref": "bin/hooks/commit-msg/conventional",
+              "why": "the form of a delegating hook script of the plugin"
+            },
+            {
+              "ref": "bin/hooks/hooks.yaml",
+              "why": "the key pre-push the plugin registers"
+            },
+            {
+              "ref": "adapters/git/hooks/hooks.yaml",
+              "why": "how git fires the key"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/hooks",
+              "paths": [
+                "bin/hooks/pre-push/minimum-check"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: the hook is executable, registered under the key pre-push and calls app git check",
+            "run": "test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh"
+          },
+          "status": "pending",
+          "why": "A broken direct push is found on the developer machine at once, and no GitHub Action runs on push (decision D54 of the concept).",
+          "result": "A pre-push hook that runs app git check and blocks the push when a component is red.",
+          "done": "The hook script exists under the key pre-push, runs the check command, exits non-zero when the check is red and passes the push otherwise.",
+          "fails": "A red direct push would reach master, or the hook would block every push because it cannot find the command.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D54"
+          ],
+          "consumes": []
+        },
+        {
+          "id": "T4.10",
+          "title": "Adapt workflow-status to squash merge and promote",
+          "depends": [
+            "T4.1"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/workflow-status.sh",
+              "why": "the script to adapt"
+            },
+            {
+              "ref": "bin/lib/component.sh",
+              "why": "component_names, the components the status reports per tag"
+            },
+            {
+              "ref": "bin/modules/git/promote.sh",
+              "why": "how the release branch and the tag relate"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/workflow-status.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: the status names the latest release tag, the commits since it and where the release branch stands",
+            "run": "bash -n bin/modules/git/workflow-status.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git -C $t/r tag v0.1.0 && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'feat: a' && (cd $t/r && PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-status.sh 2>/dev/null | jq -e '.latest_release == \"v0.1.0\" and .unreleased_commits == 1' >/dev/null); ec=$?; rm -rf $t; exit $ec )"
+          },
+          "status": "pending",
+          "why": "After squash merge and promote the status must report releases and the release branch, not the retired release-please and Stage Guard state (decision D25 of the concept).",
+          "result": "workflow-status reports the latest release tag, the unreleased commits and the release branch position.",
+          "done": "On a throwaway repository the JSON names the latest release tag, the number of commits since it and whether the release branch sits on the tag.",
+          "fails": "The status would still talk about release-please pull requests or compare branches in a way that squash merge makes wrong.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D41"
+          ],
+          "brief": {
+            "arguments": "Change workflow-status.sh: drop the release-please and Stage Guard data, add per component the latest release tag, the number of commits since it and the position of the release branch (RELEASE_BRANCH) against the tag (on it, behind it, absent), keep the JSON output form. The run uses git through tool_run.",
+            "output": "bin/modules/git/workflow-status.sh with the new fields in its JSON.",
+            "pattern": "bin/modules/git/workflow-status.sh: the script itself",
+            "target": "change"
+          },
+          "consumes": []
+        },
+        {
+          "id": "T4.11",
+          "title": "Adapt branch-cleanup to squash merge",
+          "depends": [
+            "T4.1"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/branch-cleanup.sh",
+              "why": "the script to adapt"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules/git",
+              "paths": [
+                "bin/modules/git/branch-cleanup.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: a branch whose change landed by squash merge is listed as merged although git does not see it as merged",
+            "run": "bash -n bin/modules/git/branch-cleanup.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && cd $t/r && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x' && git checkout -q master && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x (#1)' && (PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/branch-cleanup.sh 2>/dev/null | grep -q 'feat/x'); ec=$?; cd /; rm -rf $t; exit $ec )"
+          },
+          "status": "pending",
+          "why": "A branch that was squash merged is no ancestor of master, so a cleanup that asks git branch --merged never finds it (decision D25 of the concept).",
+          "result": "branch-cleanup lists squash-merged branches as safe to delete.",
+          "done": "On a throwaway repository a branch whose tree changes are all in master by a squash commit is listed as merged and safe to delete, and an unmerged branch is not.",
+          "fails": "Squash-merged branches would pile up as stale, or a branch with unmerged work would be listed as safe to delete.",
+          "carries": [],
+          "brief": {
+            "arguments": "Change branch-cleanup.sh: treat a branch as merged also when git cherry against the main branch shows no commit that is not applied or when the pull request of the branch is merged (gh pr list --state merged --head <branch> through tool_run when a token or login exists), keep the safety checks and the interactive form, and never delete a branch with unmerged work.",
+            "output": "bin/modules/git/branch-cleanup.sh with the squash-merge detection.",
+            "pattern": "bin/modules/git/branch-cleanup.sh: the script itself",
+            "target": "change"
+          },
+          "consumes": []
+        },
+        {
+          "id": "T4.12",
+          "title": "Run the daily loop in the sandbox",
+          "depends": [
+            "T4.7",
+            "T4.8",
+            "T4.9",
+            "T4.10",
+            "T4.11"
+          ],
+          "owner": "developer",
+          "inputs": [
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/pilot-release.md",
+              "why": "the form of a pilot note and the sandbox setup it started from"
+            },
+            {
+              "ref": "docker-compose.yaml",
+              "why": "starts the token service with the sandbox key mounted"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                ".agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: the note records the rulesets, a start, commit and pr, the aggregate check and the guard",
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f"
+          },
+          "status": "pending",
+          "why": "The gate of m4-daily-loop asks that the PR gate with the aggregate check is required and the rulesets are applied with the App as bypass actor; the earlier checks cannot reach GitHub.",
+          "result": "A note that records the daily loop and the rulesets in the sandbox repository.",
+          "done": "The note names the repository and the result: rules-sync applied with the App, a change made with start, commit and pr, the aggregate check required and green, the squash merge, and a red direct push stopped by the pre-push guard.",
+          "fails": "The rulesets, the aggregate check name and the squash merge, which the earlier checks cannot reach without GitHub, would first run in a consuming project.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D8",
+            "CONCEPT-git-workflow-plugin:D54"
+          ],
+          "consumes": [],
+          "brief": {
+            "arguments": "Start the token service with the sandbox key mounted, run app git rules-sync --dry-run and --apply with STAGE=production on the sandbox repository, make a change with app git start, commit and pr, check that the aggregate check named check is required and green and that the PR is squash merged, then run rules-sync --apply with STAGE=development and check that a direct push is accepted, install the hooks and check that a red direct push is stopped by the pre-push guard. Write what you ran and saw.",
+            "output": "A note with the sections Repository and Result.",
+            "pattern": "pilot-release.md: the form of a pilot note",
+            "target": "new"
+          }
+        }
+      ],
+      "gate": {
+        "run": "(bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh) && (bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh) && (bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh) && (bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh) && (bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh) && (bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh) && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage) && (yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml) && (test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh) && (bash -n bin/modules/git/workflow-status.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git -C $t/r tag v0.1.0 && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'feat: a' && (cd $t/r && PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-status.sh 2>/dev/null | jq -e '.latest_release == \"v0.1.0\" and .unreleased_commits == 1' >/dev/null); ec=$?; rm -rf $t; exit $ec )) && (bash -n bin/modules/git/branch-cleanup.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && cd $t/r && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x' && git checkout -q master && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x (#1)' && (PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/branch-cleanup.sh 2>/dev/null | grep -q 'feat/x'); ec=$?; cd /; rm -rf $t; exit $ec )) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f)"
+      }
     },
     {
       "id": "P5",
@@ -1912,6 +2581,56 @@
       "date": "2026-11-04",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D37",
+      "question": "Does the release commit run the hooks of the repository",
+      "chosen": "No: release.sh makes the release commit with core.hooksPath=/dev/null in the tool container, because the hooks of a repository run on the host (the pre-commit hook calls agentic-os) and are not in the tool image; the message is generated and conventional and the minimum check linted the commits before; a failed commit restores the files the release wrote",
+      "reason": "The first pilot apply in the sandbox stopped at the release commit on the hook; developer decision on 2026-11-04",
+      "by": "developer",
+      "date": "2026-11-04",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D38",
+      "question": "What app git commit does",
+      "chosen": "commit stages the named paths, takes the message from --message or asks provider_run_prompt of the host session for a conventional message from the staged diff, shows it, lints it with lint-commit and commits only after the developer confirmed; the plugin calls no provider binary (concept D10 and D18)",
+      "reason": "Developer answer of 2026-11-04 to the question what commit does in P4",
+      "by": "developer",
+      "date": "2026-11-04",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D39",
+      "question": "Who acts in app git start and app git pr",
+      "chosen": "start makes a worktree and the branch <type>/<name> from the main branch; pr runs the minimum check, pushes the branch and opens the pull request with gh as the developer, with the developer login and not the App token; the squash merge is the developer's",
+      "reason": "Developer answer of 2026-11-04",
+      "by": "developer",
+      "date": "2026-11-04",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D40",
+      "question": "What app git rules-sync applies",
+      "chosen": "Three rulesets from one YAML: the master ruleset with the STAGE switch (development: direct pushes, no checks; production: pull request, the aggregate check named check, squash merge), the release-branch ruleset and the legacy-branch ruleset (pull request, linear history, the App as the only bypass actor), applied as the App with the administration permission set; branch-protection.sh and its classic code stay until the retirement phase",
+      "reason": "Developer answer of 2026-11-04",
+      "by": "developer",
+      "date": "2026-11-04",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D41",
+      "question": "Where the check list of the PR gate and the pre-push guard comes from",
+      "chosen": "One definition: the checks field of components.yaml with the commit lint of the commits since the last tag. app git check runs it for the pre-push hook and for the developer; the aggregate job check of status-checks.yml reads the same components.yaml and runs the same two steps in the runner itself, because a consuming project's runner has neither agentic-os nor this plugin",
+      "reason": "Developer chose components.yaml as the single definition on 2026-11-04; the runner detail is the orchestrator's reading and is for the developer to confirm",
+      "by": "developer",
+      "date": "2026-11-04",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -2186,54 +2905,47 @@
       ],
       "reason": "plan ready refused T3.6 and T3.9: the entry check compares one brief target with every writable path, so a task cannot mix new and existing files; developer approved the split on 2026-11-04",
       "by": "developer"
+    },
+    {
+      "date": "2026-11-04",
+      "change": "T3.6 brief, done, result and fails follow what the pilot proved: no repository hooks for the release commit, files restored on failure, push through the credential helper of gh, one component at a time, notes from the tag; D37 records the hook decision",
+      "affects": [
+        "T3.6",
+        "D37"
+      ],
+      "reason": "The pilot of T3.8 ran the apply path and showed four differences from the brief; developer approved the amendment on 2026-11-04",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-04",
+      "change": "P4 detailed with the tasks T4.1 to T4.12 and its gate; decisions D38 to D41 recorded; the dismissals of D8, D10, D17, D18, D19, D31 and D54 removed because P4 tasks carry them",
+      "affects": [
+        "P4",
+        "T4.1",
+        "T4.2",
+        "T4.3",
+        "T4.4",
+        "T4.5",
+        "T4.6",
+        "T4.7",
+        "T4.8",
+        "T4.9",
+        "T4.10",
+        "T4.11",
+        "T4.12",
+        "D38",
+        "D39",
+        "D40",
+        "D41"
+      ],
+      "reason": "Developer asked to detail P4 here by amend and answered the four design questions on 2026-11-04; D41 holds the runner detail for the developer to confirm",
+      "by": "developer"
     }
   ],
   "dismissals": [
     {
-      "ref": "CONCEPT-git-workflow-plugin:D10",
-      "reason": "P3 has no LLM step: the release notes come from git-cliff alone (plan decision D28)",
-      "by": "claude",
-      "date": "2026-11-03"
-    },
-    {
-      "ref": "CONCEPT-git-workflow-plugin:D18",
-      "reason": "P3 has no LLM step, so nothing runs through provider_run_prompt yet (plan decision D28)",
-      "by": "claude",
-      "date": "2026-11-03"
-    },
-    {
-      "ref": "CONCEPT-git-workflow-plugin:D8",
-      "reason": "The ease of daily development is the goal of phase P4 (daily loop and guards), outlined and detailed in a later amend",
-      "by": "claude",
-      "date": "2026-11-04"
-    },
-    {
       "ref": "CONCEPT-git-workflow-plugin:D14",
       "reason": "The purpose of the whole concept, realised by phases P3 to P6 together; no single task carries it",
-      "by": "claude",
-      "date": "2026-11-04"
-    },
-    {
-      "ref": "CONCEPT-git-workflow-plugin:D17",
-      "reason": "The STAGE switch and the end of the Stage Guard belong to phase P6 (retire the old approach), outlined only",
-      "by": "claude",
-      "date": "2026-11-04"
-    },
-    {
-      "ref": "CONCEPT-git-workflow-plugin:D19",
-      "reason": "Removing the old CI callables and generated callers belongs to phase P6 (retire the old approach), outlined only",
-      "by": "claude",
-      "date": "2026-11-04"
-    },
-    {
-      "ref": "CONCEPT-git-workflow-plugin:D31",
-      "reason": "Legacy branch rules belong to phase P4 or later and the behaviour for App releases on a legacy branch is unconfirmed; the sandbox pilot of T3.8 does not cover it",
-      "by": "claude",
-      "date": "2026-11-04"
-    },
-    {
-      "ref": "CONCEPT-git-workflow-plugin:D54",
-      "reason": "The pre-push guard hook belongs to phase P4 (daily loop and guards), outlined only; the check it runs is check_minimum of T3.5",
       "by": "claude",
       "date": "2026-11-04"
     }
