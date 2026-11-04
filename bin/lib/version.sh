@@ -42,10 +42,10 @@ _version_bump() {
   for dir in "${dirs[@]}"; do
     args+=(--include-path "${dir}/**")
   done
-  out=$(tool_run "${args[@]}" </dev/null) || die "version: git-cliff failed for the component ${name}"
+  out=$(tool_run "${args[@]}" </dev/null) || die_with "$BU_EXIT_CONFIG" "version: git-cliff failed for the component ${name}"
   out="${out#"${prefix}"v}"
   if ! version_valid "$out"; then
-    die "version: git-cliff gave no version for the component ${name}: '${out}'"
+    die_with "$BU_EXIT_CONFIG" "version: git-cliff gave no version for the component ${name}: '${out}'"
   fi
   _VERSION_BUMPED="$out"
   return 0
@@ -112,8 +112,9 @@ _version_php_render() {
 #   $1 - component name
 #   $2 - channel, optional: lower case letters (alpha, beta, rc)
 # Returns: the version on stdout; status 1 and no output when no commit of the component is newer than its latest tag
-# Exits: 2 on a missing or invalid argument, 3 for a component without versions, 1 when git-cliff fails or the
-#        pre-release has the wrong shape
+# Exits: 2 on a missing or invalid argument, 3 for a component without versions, a failing git-cliff, a git-cliff
+#        result without a version and a pre-release of the wrong shape; never 1, so a caller tells an error from
+#        the status 1 of no change
 # Example: version_next object rc
 version_next() {
   local name="${1:-}" channel="${2:-}"
@@ -157,7 +158,7 @@ version_next() {
   fi
   local shape_re="^[0-9]+\\.[0-9]+\\.[0-9]+-${channel}\\.[0-9]+\$"
   if [[ ! "$counted" =~ $shape_re ]]; then
-    die "version_next: expected X.Y.Z-${channel}.N from git-cliff, got '${counted}' (base ${base}, latest tag ${latest})"
+    die_with "$BU_EXIT_CONFIG" "version_next: expected X.Y.Z-${channel}.N from git-cliff, got '${counted}' (base ${base}, latest tag ${latest})"
   fi
   printf '%s\n' "$counted"  # out:return
   return 0
