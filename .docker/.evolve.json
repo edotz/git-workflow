@@ -1,0 +1,7 @@
+{
+  "claude": {
+    "context_file": ".agentic-os/adapters/claude/templates/rules/docker.md",
+    "purpose": "Container images of the git-workflow plugin: the pinned tool image and the token service image, one Dockerfile with a stage per image, pins from .env.defaults and .env",
+    "scope_trigger": ".docker/**"
+  }
+}
