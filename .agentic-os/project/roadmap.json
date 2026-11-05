@@ -23,7 +23,7 @@
           "id": "m3-release-core",
           "name": "Release core",
           "gate": "A pilot single repo releases locally with commit, tag and GitHub Release by the App, and promote fast-forwards the release branch to the tag.",
-          "status": "active"
+          "status": "done"
         },
         {
           "id": "m4-daily-loop",
@@ -179,6 +179,14 @@
         "m3-release-core"
       ],
       "reason": "P3 of PLAN-plugin, the release core, is detailed and its first tasks are under way: the token service, the component library and the token, version and check libraries"
+    },
+    {
+      "date": "2026-11-04",
+      "change": "Changed milestone m3-release-core: status",
+      "affects": [
+        "m3-release-core"
+      ],
+      "reason": "The pilot of T3.8 in the sandbox met the gate on 2026-11-04: release commit, tag and the GitHub Release by the App, a repeated apply that creates nothing, and promote moving the release branch to the tag (release v0.1.0 and v0.2.0); all 11 tasks of P3 are done"
     }
   ]
 }
