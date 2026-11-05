@@ -2,7 +2,6 @@
 **/*.idea/
 **/.history/
 **/*.env
-!**/.github/workflow.env
 !**/*.md
 **/*.dist
 **/*.cache
@@ -38,3 +37,6 @@ debug.log*
 
 # node
 node_modules/
+
+# planning locks of the project root files
+.agentic-os/project/*.json.lock
