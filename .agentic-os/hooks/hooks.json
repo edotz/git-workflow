@@ -80,6 +80,10 @@
     {
       "name": "pre-commit/scope-checks",
       "enabled": false
+    },
+    {
+      "name": "pre-push/minimum-check",
+      "enabled": true
     }
   ],
   "claude": []

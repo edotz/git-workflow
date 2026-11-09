@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# aos-hook: output=none advisory=false default=on
+set -euo pipefail
+source "${BU_ROOT}/lib/core.sh"
+if [[ ! -f "${PROJECT_ROOT}/components.yaml" ]]; then
+  exit 0
+fi
+if [[ -z "${PLUGIN_ROOT:-}" ]]; then
+  die_with "$BU_EXIT_USAGE" "PLUGIN_ROOT is not set"
+fi
+exec bash "${PLUGIN_ROOT}/bin/modules/git/check.sh"
