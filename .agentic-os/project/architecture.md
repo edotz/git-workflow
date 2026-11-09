@@ -31,7 +31,7 @@ The root declaration with the trigger Dockerfile matches no file since the Docke
 - github.sh and worktree.sh stay plugin-local by design, not in the framework lib. Reason: the developer's answer.
 - The module.yaml-per-domain layout is a framework requirement. Reason: the developer's answer.
 - Heredoc templates and the types single, monorepo and package are inherited from the framework and were not re-decided (developer's answer). The concept shrinks workflow-setup to config validation and `status-checks.yml`, and replaces the merge-commit-only branch protection by rulesets with squash merge in the production phase. Evidence: bin/modules/git/templates/*.sh, workflow-setup.sh, templates/branch-protection.sh.
-- The generated status-checks.yml stays the pull-request check; the callable status-checks workflow is not the replacement (developer's answer; .github/workflows/status-checks.yml, _callable-status-checks.yml). Its header names workflow.env as the source, which goes with the file; the plan makes it a static file with one job named check (PLAN-plugin.md:331).
+- The generated status-checks.yml stays the pull-request check; the callable status-checks workflow is deleted (developer's answer; .github/workflows/status-checks.yml). Its header names workflow.env as the source, which goes with the file; the plan makes it a static file with one job named check (PLAN-plugin.md:331).
 - vscode-setup prefers the vscode-server Project Manager path over the native one. Reason: the team works in WSL and remote (vscode-setup.sh, vscode-teardown.sh).
 - Commitlint is installed per plugin root and run from node_modules/.bin. Reason: the lockfile pins the version (lint-commit.sh:16-19; developer's answer).
 - The ten commit types, the disabled subject-case rule and the subject length of 100 are the team convention (commitlint.config.mjs; developer's answer).
@@ -53,7 +53,7 @@ The root declaration with the trigger Dockerfile matches no file since the Docke
 - Commit messages are linted with `app git lint-commit <file>`; commitlint is installed with `npm install` in the plugin root (lint-commit.sh:17).
 - Lint: `bash ${BU_ROOT}/app lint all full` runs the declared linters (node, shell) and the framework checks; without `full` the mode is staged. Markdown and YAML files have no declared linter (.agentic-os/project.yaml:15-24).
 - Compose commands take `--env-file .env.defaults` and then `--env-file .env` when it exists (.env.defaults header).
-- CI: the job commit-lint uses `wagoid/commitlint-github-action@v6` with `commitlint.config.mjs` and `commitDepth: 1` (.github/workflows/_callable-status-checks.yml:20-34).
+- CI: the job commit-lint uses `wagoid/commitlint-github-action@v6` with `commitlint.config.mjs` and `commitDepth: 1` (.github/workflows/status-checks.yml:20-23).
 - Container: the tool image takes its base from IMAGE_BASE, has WORKDIR /workspace and carries git-cliff, splitsh-lite and gh pinned by version and checksum (.docker/Dockerfile:1-40; .env.defaults); the token-service image is node:22-bookworm-slim by digest, runs as user node and exposes port 8790 (.docker/Dockerfile:42-50).
 - Required status check names the git module knows: commit-lint, biome, php-cs-fixer, shellcheck, eslint (workflow-setup.sh:STATUS_CHECK_DISPLAY_NAMES).
 

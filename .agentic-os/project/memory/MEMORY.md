@@ -1,5 +1,5 @@
 ## Now
-- m6-retire-old: workflow.env, its templates, branch-protection.yaml and the four release callables are removed; left are _callable-status-checks.yml, the status-checks.yml header, workflow-setup and the readers of workflow.env, and the classic protection code
+- m6-retire-old: workflow.env, its templates, branch-protection.yaml and the four release callables are removed; left are the status-checks.yml header, workflow-setup and the readers of workflow.env, and the classic protection code
 - m4-daily-loop: P4 detailed as T4.1 to T4.13; next T4.1, T4.2, T4.5, then T4.3, T4.4, T4.6, T4.7; T4.13 waits for the agentic-os check of how a plugin ships script commands; the pilot T4.12 is the developer's
 
 ## Log
