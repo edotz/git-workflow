@@ -269,7 +269,7 @@ Build start, commit and pr, the aggregate status check, rules-sync with the STAG
 | Adapt branch-cleanup to squash merge | T4.11 | bash-author | T4.1, T4.14 | pending |
 | Run the daily loop in the sandbox | T4.12 | developer | T4.7, T4.8, T4.9, T4.10, T4.11, T4.13 | pending |
 | Author the git slash commands of the plugin in the plugin tier | T4.13 | dynamic-author | T4.7 | pending |
-| Take the branch settings from the project .env and reduce workflow-setup to validate | T4.14 | bash-author | - | pending |
+| Take the branch settings from the project .env and reduce workflow-setup to validate | T4.14 | bash-author | - | done |
 
 **Write the check command: the minimum check of every component** (T4.1)
 - Why: The aggregate status check on a PR and the pre-push guard must run the same check the release requires, from one command, so the three cannot disagree (decision D41 of the plan).

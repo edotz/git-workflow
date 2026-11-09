@@ -2329,7 +2329,7 @@
             "from": "environment fact: no script reads workflow.env or a PLUGIN_ branch key any more, the dead workflow-setup functions are gone, worktree_resolve_base_branch returns the GIT_WORKFLOW_MAIN_BRANCH value and master without it, workflow-setup validate passes with the settings and --apply is refused, and the promote and release tests pass",
             "run": "for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\\.env|generate_branch_protection|generate_workflow_callers|generate_release_please_config|apply_branch_protection|init_workflow_env|check_preflight|load_workflow_env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/worktree.sh; test \"$(worktree_resolve_base_branch \"$1\")\" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test \"$(worktree_resolve_base_branch \"$1\")\" = master' _ \"$t\"; ec=$?; rm -rf \"$t\"; exit $ec) && (t=$(mktemp -d) && (cd $t && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_MAIN_BRANCH=trunk GIT_WORKFLOW_RELEASE_BRANCH=trunk bash $OLDPWD/bin/modules/git/workflow-setup.sh validate >/dev/null 2>&1 && ! PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-setup.sh --apply >/dev/null 2>&1); ec=$?; rm -rf $t; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The scripts that read the main branch still read the deleted workflow.env or a PLUGIN_ key, so the start command (T4.2) and the status and cleanup adaptations (T4.10, T4.11) would build on a setting that has no source (decisions D49 and D50 of this plan).",
           "result": "Every script of the plugin takes the main and release branch from GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH of the project-root .env, with master as the fallback, and workflow-setup is reduced to the validate entry point.",
           "done": "No plugin script or the env.defaults file names workflow.env or a PLUGIN_ branch key; the generate_, apply_branch_protection, init_workflow_env and preflight functions are gone from workflow-setup; worktree_resolve_base_branch gives the configured branch and master without one; workflow-setup validate passes and --apply is refused; the promote and release tests pass with the new names.",
@@ -2343,7 +2343,28 @@
             "pattern": "bin/modules/git/promote.sh: how a command reads a setting with a fallback",
             "target": "change"
           },
-          "consumes": []
+          "consumes": [],
+          "findings": [
+            {
+              "file": "bin/modules/git/workflow-setup.sh",
+              "line": 21,
+              "severity": "wrong result",
+              "summary": "the empty-value check of _validate_branch can never fail because the callers' :-master replaces an empty value",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/workflow-setup.sh",
+              "line": 28,
+              "severity": "style",
+              "summary": "an unknown flag such as --bogus is accepted silently by validate",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.14.md",
+          "last_verify": {
+            "at": "2026-11-09T11:48:23Z",
+            "exit": 0
+          }
         }
       ],
       "gate": {
