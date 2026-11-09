@@ -1,8 +1,9 @@
 ## Now
-- m6-retire-old: workflow.env, its templates, branch-protection.yaml and the four release callables are removed; left are the status-checks.yml header, workflow-setup and the readers of workflow.env, and the classic protection code
-- m4-daily-loop: P4 detailed as T4.1 to T4.13; next T4.1, T4.2, T4.5, then T4.3, T4.4, T4.6, T4.7; T4.13 waits for the agentic-os check of how a plugin ships script commands; the pilot T4.12 is the developer's
+- m6-retire-old: workflow.env, its templates, branch-protection.yaml, all callables and the old reference docs are removed; left are the status-checks.yml header (T4.8), the workflow.env readers and workflow-setup (T4.14) and the classic protection code (P6)
+- m4-daily-loop: P4 detailed as T4.1 to T4.14; next T4.14, then T4.1, T4.5, T4.2, T4.3, T4.4, T4.6, T4.7; T4.13 waits for the agentic-os check of how a plugin ships script commands; the pilot T4.12 is the developer's
 
 ## Log
+- 2026-11-09 plugin (a24bcf21): amended the plan (T4.14 branch settings to GIT_WORKFLOW_ keys, D45 to D48, P3 gate fixed, D41 confirmed), dropped _callable-status-checks.yml, one env bash shebang for ide scripts and templates, compiled; plan amend --dry-run writes the plan
 - 2026-11-05 plugin (a24bcf21): re-ran init (docker scope declared, architecture.md updated), removed workflow.env, its templates, the protection config and the release callables, ignored the planning locks, committed and pushed
 - 2026-11-05 plugin (a24bcf21): linting moved to toolchain.linters of project.yaml (node Biome, shell); the plugin lint module is removed, `app lint all full` replaces `app lint node full`; plan tasks T3.9 to T3.11 still describe the old module
 - 2026-11-04 plugin (a24bcf21): amended P4 with T4.13 for the /git: slash commands, found that a plugin cannot ship a script command, wrote the findings note for the agentic-os check
