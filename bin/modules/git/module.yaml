@@ -8,8 +8,44 @@ commands:
   - name: "branch-protection"
     requires: [git, gh]
     description: "Manage GitHub branch protection rules from declarative YAML."
+  - name: "check"
+    description: "Run the minimum check of one component or of every component: commit lint since the latest tag plus the checks the component declares."
+    when: "Before a pull request or a push, and to see which component is red"
+    examples:
+      - "bash $BU_ROOT/app git check"
+      - "bash $BU_ROOT/app git check web"
+    arguments:
+      - name: "component"
+        description: "Name of the component to check; every component of components.yaml when omitted"
+  - name: "commit"
+    requires: [git, docker]
+    description: "Stage the paths named and commit them with a conventional message, drafted by the provider unless one is given."
+    when: "Changes on a feature branch are ready to be committed"
+    examples:
+      - "bash $BU_ROOT/app git commit src/login.js"
+      - "bash $BU_ROOT/app git commit --message 'fix(login): keep the session' --yes src/login.js"
+    arguments:
+      - name: "paths"
+        description: "Files or directories to stage and commit; other staged files stay staged"
+        required: true
+      - name: "--message"
+        description: "Commit message; without it the provider drafts one from the staged diff"
+      - name: "--yes"
+        description: "Skip the confirmation; only with --message"
   - name: "lint-commit"
     description: "Validate a commit message file against the conventional commit config of the plugin."
+  - name: "pr"
+    requires: [git, docker, gh]
+    description: "Push the current branch and open the pull request as the developer, after the minimum check of every component."
+    when: "A feature branch is committed and ready for review"
+    examples:
+      - "bash $BU_ROOT/app git pr --dry-run"
+      - "bash $BU_ROOT/app git pr --draft"
+    arguments:
+      - name: "--dry-run"
+        description: "Print the branch, the title and the body and change nothing"
+      - name: "--draft"
+        description: "Open the pull request as a draft"
   - name: "promote"
     requires: [git, docker]
     description: "Fast-forward the release branch to the commit of a release tag; never to the head of master, never a force."
@@ -41,9 +77,36 @@ commands:
         description: "Leave the GitHub Release unpublished"
       - name: "--pre"
         description: "Make a pre-release of this channel: lower case letters, for example alpha, beta or rc"
+  - name: "rules-sync"
+    requires: [git, docker, gh, curl]
+    description: "Create or update the branch rulesets of the repository as the App; a ruleset whose branch setting is unset is skipped."
+    when: "The branch rules of the repository must follow bin/config/rulesets.yaml or the stage changes"
+    examples:
+      - "bash $BU_ROOT/app git rules-sync --dry-run"
+      - "bash $BU_ROOT/app git rules-sync --apply --stage production"
+    arguments:
+      - name: "--dry-run"
+        description: "Print per ruleset create, update, unchanged or skipped and change nothing; the default"
+      - name: "--apply"
+        description: "Create or update the rulesets with the administration token of the App; needs GIT_WORKFLOW_APP_ID"
+      - name: "--stage"
+        description: "Project phase of the master ruleset: development or production; default GIT_WORKFLOW_STAGE, else development"
   - name: "run-status"
     requires: [gh]
     description: "Fetch recent GitHub Actions workflow runs as JSON."
+  - name: "start"
+    requires: [git, docker]
+    description: "Create the branch <type>/<name> and its worktree from the main branch and print the worktree path."
+    when: "Work on a new change starts"
+    examples:
+      - "bash $BU_ROOT/app git start feat add-login"
+    arguments:
+      - name: "type"
+        description: "Conventional commit type of the branch, one of the types of commitlint.config.mjs"
+        required: true
+      - name: "name"
+        description: "Name after the type: lower case words joined by hyphens"
+        required: true
   - name: "token-service"
     script: "token-service.mjs"
     requires: [node]
