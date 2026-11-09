@@ -112,8 +112,9 @@ get_workflow_status() {
   ahead="$(json_get "$sync_status" "ahead")"
   working_tree="$(git_get_workdir_status)"
 
-  # The counts and the details are built here: jq escapes the subjects, and git_get_commit_details and
-  # git_conventional_commit_stats of the framework library break on a quoted subject and drop the oldest commit.
+  # The counts and the details are built here from one `git log` run in the tool container (tool_run): the
+  # framework functions git_get_commit_details and git_conventional_commit_stats run the host git, and the
+  # release commit and the base ref are read through the tool too.
   local stats='{}' commits_json='[]' log
   if [[ "$ahead" -gt 0 ]]; then
     log="$(tool_run git log "${_RELEASE_COMMIT}..${_BASE_REF}" --pretty=format:'%H%x1f%h%x1f%an%x1f%ae%x1f%ci%x1f%s' </dev/null)"

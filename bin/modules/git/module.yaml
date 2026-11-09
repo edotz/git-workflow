@@ -94,6 +94,16 @@ commands:
   - name: "run-status"
     requires: [gh]
     description: "Fetch recent GitHub Actions workflow runs as JSON."
+  - name: "shims"
+    requires: [git]
+    description: "Put the git hook shims of the plugin into the directory git runs hooks from (core.hooksPath, else the common git dir), leaving files that are not ours."
+    when: "A repository has no shims, has stale ones, or its hooks directory changed"
+    examples:
+      - "bash $BU_ROOT/app git shims"
+      - "bash $BU_ROOT/app git shims --check"
+    arguments:
+      - name: "--check"
+        description: "Report what is missing or stale and change nothing; exit 1 when something is"
   - name: "start"
     requires: [git, docker]
     description: "Create the branch <type>/<name> and its worktree from the main branch and print the worktree path."
