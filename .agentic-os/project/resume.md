@@ -1,12 +1,12 @@
 ## State
-- PLAN-plugin (B-1) active: P1 to P3 done, P4 detailed as T4.1 to T4.14, none started. Roadmap: m1, m2, m3 done. Built and verified: token service, libs token, version, check, component, tool; release, promote; sandbox pilot (v0.1.0, v0.2.0).
+- PLAN-plugin (B-1) active: P1 to P3 done, P4 detailed as T4.1 to T4.14, T4.14 done (closed by hand: the Done command needs docker and an .agentic-os temp dir), the rest pending. Roadmap: m1, m2, m3 done. Built and verified: token service, libs token, version, check, component, tool; release, promote; sandbox pilot (v0.1.0, v0.2.0).
 - Linting runs through toolchain.linters of project.yaml (node with Biome 2.6.5, shell); the plugin lint module is gone (D45). `app compile all` ran; `app lint all full` passes (json, node, shell).
-- T4.14 (new) moves the branch settings to GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH of the project-root .env only, master in code (D49, supersedes D46), and reduces workflow-setup to validate with the dead code deleted (D50, supersedes D47); T4.1, T4.2, T4.10 and T4.11 wait for it (D48). The framework loads only the project-root .env, never a project .env.defaults.
+- T4.14 (done) moved the branch settings to GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH of the project-root .env only, master in code (D49, supersedes D46), and reduced workflow-setup to validate with the dead code deleted (D50, supersedes D47); T4.1 (D48), T4.2, T4.10 and T4.11 were waiting for it. This project's .env sets GIT_WORKFLOW_MAIN_BRANCH=master and GIT_WORKFLOW_RELEASE_BRANCH=0.x (1.x is the old diverged cascade branch; promote creates 0.x on its first run). Check the loaded values with `env -i HOME="$HOME" PATH="$PATH" bash ${BU_ROOT}/app git workflow-setup`: the tool shell inherits a bootstrap and skips .env. The framework loads only the project-root .env, never a project .env.defaults.
 - Removed and committed: workflow.env, its templates, branch-protection.yaml, the release callables, _callable-status-checks.yml, the old docs/git-workflow reference docs (developer). Root .evolve.json scope_trigger is docker-compose.yaml. The ide scripts and templates use `#!/usr/bin/env bash`.
 - Not ours: .envrc, .claude/output-styles, and the hooks.json entry pre-commit/scope-checks added by the compile.
 
 ## Open
-1. START: T4.14 first; then T4.1 check, T4.5 rules library, T4.2 start; then T4.3, T4.4, T4.6, T4.7, T4.10, T4.11; T4.8 inline; T4.9 hook-author; T4.12 pilot is the developer's.
+1. START: T4.1 check, T4.5 rules library, T4.2 start (ready); then T4.3, T4.4, T4.6, T4.7, T4.10, T4.11; T4.8 inline; T4.9 hook-author; T4.12 pilot is the developer's.
 2. T4.13 waits for the developer's check in the agentic-os project of notes/plugin-slash-commands.md (a plugin cannot ship a script command); amend through /aos:plan after the answer.
 3. The status-checks.yml header still names workflow.env; T4.8 replaces the file. P6 is outlined: the classic protection code and bin/modules/git/templates (branch-protection.sh, workflow-callers.sh, release-please.sh) go there.
 4. Code follow-up: move the token-service base digest into the pins. The bin/lib scripts keep `#!/bin/bash` (developer's answer).
@@ -21,6 +21,7 @@
 
 ## Traps
 - No git stash. Port 8790. Never print a token or key. Commit header 100 characters at most.
+- The Done command of T4.14 cannot pass here (no docker, no .agentic-os in its temp dir); the promote and release tests need docker.
 - `app plan amend --dry-run` writes the plan: never use it to test; test the jq program with jq on the plan file.
 - gh has no stored login: the exported GH_TOKEN is the developer login. The shell exports RELEASE_BRANCH=0.x, which beats .env until T4.14 renames the key: set it on the command line.
 - SSH to GitHub fails now and then (publickey denied on a plain git push); gh credential helper over https works.
