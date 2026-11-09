@@ -1543,7 +1543,8 @@
           "title": "Write the check command: the minimum check of every component",
           "depends": [
             "T3.3",
-            "T3.5"
+            "T3.5",
+            "T4.14"
           ],
           "owner": "bash-author",
           "inputs": [
@@ -2842,6 +2843,16 @@
       "date": "2026-11-09",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D48",
+      "question": "How the group conflict of T4.1 and T4.14 on bin/modules/git/promote.sh is settled",
+      "chosen": "T4.1 depends on T4.14, so the check command is written after the branch settings moved to the GIT_WORKFLOW_ keys",
+      "reason": "The plan lint reported both tasks in group 1 with T4.14 writing promote.sh, which T4.1 names in its verify run or pattern; the developer approved the dependency on 2026-11-09 and ruled out dropping the file from T4.14",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -3185,6 +3196,18 @@
         "D47"
       ],
       "reason": "The plugin lint module and workflow.env are removed: the P3 gate could not pass again, and the readers of workflow.env had no task; the developer answered the four questions on 2026-11-09",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-09",
+      "change": "Make T4.1 depend on T4.14 so the two tasks no longer share a group while T4.14 writes promote.sh",
+      "affects": [
+        "P4",
+        "T4.1",
+        "T4.14",
+        "D48"
+      ],
+      "reason": "The plan lint reported T4.1 and T4.14 in the same group with T4.14 writing promote.sh, which T4.1 names in its verify run or pattern; the developer approved the dependency on 2026-11-09",
       "by": "developer"
     }
   ],
