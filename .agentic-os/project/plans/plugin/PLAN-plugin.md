@@ -256,11 +256,11 @@ Build start, commit and pr, the aggregate status check, rules-sync with the STAG
 
 | Title | Task | Owner | Depends | Status |
 |---|---|---|---|---|
-| Write the check command: the minimum check of every component | T4.1 | bash-author | T3.3, T3.5, T4.14 | pending |
+| Write the check command: the minimum check of every component | T4.1 | bash-author | T3.3, T3.5, T4.14 | done |
 | Write the start command: a worktree and a branch from master | T4.2 | bash-author | T3.3, T4.14, T4.15 | pending |
 | Write the commit command: a conventional message drafted by the provider | T4.3 | bash-author | T4.1, T4.18 | pending |
 | Write the pr command: push the branch and open the pull request as the developer | T4.4 | bash-author | T4.1, T4.18 | pending |
-| Write the rules library: the rulesets of the master, release and legacy branches | T4.5 | bash-author | T3.2 | pending |
+| Write the rules library: the rulesets of the master, release and legacy branches | T4.5 | bash-author | T3.2 | done |
 | Write the rules-sync command: apply the rulesets as the App | T4.6 | bash-author | T3.2, T4.5, T4.18 | pending |
 | Register the daily-loop commands in the git module registry | T4.7 | bash-author | T4.1, T4.2, T4.3, T4.4, T4.6 | pending |
 | Replace the status checks workflow with one aggregate check | T4.8 | inline | T4.1 | pending |
@@ -270,10 +270,10 @@ Build start, commit and pr, the aggregate status check, rules-sync with the STAG
 | Run the daily loop in the sandbox | T4.12 | developer | T4.7, T4.8, T4.9, T4.10, T4.11, T4.13, T4.17, T4.19 | pending |
 | Register the git slash commands in the plugin tier | T4.13 | dynamic-author | T4.7, T4.16 | pending |
 | Take the branch settings from the project .env and reduce workflow-setup to validate | T4.14 | bash-author | - | done |
-| Move the worktree directory to the GIT_WORKFLOW_WORKTREE_DIR setting | T4.15 | bash-author | T4.14 | pending |
+| Move the worktree directory to the GIT_WORKFLOW_WORKTREE_DIR setting | T4.15 | bash-author | T4.14 | done |
 | Write the seven command scripts of the git slash commands | T4.16 | bash-author | T4.7 | pending |
 | Declare commands in provides of plugin.yaml and compile them | T4.17 | inline | T4.13 | pending |
-| Write the remote library: the repository slug and the developer identity | T4.18 | bash-author | - | pending |
+| Write the remote library: the repository slug and the developer identity | T4.18 | bash-author | - | done |
 | Enable the pre-push guard in the hook registry | T4.19 | inline | T4.9 | pending |
 
 **Write the check command: the minimum check of every component** (T4.1)

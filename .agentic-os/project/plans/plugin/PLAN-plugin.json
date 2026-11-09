@@ -1583,7 +1583,7 @@
             "from": "environment fact: a green repository passes, a repository with a non-conventional commit or a failing declared check fails, and the output names the component",
             "run": "bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The aggregate status check on a PR and the pre-push guard must run the same check the release requires, from one command, so the three cannot disagree (decision D41 of the plan).",
           "result": "The command app git check that runs check_minimum for every component, or for the one named.",
           "done": "On a throwaway repository with components.yaml the command exits 0 for conventional commits and passing checks, exits non-zero naming the component for a bad commit or a failing check, and writes nothing.",
@@ -1608,7 +1608,12 @@
               "name": "check_minimum",
               "signature": "check_minimum <component>"
             }
-          ]
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.1.md",
+          "last_verify": {
+            "at": "2026-11-09T14:40:18Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.2",
@@ -1853,7 +1858,7 @@
             "from": "environment fact: the master ruleset differs between development and production, the release and legacy rulesets carry the App as the only bypass, and an unknown stage is refused",
             "run": "bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh"
           },
-          "status": "pending",
+          "status": "done",
           "why": "Rulesets replace the classic branch protection and the Stage Guard, so the rules of a repository are one declared set the developer reads and the App applies (decisions D17, D26 and D31).",
           "result": "A library that builds the three rulesets as GitHub ruleset JSON from one declaration and the GIT_WORKFLOW_STAGE switch.",
           "done": "rules_json master development gives a ruleset without required checks, master production requires a pull request, the aggregate check and squash merge, release and legacy give pull request, linear history and the App as the only bypass actor, and an unknown name or stage is refused.",
@@ -1884,7 +1889,49 @@
               "name": "rules_names",
               "signature": "rules_names"
             }
-          ]
+          ],
+          "findings": [
+            {
+              "file": "bin/lib/rules.sh",
+              "line": 102,
+              "severity": "wrong result",
+              "summary": "a legacy setting of only blanks or commas passes the empty test and keeps the release pattern",
+              "state": "accepted"
+            },
+            {
+              "file": "tests/git-rules/build.sh",
+              "line": 5,
+              "severity": "style",
+              "summary": "the test lacks the sibling header and breaks when run from its own directory",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/lib/rules.sh",
+              "line": 84,
+              "severity": "style",
+              "summary": "each rules_json call starts about five processes",
+              "state": "dismissed"
+            },
+            {
+              "file": "bin/config/rulesets.yaml",
+              "line": 46,
+              "severity": "wrong result",
+              "summary": "the release pattern release/* was a guess that contradicts D16",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/config/rulesets.yaml",
+              "line": 20,
+              "severity": "wrong result",
+              "summary": "master had no bypass actor, which contradicts D30",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.5.md",
+          "last_verify": {
+            "at": "2026-11-09T14:43:29Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.6",
@@ -2438,7 +2485,7 @@
             "from": "environment fact: worktree_get_path gives <GIT_WORKFLOW_WORKTREE_DIR>/<repo-name>/<name with / as -> and $HOME/worktrees/<repo-name>/... without the setting, and no PROVIDER_CONFIG_DIR path is left",
             "run": "bash -n bin/lib/worktree.sh && ! grep -n 'PROVIDER_CONFIG_DIR' bin/lib/worktree.sh && (t=$(mktemp -d) && git init -q \"$t/r\" && mkdir \"$t/r/.agentic-os\" && (cd \"$t/r\" && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_WORKTREE_DIR=\"$t/w\" bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source \"${PLUGIN_ROOT}/bin/lib/worktree.sh\"; test \"$(worktree_get_path feat/foo)\" = \"$1/w/r/feat-foo\"; unset GIT_WORKFLOW_WORKTREE_DIR; test \"$(worktree_get_path feat/foo)\" = \"${HOME}/worktrees/r/feat-foo\"' _ \"$t\"); ec=$?; rm -rf \"$t\"; exit $ec)"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The start command (T4.2) must put the worktree where the developer keeps them, not inside the repository (decision D52 of this plan).",
           "result": "worktree_get_path gives <GIT_WORKFLOW_WORKTREE_DIR>/<repo-name>/<name>, with $HOME/worktrees as the default and the repository name taken from the main worktree.",
           "done": "With GIT_WORKFLOW_WORKTREE_DIR set the path is under it, without it the path is under $HOME/worktrees, the repository name is the name of the main worktree directory, a slash in the name becomes a hyphen, and no PROVIDER_CONFIG_DIR path is left in the library.",
@@ -2452,7 +2499,35 @@
             "pattern": "bin/lib/worktree.sh: the library the change stays in",
             "target": "change"
           },
-          "consumes": []
+          "consumes": [],
+          "findings": [
+            {
+              "file": "bin/lib/worktree.sh",
+              "line": 86,
+              "severity": "wrong result",
+              "summary": "a relative or ~ base stays literal and depends on the working directory",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/lib/worktree.sh",
+              "line": 86,
+              "severity": "crash",
+              "summary": "HOME unset under set -u ends with an unbound variable error",
+              "state": "dismissed"
+            },
+            {
+              "file": "bin/lib/worktree.sh",
+              "line": 132,
+              "severity": "wrong result",
+              "summary": "git worktree add stdout leaks into the captured path of worktree_create",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.15.md",
+          "last_verify": {
+            "at": "2026-11-09T14:40:17Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.16",
@@ -2601,7 +2676,7 @@
             "from": "environment fact: remote_slug gives owner/name for an https and an ssh remote URL and refuses a repository without the remote, and remote_identity gives the configured name and email",
             "run": "bash -n bin/lib/remote.sh && bash tests/git-remote/run.sh"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The commit, pr and rules-sync commands need the owner/name slug and the developer identity, and release.sh and promote.sh each hold their own copy; a shared library keeps the new commands from adding more copies (decision D56 of this plan).",
           "result": "bin/lib/remote.sh with remote_slug [<remote>] and remote_identity <name|email>.",
           "done": "remote_slug prints owner/name for git@github.com:owner/name.git, https://github.com/owner/name.git and https://github.com/owner/name, dies for a missing remote, and remote_identity prints the configured user.name and user.email and dies when one is unset.",
@@ -2625,7 +2700,28 @@
             "pattern": "bin/lib/tool.sh: the layout of a plugin library",
             "target": "new"
           },
-          "consumes": []
+          "consumes": [],
+          "findings": [
+            {
+              "file": "bin/lib/remote.sh",
+              "line": 44,
+              "severity": "wrong result",
+              "summary": "remote_slug keeps a query string or fragment in the slug",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/lib/remote.sh",
+              "line": 65,
+              "severity": "wrong result",
+              "summary": "remote_identity accepts a whitespace-only value",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.18.md",
+          "last_verify": {
+            "at": "2026-11-09T14:40:16Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.19",
