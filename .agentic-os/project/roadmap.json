@@ -29,7 +29,7 @@
           "id": "m4-daily-loop",
           "name": "Daily loop and guards",
           "gate": "The PR gate with the aggregate check is required, and the rulesets are applied with the App as bypass actor.",
-          "status": "planned"
+          "status": "active"
         },
         {
           "id": "m5-monorepo",

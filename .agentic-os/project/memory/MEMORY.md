@@ -1,8 +1,9 @@
 ## Now
 - m6-retire-old: workflow.env, its templates, branch-protection.yaml, all callables and the old reference docs are removed; left are the status-checks.yml header (T4.8), the classic templates and the classic protection code (P6)
-- m4-daily-loop: P4 detailed as T4.1 to T4.19, plan reviewed (D54 to D57), only T4.14 done; next group T4.15, T4.18, T4.1, T4.5, then T4.2, T4.3, T4.4, T4.6; the slash commands are T4.16, T4.13, T4.17 (B-62 is done); the pilot T4.12 is the developer's
+- m4-daily-loop: P4 detailed as T4.1 to T4.19 and reviewed (D54 to D57), T4.14 done; next the authoring of T4.15, T4.18, T4.1, T4.5, then T4.2, T4.3, T4.4, T4.6; slash commands are T4.16, T4.13, T4.17; the pilot T4.12 is the developer's
 
 ## Log
+- 2026-11-09 plugin (a24bcf21): closed the session with the handoff; branch pushed up to c3f182f; the authoring of group 1 is next
 - 2026-11-09 plugin (a24bcf21): aligned T4.1, T4.2, T4.5 (D51, D52, T4.15), split T4.13 (D53, T4.16, T4.17), reviewed the plan with five lenses and settled the findings (D54 to D57, T4.18, T4.19), rotated the leaked token and stored a gh login, ignored .envrc, committed and pushed up to the review round
 - 2026-11-09 plugin (a24bcf21): T4.14 done (branch settings GIT_WORKFLOW_ keys, workflow-setup reduced to validate), both findings accepted, project .env sets master and 0.x
 - 2026-11-09 plugin (a24bcf21): amended the plan (T4.14 branch settings to GIT_WORKFLOW_ keys, D45 to D48, P3 gate fixed, D41 confirmed), dropped _callable-status-checks.yml, one env bash shebang for ide scripts and templates, compiled; plan amend --dry-run writes the plan
