@@ -262,7 +262,7 @@ Build start, commit and pr, the aggregate status check, rules-sync with the STAG
 | Write the pr command: push the branch and open the pull request as the developer | T4.4 | bash-author | T4.1, T4.18 | done |
 | Write the rules library: the rulesets of the master, release and legacy branches | T4.5 | bash-author | T3.2 | done |
 | Write the rules-sync command: apply the rulesets as the App | T4.6 | bash-author | T3.2, T4.5, T4.18 | done |
-| Register the daily-loop commands in the git module registry | T4.7 | bash-author | T4.1, T4.2, T4.3, T4.4, T4.6 | pending |
+| Register the daily-loop commands in the git module registry | T4.7 | bash-author | T4.1, T4.2, T4.3, T4.4, T4.6 | done |
 | Replace the status checks workflow with one aggregate check | T4.8 | inline | T4.1 | done |
 | Write the pre-push guard hook | T4.9 | hook-author | T4.1, T4.7 | pending |
 | Adapt workflow-status to squash merge and promote | T4.10 | bash-author | T4.1, T4.14 | done |

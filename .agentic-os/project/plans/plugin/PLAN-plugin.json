@@ -2145,7 +2145,7 @@
             "from": "the registry and the scripts agree and the dispatcher prints the usage of the five commands",
             "run": "bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The scripts of T4.1 to T4.6 are checked directly; the registry entries make them commands of the dispatcher.",
           "result": "The commands app git check, start, commit, pr and rules-sync are registered and found by the dispatcher.",
           "done": "The module registry and the five scripts agree and each command prints its usage through the dispatcher.",
@@ -2157,7 +2157,12 @@
             "pattern": "bin/modules/git/module.yaml: the entries of the existing commands",
             "target": "change"
           },
-          "consumes": []
+          "consumes": [],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.7.md",
+          "last_verify": {
+            "at": "2026-11-09T15:12:50Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.8",
