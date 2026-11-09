@@ -64,7 +64,7 @@
     {
       "name": "blueprint-authoring",
       "enabled": true,
-      "description": "Use when deciding where a blueprint belongs: the tier (framework, adapter or project), the placeholder contract of a template type, the variable whitelist, the resolver chain, and blueprint lookup.",
+      "description": "Use when deciding where a blueprint belongs: the tier (framework, adapter, project or plugin), the placeholder contract of a template type, the variable whitelist, the resolver chain, and blueprint lookup.",
       "origin": "framework"
     },
     {

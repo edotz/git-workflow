@@ -12,7 +12,7 @@ The project's own commands: registration, provider config and blueprints, author
 - The body is assembled from blueprints under `blueprints/<placeholder>/<name>.md`, one file per placeholder, body only.
 
 ## Environment
-- `bash bin/app compile commands` builds the artifacts; `bash bin/app lint yaml changed` checks the registration (the default mode lints only staged files) and `jq empty .agentic-os/commands/commands.json` or `lint json changed` checks the manifest.
+- `bash bin/app compile commands` builds the artifacts; `bash bin/app lint artifacts changed` checks the registration (the default mode lints only staged files) and `jq empty .agentic-os/commands/commands.json` or `lint json changed` checks the manifest.
 
 ## Constraints
 - Compiled artifacts are build output: never hand-edited.

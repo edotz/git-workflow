@@ -59,7 +59,7 @@ The root declaration with the trigger Dockerfile matches no file since the Docke
 
 ## Constraints
 
-- A change to bin/lib or bin/modules is done when `bash ${BU_ROOT}/app lint shell full` exits 0 under .shellcheckrc (confirmed; it passes on 26 files today).
+- A change to bin/lib or bin/modules is done when `bash ${BU_ROOT}/app lint domain full` exits 0 under .shellcheckrc (confirmed; it passes on 26 files today).
 - Module scripts run under `set -euo pipefail` (proven: bin/modules/git/*.sh, bin/modules/ide/*.sh).
 - Plugin setting keys start with `PLUGIN_EDOTZ_GIT_WORKFLOW_` and may not redefine a framework key (proven: bin/config/env.defaults:1).
 - Generated files are never edited by hand; changes go through bin/modules/git/templates and workflow-setup (proven: the GENERATED headers).

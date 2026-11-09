@@ -4,7 +4,7 @@
     "purpose": "The project's own commands: registration, provider config and blueprints, authored through the pipeline",
     "scope_trigger": ".agentic-os/commands/**",
     "checks": [
-      "bash bin/app lint yaml changed exits 0",
+      "bash bin/app lint artifacts changed exits 0",
       "jq empty .agentic-os/commands/commands.json exits 0"
     ]
   }

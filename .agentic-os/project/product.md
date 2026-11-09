@@ -50,7 +50,7 @@ developer uses the same binaries. GitHub Actions keep only the status checks of 
 
 ## Definition of Done
 
-- The touched script passes `lint shell` and `lint modules` of the framework, run under `env -i HOME="$HOME"
+- The touched script passes `lint domain` and `lint modules` of the framework, run under `env -i HOME="$HOME"
   PATH="$PATH"` because the tool shell exports functions that mask missing sources.
 - The command runs once for real, and a changed hook registry or mapping passes `hooks sync` without a diff.
 - A change to a moved file stays a move unless the task says redesign: no fix of stale behaviour on the way.

@@ -72,6 +72,10 @@
     {
       "name": "commit-msg/conventional",
       "enabled": true
+    },
+    {
+      "name": "pre-commit/linter",
+      "enabled": false
     }
   ],
   "claude": []
