@@ -1660,7 +1660,7 @@
             "from": "environment fact: start makes a worktree on a new branch of the right name from the up-to-date main branch and refuses a bad name or an existing branch",
             "run": "bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh"
           },
-          "status": "pending",
+          "status": "done",
           "why": "A developer should start work with one command and never think about how the change is incorporated (decision D8 of the concept).",
           "result": "The command app git start that makes a worktree and a branch <type>/<name> from the main branch.",
           "done": "On a throwaway repository start <type> <name> creates the worktree and the branch from the main branch, refuses a type outside the conventional types and refuses a branch that exists, and prints the path.",
@@ -1675,7 +1675,28 @@
             "pattern": "bin/modules/git/worktree.sh: the layout of a command that uses the worktree library",
             "target": "new"
           },
-          "consumes": []
+          "consumes": [],
+          "findings": [
+            {
+              "file": "bin/modules/git/start.sh",
+              "line": 33,
+              "severity": "wrong result",
+              "summary": "a failing container run on the ref read counts as branch absent and the guard passes",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/start.sh",
+              "line": 21,
+              "severity": "convention",
+              "summary": "START_TYPES is a hand copy of the commitlint type-enum",
+              "state": "dismissed"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.2.md",
+          "last_verify": {
+            "at": "2026-11-09T14:55:02Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.3",
@@ -1721,7 +1742,7 @@
             "from": "environment fact: a given message is linted and committed, a bad message is refused, and the drafted message is shown and committed only after the confirmation",
             "run": "bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh"
           },
-          "status": "pending",
+          "status": "done",
           "why": "A developer commits with a conventional message without writing it by hand, and no message reaches the history unseen (decisions D8, D10 and D18 of the concept).",
           "result": "The command app git commit that stages the named paths, drafts or takes a conventional message, lints it and commits.",
           "done": "With --message the command lints that message and commits; without it the command asks provider_run_prompt for a draft from the staged diff, shows it and commits only after the developer confirmed; a message that fails lint-commit is never committed.",
@@ -1743,7 +1764,28 @@
               "name": "remote_identity",
               "signature": "remote_identity <name|email>"
             }
-          ]
+          ],
+          "findings": [
+            {
+              "file": "bin/modules/git/commit.sh",
+              "line": 122,
+              "severity": "convention",
+              "summary": "a provider reply wrapped in a code fence is refused by the lint every time",
+              "state": "accepted"
+            },
+            {
+              "file": "tests/git-commit/run.sh",
+              "line": 1,
+              "severity": "style",
+              "summary": "no case for a failing provider or a fenced reply",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.3.md",
+          "last_verify": {
+            "at": "2026-11-09T14:57:03Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.4",
@@ -1789,7 +1831,7 @@
             "from": "environment fact: the dry run prints the branch, the title and the body, and pr refuses the main branch and a red minimum check",
             "run": "bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh"
           },
-          "status": "pending",
+          "status": "done",
           "why": "A change reaches the main branch by a pull request the developer opens with one command, with the check already green (decision D8 of the concept).",
           "result": "The command app git pr that pushes the branch and opens the pull request as the developer.",
           "done": "On a throwaway repository the dry run prints the branch, the title taken from the commits and the body and changes nothing; pr refuses the main branch and a branch whose minimum check is red.",
@@ -1815,7 +1857,28 @@
               "name": "remote_slug",
               "signature": "remote_slug [<remote>]"
             }
-          ]
+          ],
+          "findings": [
+            {
+              "file": "bin/modules/git/pr.sh",
+              "line": 64,
+              "severity": "wrong result",
+              "summary": "the title of a branch with several commits is no conventional subject",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/pr.sh",
+              "line": 85,
+              "severity": "wrong result",
+              "summary": "a real run dies without an exported GH_TOKEN although a gh login exists",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.4.md",
+          "last_verify": {
+            "at": "2026-11-09T14:55:03Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.5",
@@ -1976,19 +2039,19 @@
           ],
           "verify": {
             "from": "environment fact: the dry run changes nothing, the apply fetches the token with the administration set before its first write, a second apply changes nothing, the stage selects the master ruleset and the App id comes from GIT_WORKFLOW_APP_ID",
-            "run": "bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh && for k in 'dry-run' 'second apply' 'stage' 'GIT_WORKFLOW_APP_ID' 'token'; do grep -qi -- \"$k\" tests/git-rules/sync.sh || exit 1; done"
+            "run": "bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh && for k in 'dry-run' 'second apply' 'stage' 'GIT_WORKFLOW_APP_ID' 'token' 'skipped'; do grep -qi -- \"$k\" tests/git-rules/sync.sh || exit 1; done"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The rulesets reach GitHub from one command with the App as the writer, in both phases (decisions D26 and D30 of the concept).",
           "result": "The command app git rules-sync that creates or updates the rulesets of a repository.",
-          "done": "The dry run prints per ruleset whether it would be created or updated and sends nothing; the apply fetches the token with the administration set before its first write and creates or updates each ruleset by name; a second apply changes nothing. The test covers the dry run without a write, the token before the first write, the second apply, the stage and the App id.",
+          "done": "The dry run prints per ruleset whether it would be created or updated and sends nothing; the apply fetches the token with the administration set before its first write and creates or updates each ruleset by name; a second apply changes nothing. The test covers the dry run without a write, the token before the first write, the second apply, the stage and the App id. A ruleset whose branch setting is unset is skipped and reported, and master still applies.",
           "fails": "The rulesets would be applied with a personal token, a repeated apply would create duplicates, or the master ruleset of the wrong stage would be applied.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D30",
             "CONCEPT-git-workflow-plugin:D17"
           ],
           "brief": {
-            "arguments": "Write app git rules-sync [--dry-run|--apply] [--stage <stage>]: for the repository of the remote origin it builds the rulesets with rules_json, reads the existing rulesets of the repository through gh by name, and prints per ruleset create, update or unchanged. --apply fetches the token (permission set administration) before its first write and creates or updates the rulesets through the Rulesets API, never deleting a ruleset it did not name. tests/git-rules/sync.sh runs the dry run against a stub gh that returns canned ruleset lists and checks the three outcomes. The slug of the repository comes from remote_slug of the remote library (T4.18), never from a copy of the helper of release.sh. The stage comes from --stage or GIT_WORKFLOW_STAGE, default development; the bypass actor id comes from GIT_WORKFLOW_APP_ID of the project-root .env, required for --apply (refused with a message when empty) and left as the placeholder in the dry run. The stub gh of tests/git-rules/sync.sh appends every call to a log, and the test asserts: the dry run logs no write; --apply logs the token request before its first create or update; a second --apply, with the stub returning the created rulesets, logs no write (a second apply changes nothing); --stage production and --stage development send different master rulesets; the bypass actor id equals GIT_WORKFLOW_APP_ID. The throwaway repository holds an empty .agentic-os directory.",
+            "arguments": "Write app git rules-sync [--dry-run|--apply] [--stage <stage>]: for the repository of the remote origin it builds the rulesets with rules_json, reads the existing rulesets of the repository through gh by name, and prints per ruleset create, update or unchanged. --apply fetches the token (permission set administration) before its first write and creates or updates the rulesets through the Rulesets API, never deleting a ruleset it did not name. tests/git-rules/sync.sh runs the dry run against a stub gh that returns canned ruleset lists and checks the three outcomes. The slug of the repository comes from remote_slug of the remote library (T4.18), never from a copy of the helper of release.sh. The stage comes from --stage or GIT_WORKFLOW_STAGE, default development; the bypass actor id comes from GIT_WORKFLOW_APP_ID of the project-root .env, required for --apply (refused with a message when empty) and left as the placeholder in the dry run. The stub gh of tests/git-rules/sync.sh appends every call to a log, and the test asserts: the dry run logs no write; --apply logs the token request before its first create or update; a second --apply, with the stub returning the created rulesets, logs no write (a second apply changes nothing); --stage production and --stage development send different master rulesets; the bypass actor id equals GIT_WORKFLOW_APP_ID. The throwaway repository holds an empty .agentic-os directory. A ruleset whose branch setting is unset is skipped, not applied: release without GIT_WORKFLOW_RELEASE_BRANCH and legacy without GIT_WORKFLOW_LEGACY_BRANCHES, for which rules_json exits 3 (decisions D16 and D31). rules-sync prints skipped for it and goes on, the master ruleset always applies, and the run exits 0 when only skips happened. tests/git-rules/sync.sh adds the case: a project with neither setting applies master and prints skipped for release and legacy.",
             "output": "bin/modules/git/rules-sync.sh and tests/git-rules/sync.sh; the registration in module.yaml is the task T4.7. branch-protection.sh stays until the retirement phase.",
             "pattern": "bin/modules/git/promote.sh: the layout of a command that fetches a token and calls the API",
             "target": "new"
@@ -2009,7 +2072,49 @@
               "name": "remote_slug",
               "signature": "remote_slug [<remote>]"
             }
-          ]
+          ],
+          "findings": [
+            {
+              "file": "bin/modules/git/rules-sync.sh",
+              "line": 80,
+              "severity": "crash",
+              "summary": "the dry run reads the rulesets with no credential for a developer without an exported GH_TOKEN",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/rules-sync.sh",
+              "line": 80,
+              "severity": "wrong result",
+              "summary": "the list call includes the organisation rulesets because includes_parents stays at its default",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/rules-sync.sh",
+              "line": 94,
+              "severity": "wrong result",
+              "summary": "unchanged needs an exact match, so defaults that GitHub fills in would make every run print update",
+              "state": "dismissed"
+            },
+            {
+              "file": "bin/modules/git/rules-sync.sh",
+              "line": 149,
+              "severity": "style",
+              "summary": "the error of an unknown stage doubles the Error prefix",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/rules-sync.sh",
+              "line": 156,
+              "severity": "wrong result",
+              "summary": "a dry run without GIT_WORKFLOW_APP_ID leaves the placeholder and prints update for existing rulesets",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.6.md",
+          "last_verify": {
+            "at": "2026-11-09T15:00:26Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.7",
@@ -2087,7 +2192,7 @@
             "from": "environment fact: the workflow is valid YAML, has the one job named check and no Stage Guard",
             "run": "yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The master ruleset requires one aggregate check, and the only GitHub Action keeps the PR checks (decisions D19 and D45 of the concept).",
           "result": "A static status-checks.yml with one job named check that lints the commits of the pull request and runs the checks of components.yaml.",
           "done": "The workflow is valid YAML, has the one job check on pull requests, no stage-guard job and no generated-file header.",
@@ -2095,7 +2200,12 @@
           "carries": [
             "CONCEPT-git-workflow-plugin:D19"
           ],
-          "consumes": []
+          "consumes": [],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.8.md",
+          "last_verify": {
+            "at": "2026-11-09T14:47:28Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.9",
@@ -2181,7 +2291,7 @@
             "from": "environment fact: the status names per component the latest release tag, the commits since it and the position of the release branch (absent, on the tag, behind it), and no release-please data",
             "run": "bash -n bin/modules/git/workflow-status.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master \"$t/r\" && mkdir \"$t/r/.agentic-os\" && printf 'components:\\n  - name: object\\n    paths: [\".\"]\\n' > \"$t/r/components.yaml\" && cd \"$t/r\" && g=\"git -c user.name=t -c user.email=t@example.com\" && $g add -A && $g commit -q -m 'chore: init' && git tag v0.1.0 && $g commit -q --allow-empty -m 'feat: a' && run() { PLUGIN_ROOT=\"$r\" GIT_WORKFLOW_RELEASE_BRANCH=rel bash \"$r/bin/modules/git/workflow-status.sh\" 2>/dev/null; } && run | jq -e '.components[0] | .name == \"object\" and .latest_release == \"v0.1.0\" and .commits_since_release == 1 and .release_branch == \"absent\"' >/dev/null && git branch rel v0.1.0 && run | jq -e '.components[0].release_branch == \"on\"' >/dev/null && git tag v0.2.0 && run | jq -e '.components[0] | .latest_release == \"v0.2.0\" and .release_branch == \"behind\"' >/dev/null && if run | grep -qi 'release-please'; then false; fi; ec=$?; cd /; rm -rf \"$t\"; exit $ec)"
           },
-          "status": "pending",
+          "status": "done",
           "why": "After squash merge and promote the status must report releases and the release branch, not the retired release-please and Stage Guard state (decision D25 of the concept).",
           "result": "workflow-status reports the latest release tag, the unreleased commits and the release branch position.",
           "done": "On a throwaway repository the JSON names the latest release tag, the number of commits since it and whether the release branch sits on the tag.",
@@ -2195,7 +2305,42 @@
             "pattern": "bin/modules/git/workflow-status.sh: the script itself",
             "target": "change"
           },
-          "consumes": []
+          "consumes": [],
+          "findings": [
+            {
+              "file": "bin/modules/git/workflow-status.sh",
+              "line": 118,
+              "severity": "crash",
+              "summary": "git_get_commit_details of the framework library breaks on a quoted subject",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/workflow-status.sh",
+              "line": 117,
+              "severity": "wrong result",
+              "summary": "git_conventional_commit_stats of the framework library drops the oldest commit",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/module.yaml",
+              "line": 60,
+              "severity": "convention",
+              "summary": "the workflow-status entry still requires gh and has the old description",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/workflow-status.sh",
+              "line": 51,
+              "severity": "convention",
+              "summary": "every tool_run starts a container, 4 plus 2 per component",
+              "state": "dismissed"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.10.md",
+          "last_verify": {
+            "at": "2026-11-09T14:55:05Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.11",
@@ -2223,7 +2368,7 @@
             "from": "environment fact: a branch whose change landed by squash merge is printed under merged, and an unmerged branch is not",
             "run": "bash -n bin/modules/git/branch-cleanup.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master \"$t/r\" && mkdir \"$t/r/.agentic-os\" && cd \"$t/r\" && g=\"git -c user.name=t -c user.email=t@example.com\" && $g commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && $g commit -q -m 'feat: x' && git checkout -q master && git checkout -q -b feat/y && echo y > y && git add y && $g commit -q -m 'feat: y' && git checkout -q master && echo x > x && git add x && $g commit -q -m 'feat: x (#1)' && out=$(PLUGIN_ROOT=\"$r\" bash \"$r/bin/modules/git/branch-cleanup.sh\" --dry-run 2>/dev/null) && printf '%s\\n' \"$out\" | grep -qx 'merged: feat/x' && if printf '%s\\n' \"$out\" | grep -q 'merged: feat/y'; then false; fi; ec=$?; cd /; rm -rf \"$t\"; exit $ec)"
           },
-          "status": "pending",
+          "status": "done",
           "why": "A branch that was squash merged is no ancestor of master, so a cleanup that asks git branch --merged never finds it (decision D25 of the concept).",
           "result": "branch-cleanup lists squash-merged branches as safe to delete.",
           "done": "On a throwaway repository a branch whose tree changes are all in master by a squash commit is listed as merged and safe to delete, and an unmerged branch is not.",
@@ -2235,7 +2380,42 @@
             "pattern": "bin/modules/git/branch-cleanup.sh: the script itself",
             "target": "change"
           },
-          "consumes": []
+          "consumes": [],
+          "findings": [
+            {
+              "file": "bin/modules/git/branch-cleanup.sh",
+              "line": 124,
+              "severity": "wrong result",
+              "summary": "the local analysis compares with the local main branch that a fetch does not move",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/branch-cleanup.sh",
+              "line": 66,
+              "severity": "wrong result",
+              "summary": "a squash of several commits is never detected and the gh lookup of the brief was not written",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/branch-cleanup.sh",
+              "line": 288,
+              "severity": "wrong result",
+              "summary": "the no-TTY message goes through logger_info and prints nothing by default",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/branch-cleanup.sh",
+              "line": 23,
+              "severity": "crash",
+              "summary": "STALE_DAYS has no default, the script stops with an unbound variable when the setting is unset",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T4.11.md",
+          "last_verify": {
+            "at": "2026-11-09T14:55:07Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.12",
@@ -3369,6 +3549,16 @@
       "date": "2026-11-09",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D58",
+      "question": "What rules-sync does with a ruleset whose branch setting is unset",
+      "chosen": "rules-sync skips a ruleset whose branch setting is unset (release without GIT_WORKFLOW_RELEASE_BRANCH, legacy without GIT_WORKFLOW_LEGACY_BRANCHES) and prints skipped for it; master always applies; tests/git-rules/sync.sh covers it",
+      "reason": "T4.5 made rules_json exit 3 for an unset branch setting after D16 and D31, so rules-sync would die on a project without legacy branches; the developer approved the amendment on 2026-11-09",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -3794,6 +3984,16 @@
       ],
       "reason": "The five plan review lenses of 2026-11-09 found verifies that exit 3 on the project bootstrap or pass while the claim is false, registry files no task covered, no source for the App id and a duplicated slug helper; the developer settled the findings in two rounds",
       "by": "claude"
+    },
+    {
+      "date": "2026-11-09",
+      "change": "T4.6 rules-sync skips a ruleset whose branch setting is unset and prints skipped; master always applies; the proof gains the skipped case; D58 records the rule",
+      "affects": [
+        "T4.6",
+        "D58"
+      ],
+      "reason": "T4.5 made rules_json exit 3 for an unset GIT_WORKFLOW_RELEASE_BRANCH or GIT_WORKFLOW_LEGACY_BRANCHES (D16, D31), so rules-sync would die on a project without legacy branches; the developer approved the amendment on 2026-11-09",
+      "by": "developer"
     }
   ],
   "dismissals": [

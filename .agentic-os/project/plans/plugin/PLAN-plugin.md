@@ -257,16 +257,16 @@ Build start, commit and pr, the aggregate status check, rules-sync with the STAG
 | Title | Task | Owner | Depends | Status |
 |---|---|---|---|---|
 | Write the check command: the minimum check of every component | T4.1 | bash-author | T3.3, T3.5, T4.14 | done |
-| Write the start command: a worktree and a branch from master | T4.2 | bash-author | T3.3, T4.14, T4.15 | pending |
-| Write the commit command: a conventional message drafted by the provider | T4.3 | bash-author | T4.1, T4.18 | pending |
-| Write the pr command: push the branch and open the pull request as the developer | T4.4 | bash-author | T4.1, T4.18 | pending |
+| Write the start command: a worktree and a branch from master | T4.2 | bash-author | T3.3, T4.14, T4.15 | done |
+| Write the commit command: a conventional message drafted by the provider | T4.3 | bash-author | T4.1, T4.18 | done |
+| Write the pr command: push the branch and open the pull request as the developer | T4.4 | bash-author | T4.1, T4.18 | done |
 | Write the rules library: the rulesets of the master, release and legacy branches | T4.5 | bash-author | T3.2 | done |
-| Write the rules-sync command: apply the rulesets as the App | T4.6 | bash-author | T3.2, T4.5, T4.18 | pending |
+| Write the rules-sync command: apply the rulesets as the App | T4.6 | bash-author | T3.2, T4.5, T4.18 | done |
 | Register the daily-loop commands in the git module registry | T4.7 | bash-author | T4.1, T4.2, T4.3, T4.4, T4.6 | pending |
-| Replace the status checks workflow with one aggregate check | T4.8 | inline | T4.1 | pending |
+| Replace the status checks workflow with one aggregate check | T4.8 | inline | T4.1 | done |
 | Write the pre-push guard hook | T4.9 | hook-author | T4.1, T4.7 | pending |
-| Adapt workflow-status to squash merge and promote | T4.10 | bash-author | T4.1, T4.14 | pending |
-| Adapt branch-cleanup to squash merge | T4.11 | bash-author | T4.1, T4.14 | pending |
+| Adapt workflow-status to squash merge and promote | T4.10 | bash-author | T4.1, T4.14 | done |
+| Adapt branch-cleanup to squash merge | T4.11 | bash-author | T4.1, T4.14 | done |
 | Run the daily loop in the sandbox | T4.12 | developer | T4.7, T4.8, T4.9, T4.10, T4.11, T4.13, T4.17, T4.19 | pending |
 | Register the git slash commands in the plugin tier | T4.13 | dynamic-author | T4.7, T4.16 | pending |
 | Take the branch settings from the project .env and reduce workflow-setup to validate | T4.14 | bash-author | - | done |
@@ -322,7 +322,7 @@ Build start, commit and pr, the aggregate status check, rules-sync with the STAG
 **Write the rules-sync command: apply the rulesets as the App** (T4.6)
 - Why: The rulesets reach GitHub from one command with the App as the writer, in both phases (decisions D26 and D30 of the concept).
 - Result: The command app git rules-sync that creates or updates the rulesets of a repository.
-- Done: The dry run prints per ruleset whether it would be created or updated and sends nothing; the apply fetches the token with the administration set before its first write and creates or updates each ruleset by name; a second apply changes nothing. The test covers the dry run without a write, the token before the first write, the second apply, the stage and the App id.
+- Done: The dry run prints per ruleset whether it would be created or updated and sends nothing; the apply fetches the token with the administration set before its first write and creates or updates each ruleset by name; a second apply changes nothing. The test covers the dry run without a write, the token before the first write, the second apply, the stage and the App id. A ruleset whose branch setting is unset is skipped and reported, and master still applies.
 - Fails: The rulesets would be applied with a personal token, a repeated apply would create duplicates, or the master ruleset of the wrong stage would be applied.
 - Carries: Who may make the release commit, the tag and the promote (CONCEPT-git-workflow-plugin:D30); What stays of the STAGE concept and the Stage Guard (CONCEPT-git-workflow-plugin:D17)
 - Consumes: T3.2 token_fetch token_fetch <owner/repo> <permission-set>
@@ -508,6 +508,7 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 - D55 [decided] Where the App id of the ruleset bypass actor comes from -> GIT_WORKFLOW_APP_ID in the project-root .env, required for rules-sync --apply and a placeholder in the rulesets of the library and in the dry run (The review lens assumed-code found no setting for the App id; the developer chose the .env setting on 2026-11-09, the pattern of D49, D51 and D52; developer, 2026-11-09, durable)
 - D56 [decided] What the commit, pr and rules-sync commands do about the repository slug and the developer identity -> A remote library bin/lib/remote.sh with remote_slug and remote_identity, written in task T4.18 before the three commands, which use it; the old copies in release.sh and promote.sh stay for backlog item B-2 (The review lens precedent found the helper duplicated in release.sh and promote.sh and open in the T3.6 and T3.7 findings; the developer chose the library without the refactor on 2026-11-09; developer, 2026-11-09, durable)
 - D57 [decided] Which registry files get a task of their own after the review of 2026-11-09 -> T4.19 enables pre-push/minimum-check in .agentic-os/hooks/hooks.json after T4.9, and T4.17 lists .agentic-os/commands/commands.json in its writes; the context files bin/lib/.evolve.json, bin-lib.md and bin-modules.md are kept by the orchestrator at commit time, not by a task; the lint modules gap between a new script and its registration in T4.7 is dismissed, as no lint runs per task (The review lens registrations found the hook enable-state and the commands manifest unlisted and the lens order found the script-before-registration gap; the developer chose the coverage on 2026-11-09; developer, 2026-11-09, durable)
+- D58 [decided] What rules-sync does with a ruleset whose branch setting is unset -> rules-sync skips a ruleset whose branch setting is unset (release without GIT_WORKFLOW_RELEASE_BRANCH, legacy without GIT_WORKFLOW_LEGACY_BRANCHES) and prints skipped for it; master always applies; tests/git-rules/sync.sh covers it (T4.5 made rules_json exit 3 for an unset branch setting after D16 and D31, so rules-sync would die on a project without legacy branches; the developer approved the amendment on 2026-11-09; developer, 2026-11-09, durable)
 
 ## Revisions
 
@@ -540,3 +541,4 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 - 2026-11-09 Settle the sources of STAGE and the worktree directory (D51, D52), add T4.15 for the worktree library, make T4.2 depend on it, and align the inputs and briefs of T4.1, T4.2, T4.5 and T4.12 with the current code (affects P4, T4.1, T4.2, T4.5, T4.12, T4.15, D51, D52) -- The inputs of T4.1, T4.2 and T4.5 were checked against the code: the STAGE source and the adapters/git/branch-protection.yaml input were gone, worktree.sh puts worktrees under the repository, worktree_create reuses an existing branch and the tests need the .agentic-os directory; the developer settled the two decisions on 2026-11-09 (developer)
 - 2026-11-09 Split T4.13 into T4.16 (seven command scripts), T4.13 (registration only) and T4.17 (plugin.yaml provides and compile); D53 supersedes D42; T4.12 and the P4 gate follow (affects P4, T4.12, T4.13, T4.16, T4.17, D42, D53) -- B-62 of the framework is done, so the plugin ships the scripts of its script commands at commands/git/<name>.sh; one task could not mix the existing plugin.yaml with new files, and the scripts are bash code under the script contract; the developer chose to amend T4.13 first on 2026-11-09 (developer)
 - 2026-11-09 Plan review round: mkdir .agentic-os in the unpassable verifies and gate segments, five strengthened proofs, new T4.18 remote library and T4.19 hook enable, commands.json in T4.17, GIT_WORKFLOW_APP_ID, provider.sh input path; D54 to D57 (affects P4, T4.3, T4.4, T4.5, T4.6, T4.9, T4.10, T4.11, T4.12, T4.17, T4.18, T4.19, D54, D55, D56, D57) -- The five plan review lenses of 2026-11-09 found verifies that exit 3 on the project bootstrap or pass while the claim is false, registry files no task covered, no source for the App id and a duplicated slug helper; the developer settled the findings in two rounds (claude)
+- 2026-11-09 T4.6 rules-sync skips a ruleset whose branch setting is unset and prints skipped; master always applies; the proof gains the skipped case; D58 records the rule (affects T4.6, D58) -- T4.5 made rules_json exit 3 for an unset GIT_WORKFLOW_RELEASE_BRANCH or GIT_WORKFLOW_LEGACY_BRANCHES (D16, D31), so rules-sync would die on a project without legacy branches; the developer approved the amendment on 2026-11-09 (developer)
