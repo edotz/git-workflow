@@ -14,8 +14,8 @@ What the plugin provides today (`plugin.yaml`: `provides: [modules, hooks]`), mo
   how git fires them (`adapters/git/hooks/hooks.yaml`), plus the hook `commit-msg/conventional`.
 - Conventional commit validation: `git lint-commit` runs commitlint with the config `commitlint.config.mjs`. The
   plugin owns the config and the `@commitlint/*` packages (`package.json`); a consuming project keeps neither.
-- The workflow material: `.github/` workflow blueprints, `workflow.env.{single,package,monorepo}.example`, and the
-  libraries `bin/lib/github.sh` and `bin/lib/worktree.sh`.
+- The workflow material: `.github/` workflow blueprints and the libraries `bin/lib/github.sh` and
+  `bin/lib/worktree.sh`.
 
 Why it exists: the git ecosystem is a separate concern with its own release cycle, and the framework stays provider-
 and workflow-agnostic. Parts of the moved ecosystem are stale; they stay unchanged until the redesign replaces them.
