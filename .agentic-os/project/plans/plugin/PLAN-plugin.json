@@ -1559,6 +1559,10 @@
             {
               "ref": "bin/modules/git/promote.sh",
               "why": "the layout of a command of the git domain"
+            },
+            {
+              "ref": "tests/git-promote/ff.sh",
+              "why": "how a test builds a throwaway repository with the .agentic-os directory the project bootstrap needs"
             }
           ],
           "writes": [
@@ -1588,7 +1592,7 @@
             "CONCEPT-git-workflow-plugin:D32"
           ],
           "brief": {
-            "arguments": "Write app git check [component]: it loads components.yaml from the project root, runs check_minimum for the component named or for every component, prints one line per component (ok or the failure) and exits non-zero when any component is red. It writes nothing and fetches no token. tests/git-check/run.sh builds a throwaway repository with two components and checks the cases: all green, a commit that is not conventional, a failing declared check, an unknown component.",
+            "arguments": "Write app git check [component]: it loads components.yaml from the project root, runs check_minimum for the component named or for every component, prints one line per component (ok or the failure) and exits non-zero when any component is red. It writes nothing and fetches no token. tests/git-check/run.sh builds a throwaway repository with two components and checks the cases: all green, a commit that is not conventional, a failing declared check, an unknown component. The throwaway repository of the test holds an empty .agentic-os directory, which the project bootstrap needs, as tests/git-promote/ff.sh builds it.",
             "output": "bin/modules/git/check.sh and tests/git-check/run.sh; the registration in module.yaml is the task T4.7.",
             "pattern": "bin/modules/git/promote.sh: the layout of a command of the git domain",
             "target": "new"
@@ -1611,7 +1615,8 @@
           "title": "Write the start command: a worktree and a branch from master",
           "depends": [
             "T3.3",
-            "T4.14"
+            "T4.14",
+            "T4.15"
           ],
           "owner": "bash-author",
           "inputs": [
@@ -1626,6 +1631,10 @@
             {
               "ref": "commitlint.config.mjs",
               "why": "the types a branch name may start with"
+            },
+            {
+              "ref": "tests/git-promote/ff.sh",
+              "why": "how a test builds a throwaway repository with the .agentic-os directory the project bootstrap needs"
             }
           ],
           "writes": [
@@ -1656,7 +1665,7 @@
             "CONCEPT-git-workflow-plugin:D41"
           ],
           "brief": {
-            "arguments": "Write app git start <type> <name>: the type is one of the conventional commit types of commitlint.config.mjs, the name is lower case with hyphens; it makes the branch <type>/<name> and its worktree from the main branch (GIT_WORKFLOW_MAIN_BRANCH) through worktree_create, prints the path of the worktree and refuses an existing branch. tests/git-start/run.sh checks it on a throwaway repository: a good start, a bad type, a bad name, an existing branch.",
+            "arguments": "Write app git start <type> <name>: the type is one of the conventional commit types of commitlint.config.mjs, the name is lower case with hyphens; it refuses a branch of that name that exists locally or on origin before anything is created, because worktree_create would check out an existing branch instead of failing, then makes the branch <type>/<name> and its worktree from the main branch (GIT_WORKFLOW_MAIN_BRANCH) through worktree_create, which puts the worktree under GIT_WORKFLOW_WORKTREE_DIR (task T4.15) and dies when the local main branch differs from origin, prints the path of the worktree and refuses an existing branch. tests/git-start/run.sh checks it on a throwaway repository: a good start, a bad type, a bad name, an existing branch. The throwaway repository of the test holds an empty .agentic-os directory, which the project bootstrap needs, and a bare origin at the same commit as the main branch.",
             "output": "bin/modules/git/start.sh and tests/git-start/run.sh; the registration in module.yaml is the task T4.7.",
             "pattern": "bin/modules/git/worktree.sh: the layout of a command that uses the worktree library",
             "target": "new"
@@ -1792,15 +1801,11 @@
           "inputs": [
             {
               "ref": "bin/modules/git/branch-protection.sh",
-              "why": "the classic rules this library replaces and the declarative YAML it read"
+              "why": "the classic rules this library replaces; the .github/branch-protection.yaml it read is removed"
             },
             {
-              "ref": "adapters/git/branch-protection.yaml",
-              "why": "the declaration the classic code read"
-            },
-            {
-              "ref": "bin/lib/token.sh",
-              "why": "the permission sets the token service knows"
+              "ref": "bin/config/token-service.json",
+              "why": "the permission sets the token service knows: contents, pull-requests and administration, the set the rulesets need"
             }
           ],
           "writes": [
@@ -1829,7 +1834,7 @@
           },
           "status": "pending",
           "why": "Rulesets replace the classic branch protection and the Stage Guard, so the rules of a repository are one declared set the developer reads and the App applies (decisions D17, D26 and D31).",
-          "result": "A library that builds the three rulesets as GitHub ruleset JSON from one declaration and the STAGE switch.",
+          "result": "A library that builds the three rulesets as GitHub ruleset JSON from one declaration and the GIT_WORKFLOW_STAGE switch.",
           "done": "rules_json master development gives a ruleset without required checks, master production requires a pull request, the aggregate check and squash merge, release and legacy give pull request, linear history and the App as the only bypass actor, and an unknown name or stage is refused.",
           "fails": "The development phase would require checks that block direct pushes, or the production rules would not require the aggregate check, or a human could push to the release branch.",
           "carries": [
@@ -1839,7 +1844,7 @@
             "CONCEPT-git-workflow-plugin:D30"
           ],
           "brief": {
-            "arguments": "Write bin/lib/rules.sh with rules_load <file>, rules_json <name> <stage> and rules_names, and bin/config/rulesets.yaml with the three rulesets: master (stage development: no pull request and no required check, direct pushes allowed; stage production: pull request, the aggregate check named check, squash merge only, linear history), release (pull request, linear history, no deletion, no force push, the App as the only bypass actor) and legacy (the release rules for the branch patterns the project names). Every ruleset is plain GitHub ruleset JSON built with the library json functions; the stage comes from the setting STAGE, default development, and an unknown stage is refused. The App id is a placeholder the command fills from its configuration. tests/git-rules/build.sh checks the JSON of every name and stage with jq.",
+            "arguments": "Write bin/lib/rules.sh with rules_load <file>, rules_json <name> <stage> and rules_names, and bin/config/rulesets.yaml with the three rulesets: master (stage development: no pull request and no required check, direct pushes allowed; stage production: pull request, the aggregate check named check, squash merge only, linear history), release (pull request, linear history, no deletion, no force push, the App as the only bypass actor) and legacy (the release rules for the branch patterns the project names). Every ruleset is plain GitHub ruleset JSON built with the library json functions; the stage comes from the setting GIT_WORKFLOW_STAGE of the project-root .env, read from the environment, default development in code, and an unknown stage is refused. The App id is a placeholder the command fills from its configuration. tests/git-rules/build.sh checks the JSON of every name and stage with jq.",
             "output": "bin/lib/rules.sh, bin/config/rulesets.yaml and tests/git-rules/build.sh.",
             "pattern": "bin/lib/tool.sh: the layout of a plugin library",
             "target": "new"
@@ -2198,7 +2203,7 @@
           ],
           "consumes": [],
           "brief": {
-            "arguments": "Start the token service with the sandbox key mounted, run app git rules-sync --dry-run and --apply with STAGE=production on the sandbox repository, make a change with the slash commands /git:start, /git:commit and /git:pr, check that the aggregate check named check is required and green and that the PR is squash merged, then run rules-sync --apply with STAGE=development and check that a direct push is accepted, install the hooks and check that a red direct push is stopped by the pre-push guard. Write what you ran and saw.",
+            "arguments": "Start the token service with the sandbox key mounted, run app git rules-sync --dry-run and --apply with GIT_WORKFLOW_STAGE=production on the sandbox repository, make a change with the slash commands /git:start, /git:commit and /git:pr, check that the aggregate check named check is required and green and that the PR is squash merged, then run rules-sync --apply with STAGE=development and check that a direct push is accepted, install the hooks and check that a red direct push is stopped by the pre-push guard. Write what you ran and saw.",
             "output": "A note with the sections Repository and Result.",
             "pattern": "pilot-release.md: the form of a pilot note",
             "target": "new"
@@ -2365,10 +2370,59 @@
             "at": "2026-11-09T11:48:23Z",
             "exit": 0
           }
+        },
+        {
+          "id": "T4.15",
+          "title": "Move the worktree directory to the GIT_WORKFLOW_WORKTREE_DIR setting",
+          "depends": [
+            "T4.14"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/lib/worktree.sh",
+              "why": "WORKTREE_BASE_DIR (line 22) and worktree_get_path (line 83) build the path under the repository"
+            },
+            {
+              "ref": "bin/modules/git/worktree.sh",
+              "why": "the existing worktree command that uses the library and its paths"
+            },
+            {
+              "ref": "tests/git-promote/ff.sh",
+              "why": "how a test builds a throwaway repository with the .agentic-os directory the project bootstrap needs"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/lib",
+              "paths": [
+                "bin/lib/worktree.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: worktree_get_path gives <GIT_WORKFLOW_WORKTREE_DIR>/<repo-name>/<name with / as -> and $HOME/worktrees/<repo-name>/... without the setting, and no PROVIDER_CONFIG_DIR path is left",
+            "run": "bash -n bin/lib/worktree.sh && ! grep -n 'PROVIDER_CONFIG_DIR' bin/lib/worktree.sh && (t=$(mktemp -d) && git init -q \"$t/r\" && mkdir \"$t/r/.agentic-os\" && (cd \"$t/r\" && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_WORKTREE_DIR=\"$t/w\" bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source \"${PLUGIN_ROOT}/bin/lib/worktree.sh\"; test \"$(worktree_get_path feat/foo)\" = \"$1/w/r/feat-foo\"; unset GIT_WORKFLOW_WORKTREE_DIR; test \"$(worktree_get_path feat/foo)\" = \"${HOME}/worktrees/r/feat-foo\"' _ \"$t\"); ec=$?; rm -rf \"$t\"; exit $ec)"
+          },
+          "status": "pending",
+          "why": "The start command (T4.2) must put the worktree where the developer keeps them, not inside the repository (decision D52 of this plan).",
+          "result": "worktree_get_path gives <GIT_WORKFLOW_WORKTREE_DIR>/<repo-name>/<name>, with $HOME/worktrees as the default and the repository name taken from the main worktree.",
+          "done": "With GIT_WORKFLOW_WORKTREE_DIR set the path is under it, without it the path is under $HOME/worktrees, the repository name is the name of the main worktree directory, a slash in the name becomes a hyphen, and no PROVIDER_CONFIG_DIR path is left in the library.",
+          "fails": "A started worktree would land inside the repository, or two repositories would share one directory, or the repository name would be wrong when the command runs from inside a worktree.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D8"
+          ],
+          "brief": {
+            "arguments": "Replace WORKTREE_BASE_DIR and the path of worktree_get_path in bin/lib/worktree.sh: the base directory is GIT_WORKFLOW_WORKTREE_DIR read from the environment (the framework loads the project-root .env; the process environment wins) with $HOME/worktrees as the default in code, and the worktree path is <base>/<repo-name>/<name with / replaced by ->. The repo name is the directory name of the main worktree, taken from git rev-parse --git-common-dir so that it is the same when the command runs inside a worktree; use the git library functions where one exists. Every function that builds or compares a worktree path (worktree_list, worktree_exists, worktree_create) keeps working with the new path; no PROVIDER_CONFIG_DIR path is left.",
+            "output": "bin/lib/worktree.sh changed; the path of a worktree is under GIT_WORKFLOW_WORKTREE_DIR or $HOME/worktrees and never under the repository.",
+            "pattern": "bin/lib/worktree.sh: the library the change stays in",
+            "target": "change"
+          },
+          "consumes": []
         }
       ],
       "gate": {
-        "run": "(bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh) && (bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh) && (bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh) && (bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh) && (bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh) && (bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh) && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage) && (yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml) && (test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh) && (bash -n bin/modules/git/workflow-status.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git -C $t/r tag v0.1.0 && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'feat: a' && (cd $t/r && PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-status.sh 2>/dev/null | jq -e '.latest_release == \"v0.1.0\" and .unreleased_commits == 1' >/dev/null); ec=$?; rm -rf $t; exit $ec )) && (bash -n bin/modules/git/branch-cleanup.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && cd $t/r && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x' && git checkout -q master && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x (#1)' && (PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/branch-cleanup.sh 2>/dev/null | grep -q 'feat/x'); ec=$?; cd /; rm -rf $t; exit $ec )) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f) && ((yq -r '.provides[]' plugin.yaml | grep -qx commands) && (for c in start commit pr check release promote rules-sync; do c=$c yq -e '.commands[] | select(.namespace == \"git\" and .name == strenv(c))' commands/commands.yaml >/dev/null || exit 1; done) && test \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0) && (for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\\.env|generate_branch_protection|generate_workflow_callers|generate_release_please_config|apply_branch_protection|init_workflow_env|check_preflight|load_workflow_env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/worktree.sh; test \"$(worktree_resolve_base_branch \"$1\")\" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test \"$(worktree_resolve_base_branch \"$1\")\" = master' _ \"$t\"; ec=$?; rm -rf \"$t\"; exit $ec) && (t=$(mktemp -d) && (cd $t && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_MAIN_BRANCH=trunk GIT_WORKFLOW_RELEASE_BRANCH=trunk bash $OLDPWD/bin/modules/git/workflow-setup.sh validate >/dev/null 2>&1 && ! PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-setup.sh --apply >/dev/null 2>&1); ec=$?; rm -rf $t; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh)"
+        "run": "(bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh) && (bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh) && (bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh) && (bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh) && (bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh) && (bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh) && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage) && (yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml) && (test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh) && (bash -n bin/modules/git/workflow-status.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git -C $t/r tag v0.1.0 && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'feat: a' && (cd $t/r && PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-status.sh 2>/dev/null | jq -e '.latest_release == \"v0.1.0\" and .unreleased_commits == 1' >/dev/null); ec=$?; rm -rf $t; exit $ec )) && (bash -n bin/modules/git/branch-cleanup.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && cd $t/r && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x' && git checkout -q master && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x (#1)' && (PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/branch-cleanup.sh 2>/dev/null | grep -q 'feat/x'); ec=$?; cd /; rm -rf $t; exit $ec )) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f) && ((yq -r '.provides[]' plugin.yaml | grep -qx commands) && (for c in start commit pr check release promote rules-sync; do c=$c yq -e '.commands[] | select(.namespace == \"git\" and .name == strenv(c))' commands/commands.yaml >/dev/null || exit 1; done) && test \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0) && (for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\\.env|generate_branch_protection|generate_workflow_callers|generate_release_please_config|apply_branch_protection|init_workflow_env|check_preflight|load_workflow_env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/worktree.sh; test \"$(worktree_resolve_base_branch \"$1\")\" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test \"$(worktree_resolve_base_branch \"$1\")\" = master' _ \"$t\"; ec=$?; rm -rf \"$t\"; exit $ec) && (t=$(mktemp -d) && (cd $t && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_MAIN_BRANCH=trunk GIT_WORKFLOW_RELEASE_BRANCH=trunk bash $OLDPWD/bin/modules/git/workflow-setup.sh validate >/dev/null 2>&1 && ! PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-setup.sh --apply >/dev/null 2>&1); ec=$?; rm -rf $t; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh) && (bash -n bin/lib/worktree.sh && ! grep -n 'PROVIDER_CONFIG_DIR' bin/lib/worktree.sh && (t=$(mktemp -d) && git init -q \"$t/r\" && mkdir \"$t/r/.agentic-os\" && (cd \"$t/r\" && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_WORKTREE_DIR=\"$t/w\" bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source \"${PLUGIN_ROOT}/bin/lib/worktree.sh\"; test \"$(worktree_get_path feat/foo)\" = \"$1/w/r/feat-foo\"; unset GIT_WORKFLOW_WORKTREE_DIR; test \"$(worktree_get_path feat/foo)\" = \"${HOME}/worktrees/r/feat-foo\"' _ \"$t\"); ec=$?; rm -rf \"$t\"; exit $ec))"
       }
     },
     {
@@ -2896,6 +2950,26 @@
       "date": "2026-11-09",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D51",
+      "question": "Where the project-phase switch STAGE comes from now that workflow.env is removed",
+      "chosen": "GIT_WORKFLOW_STAGE (development or production) in the project-root .env, read from the environment with development as the default in code; an unknown value is refused",
+      "reason": "STAGE was a workflow.env key and has no source; the developer chose the GIT_WORKFLOW_ prefix on 2026-11-09 to match the branch settings (D49) and to avoid a clash with an ambient STAGE variable, which the process environment would let win",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D52",
+      "question": "Where app git start puts the worktree",
+      "chosen": "GIT_WORKFLOW_WORKTREE_DIR in the project-root .env, default $HOME/worktrees; the worktree is <dir>/<repo-name>/<type>-<name>, the repo name taken from the main worktree; the worktree library changes in its own task T4.15 before T4.2",
+      "reason": "worktree.sh built the path under the repository (PROVIDER_CONFIG_DIR/worktrees) although the developer's answer is /home/ohoeft/worktrees, which holds one directory per repository; the developer chose a setting with the per-repository directory on 2026-11-09; a task cannot mix new and existing files, so the library change is a task of its own",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -3265,6 +3339,22 @@
         "D50"
       ],
       "reason": "The framework loads only the project-root .env, so D46 was ambiguous, and D47 left open what the workflow-setup entry points do once the loader is gone; the developer settled both on 2026-11-09",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-09",
+      "change": "Settle the sources of STAGE and the worktree directory (D51, D52), add T4.15 for the worktree library, make T4.2 depend on it, and align the inputs and briefs of T4.1, T4.2, T4.5 and T4.12 with the current code",
+      "affects": [
+        "P4",
+        "T4.1",
+        "T4.2",
+        "T4.5",
+        "T4.12",
+        "T4.15",
+        "D51",
+        "D52"
+      ],
+      "reason": "The inputs of T4.1, T4.2 and T4.5 were checked against the code: the STAGE source and the adapters/git/branch-protection.yaml input were gone, worktree.sh puts worktrees under the repository, worktree_create reuses an existing branch and the tests need the .agentic-os directory; the developer settled the two decisions on 2026-11-09",
       "by": "developer"
     }
   ],
