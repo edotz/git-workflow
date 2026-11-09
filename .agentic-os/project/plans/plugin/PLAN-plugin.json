@@ -2257,7 +2257,7 @@
         },
         {
           "id": "T4.14",
-          "title": "Take the branch settings from the project env files and cut workflow-setup",
+          "title": "Take the branch settings from the project .env and reduce workflow-setup to validate",
           "depends": [],
           "owner": "bash-author",
           "inputs": [
@@ -2326,20 +2326,20 @@
             }
           ],
           "verify": {
-            "from": "environment fact: no script reads workflow.env or a PLUGIN_ branch key any more, worktree_resolve_base_branch returns the GIT_WORKFLOW_MAIN_BRANCH value and master without it, and the promote and release tests pass with the new names",
-            "run": "for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\\.env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/worktree.sh; test \"$(worktree_resolve_base_branch \"$1\")\" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test \"$(worktree_resolve_base_branch \"$1\")\" = master' _ \"$t\"; ec=$?; rm -rf \"$t\"; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh"
+            "from": "environment fact: no script reads workflow.env or a PLUGIN_ branch key any more, the dead workflow-setup functions are gone, worktree_resolve_base_branch returns the GIT_WORKFLOW_MAIN_BRANCH value and master without it, workflow-setup validate passes with the settings and --apply is refused, and the promote and release tests pass",
+            "run": "for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\\.env|generate_branch_protection|generate_workflow_callers|generate_release_please_config|apply_branch_protection|init_workflow_env|check_preflight|load_workflow_env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/worktree.sh; test \"$(worktree_resolve_base_branch \"$1\")\" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test \"$(worktree_resolve_base_branch \"$1\")\" = master' _ \"$t\"; ec=$?; rm -rf \"$t\"; exit $ec) && (t=$(mktemp -d) && (cd $t && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_MAIN_BRANCH=trunk GIT_WORKFLOW_RELEASE_BRANCH=trunk bash $OLDPWD/bin/modules/git/workflow-setup.sh validate >/dev/null 2>&1 && ! PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-setup.sh --apply >/dev/null 2>&1); ec=$?; rm -rf $t; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh"
           },
           "status": "pending",
-          "why": "The scripts that read the main branch still read the deleted workflow.env or a PLUGIN_ key, so the start command (T4.2) and the status and cleanup adaptations (T4.10, T4.11) would build on a setting that has no source (decisions D46 and D47 of this plan).",
-          "result": "Every script of the plugin takes the main and release branch from GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH of the project env files, with master as the fallback, and workflow-setup is cut to those settings.",
-          "done": "No plugin script or the env.defaults file names workflow.env or a PLUGIN_ branch key; worktree_resolve_base_branch gives the configured branch and master without one; the promote and release tests pass with the new names.",
+          "why": "The scripts that read the main branch still read the deleted workflow.env or a PLUGIN_ key, so the start command (T4.2) and the status and cleanup adaptations (T4.10, T4.11) would build on a setting that has no source (decisions D49 and D50 of this plan).",
+          "result": "Every script of the plugin takes the main and release branch from GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH of the project-root .env, with master as the fallback, and workflow-setup is reduced to the validate entry point.",
+          "done": "No plugin script or the env.defaults file names workflow.env or a PLUGIN_ branch key; the generate_, apply_branch_protection, init_workflow_env and preflight functions are gone from workflow-setup; worktree_resolve_base_branch gives the configured branch and master without one; workflow-setup validate passes and --apply is refused; the promote and release tests pass with the new names.",
           "fails": "start would branch from a stale default, release and promote would ignore the branch a project configures, and workflow-setup would keep failing on a file that no longer exists.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D41"
           ],
           "brief": {
-            "arguments": "Replace every read of MAIN_BRANCH, RELEASE_BRANCH and the PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH and PLUGIN_EDOTZ_GIT_WORKFLOW_RELEASE_BRANCH keys by GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH, read from the environment (the project .env files are loaded by the framework) with master as the fallback in code. worktree_resolve_base_branch stops reading .github/workflow.env. workflow-status.sh stops loading workflow.env. Remove both PLUGIN_ branch keys and the comment about them from bin/config/env.defaults; STALE_DAYS and VSCODE_PROFILES_DIR keep their keys. Cut workflow-setup.sh: remove the workflow.env parse, the template copy and the key checks that have no source, keep what reads the two branch settings, leave the protection rendering functions untouched (P6 removes them) and update its description in module.yaml. tests/git-promote/ff.sh passes the new names. Report every key of workflow.env that has no replacement and invent none.",
-            "output": "The six scripts, bin/config/env.defaults, the module.yaml description and tests/git-promote/ff.sh changed; no file names workflow.env or a PLUGIN_ branch key.",
+            "arguments": "Replace every read of MAIN_BRANCH, RELEASE_BRANCH and the PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH and PLUGIN_EDOTZ_GIT_WORKFLOW_RELEASE_BRANCH keys by GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH, read from the environment with master as the fallback in code: the framework loads the project-root .env at bootstrap and the process environment wins, so no script parses .env or .env.defaults itself. worktree_resolve_base_branch stops reading .github/workflow.env. workflow-status.sh stops loading workflow.env. Remove both PLUGIN_ branch keys and the comment about them from bin/config/env.defaults; STALE_DAYS and VSCODE_PROFILES_DIR keep their keys. Reduce workflow-setup.sh to the validate entry point: it checks and prints the two branch settings; delete the workflow.env parse, the key checks, the template copy and the generate_*, apply_branch_protection, init_workflow_env and preflight functions with their helpers; --apply, --check and --init are removed and die with a message that names rules-sync but not workflow.env; update its description and requires in module.yaml. tests/git-promote/ff.sh passes the new names. Report every key of workflow.env that has no replacement and invent none.",
+            "output": "The six scripts, bin/config/env.defaults, the module.yaml description and tests/git-promote/ff.sh changed; no file names workflow.env or a PLUGIN_ branch key; workflow-setup holds validate only.",
             "pattern": "bin/modules/git/promote.sh: how a command reads a setting with a fallback",
             "target": "change"
           },
@@ -2347,7 +2347,7 @@
         }
       ],
       "gate": {
-        "run": "(bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh) && (bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh) && (bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh) && (bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh) && (bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh) && (bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh) && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage) && (yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml) && (test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh) && (bash -n bin/modules/git/workflow-status.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git -C $t/r tag v0.1.0 && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'feat: a' && (cd $t/r && PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-status.sh 2>/dev/null | jq -e '.latest_release == \"v0.1.0\" and .unreleased_commits == 1' >/dev/null); ec=$?; rm -rf $t; exit $ec )) && (bash -n bin/modules/git/branch-cleanup.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && cd $t/r && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x' && git checkout -q master && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x (#1)' && (PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/branch-cleanup.sh 2>/dev/null | grep -q 'feat/x'); ec=$?; cd /; rm -rf $t; exit $ec )) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f) && ((yq -r '.provides[]' plugin.yaml | grep -qx commands) && (for c in start commit pr check release promote rules-sync; do c=$c yq -e '.commands[] | select(.namespace == \"git\" and .name == strenv(c))' commands/commands.yaml >/dev/null || exit 1; done) && test \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0) && (for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\\.env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/worktree.sh; test \"$(worktree_resolve_base_branch \"$1\")\" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test \"$(worktree_resolve_base_branch \"$1\")\" = master' _ \"$t\"; ec=$?; rm -rf \"$t\"; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh)"
+        "run": "(bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh) && (bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh) && (bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh) && (bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh) && (bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh) && (bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh) && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage) && (yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml) && (test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh) && (bash -n bin/modules/git/workflow-status.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git -C $t/r tag v0.1.0 && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'feat: a' && (cd $t/r && PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-status.sh 2>/dev/null | jq -e '.latest_release == \"v0.1.0\" and .unreleased_commits == 1' >/dev/null); ec=$?; rm -rf $t; exit $ec )) && (bash -n bin/modules/git/branch-cleanup.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && cd $t/r && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x' && git checkout -q master && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x (#1)' && (PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/branch-cleanup.sh 2>/dev/null | grep -q 'feat/x'); ec=$?; cd /; rm -rf $t; exit $ec )) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f) && ((yq -r '.provides[]' plugin.yaml | grep -qx commands) && (for c in start commit pr check release promote rules-sync; do c=$c yq -e '.commands[] | select(.namespace == \"git\" and .name == strenv(c))' commands/commands.yaml >/dev/null || exit 1; done) && test \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0) && (for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\\.env|generate_branch_protection|generate_workflow_callers|generate_release_please_config|apply_branch_protection|init_workflow_env|check_preflight|load_workflow_env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/worktree.sh; test \"$(worktree_resolve_base_branch \"$1\")\" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test \"$(worktree_resolve_base_branch \"$1\")\" = master' _ \"$t\"; ec=$?; rm -rf \"$t\"; exit $ec) && (t=$(mktemp -d) && (cd $t && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_MAIN_BRANCH=trunk GIT_WORKFLOW_RELEASE_BRANCH=trunk bash $OLDPWD/bin/modules/git/workflow-setup.sh validate >/dev/null 2>&1 && ! PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-setup.sh --apply >/dev/null 2>&1); ec=$?; rm -rf $t; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh)"
       }
     },
     {
@@ -2832,7 +2832,8 @@
       "by": "developer",
       "date": "2026-11-09",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D49"
     },
     {
       "id": "D47",
@@ -2842,13 +2843,34 @@
       "by": "developer",
       "date": "2026-11-09",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D50"
     },
     {
       "id": "D48",
       "question": "How the group conflict of T4.1 and T4.14 on bin/modules/git/promote.sh is settled",
       "chosen": "T4.1 depends on T4.14, so the check command is written after the branch settings moved to the GIT_WORKFLOW_ keys",
       "reason": "The plan lint reported both tasks in group 1 with T4.14 writing promote.sh, which T4.1 names in its verify run or pattern; the developer approved the dependency on 2026-11-09 and ruled out dropping the file from T4.14",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D49",
+      "question": "Where the branch settings of the plugin are defined and read, after the clarification of 2026-11-09",
+      "chosen": "GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH are defined in the project-root .env only, which the framework loads at bootstrap (the process environment still wins); no script parses another file, a project .env.defaults is not read for them, and the fallback is master in code; both PLUGIN_EDOTZ_GIT_WORKFLOW_ keys leave bin/config/env.defaults and release, promote, workflow-status, branch-cleanup, worktree and workflow-setup read the new names; STALE_DAYS and VSCODE_PROFILES_DIR keep their PLUGIN_ keys",
+      "reason": "The framework loads only the .env of the project root (bootstrap.sh stage env) and never a project .env.defaults, so D46 and the T4.14 brief, which said the .env files, were ambiguous; the developer chose .env only on 2026-11-09",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D50",
+      "question": "What happens to workflow-setup.sh after the removal of workflow.env, after the clarification of 2026-11-09",
+      "chosen": "validate is its only entry point and checks and prints the two branch settings; --apply, --check and --init are removed and die with a message that names rules-sync; the workflow.env parse, the key checks, the template copy, the generate_*, apply_branch_protection, init_workflow_env and preflight functions are deleted in T4.14, not left for P6; the module.yaml description and requires follow",
+      "reason": "After the loader is gone the rendering and preflight functions are unreachable, and D47 left open what the entry points do; the developer chose to delete the dead code now on 2026-11-09",
       "by": "developer",
       "date": "2026-11-09",
       "scope": "durable",
@@ -3208,6 +3230,20 @@
         "D48"
       ],
       "reason": "The plan lint reported T4.1 and T4.14 in the same group with T4.14 writing promote.sh, which T4.1 names in its verify run or pattern; the developer approved the dependency on 2026-11-09",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-09",
+      "change": "Settle the branch settings source as the project-root .env only (D49) and reduce workflow-setup to validate with the dead code deleted in T4.14 (D50); D46 and D47 superseded, T4.14 text, verify and the P4 gate segment updated",
+      "affects": [
+        "P4",
+        "T4.14",
+        "D46",
+        "D47",
+        "D49",
+        "D50"
+      ],
+      "reason": "The framework loads only the project-root .env, so D46 was ambiguous, and D47 left open what the workflow-setup entry points do once the loader is gone; the developer settled both on 2026-11-09",
       "by": "developer"
     }
   ],
