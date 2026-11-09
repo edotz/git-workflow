@@ -58,7 +58,7 @@ commands:
   - name: "workflow-setup"
     description: "Validate the branch settings GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH and print them."
   - name: "workflow-status"
-    requires: [git, gh]
-    description: "Collect structured status data for the trunk-based workflow."
+    requires: [git, docker]
+    description: "Report as JSON the commits not yet released, and per component the latest release tag, the commits since it and the release branch position."
   - name: "worktree"
     description: "Manage git worktrees for isolated feature development."

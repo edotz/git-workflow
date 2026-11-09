@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Git Branch Cleanup Module
-# Identifies merged, stale, and safe-to-delete branches
+# Identifies merged, stale, and safe-to-delete branches; a squash-merged branch counts as merged
+# when git cherry finds no commit of it that is not applied to the main branch (also as one squashed commit), or a
+# merged pull request has it as its head
 # Output: Interactive cleanup with safety checks
 
 set -euo pipefail
@@ -13,13 +15,15 @@ source "${BU_ROOT}/lib/core.sh"
 source "${BU_LIB}/cli.sh"
 source "${BU_LIB}/git.sh"
 source "${BU_LIB}/json.sh"
+source "${PLUGIN_ROOT}/bin/lib/tool.sh"
+source "${PLUGIN_ROOT}/bin/lib/remote.sh"
 
 # ============================================
 # Configuration
 # ============================================
 readonly MAIN_BRANCH="${GIT_WORKFLOW_MAIN_BRANCH:-master}"
 readonly RELEASE_BRANCH="${GIT_WORKFLOW_RELEASE_BRANCH:-master}"
-readonly STALE_DAYS="${PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS}"
+readonly STALE_DAYS="${PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS:-30}"
 
 # ============================================
 # CLI Specification
@@ -57,6 +61,55 @@ is_protected() {
   fi
   
   return 1
+}
+
+# Check if every commit of a branch is applied to the base branch: merge, rebase, or a squash merge. A squash of
+# several commits is found by comparing the tree of the branch, as one commit on the merge base, with the base.
+# Args: $1 - branch ref, $2 - base ref
+# Returns: 0 if merged, 1 otherwise (also when git cannot tell)
+is_merged() {
+  local ref="$1"
+  local base="$2"
+  local cherry merge_base tree squash
+
+  cherry=$(git cherry "$base" "$ref" 2>/dev/null) || return 1
+  if [[ $'\n'"$cherry" != *$'\n+ '* ]]; then
+    return 0
+  fi
+
+  merge_base=$(git merge-base "$base" "$ref" 2>/dev/null) || return 1
+  tree=$(git rev-parse "${ref}^{tree}" 2>/dev/null) || return 1
+  squash=$(git -c user.name=branch-cleanup -c user.email=branch-cleanup@localhost commit-tree "$tree" -p "$merge_base" -m squash 2>/dev/null) || return 1
+  cherry=$(git cherry "$base" "$squash" 2>/dev/null) || return 1
+  [[ $'\n'"$cherry" != *$'\n+ '* ]]
+}
+
+# Set the slug and the developer token the merged pull request lookup needs; both stay empty without a login or a
+# remote, and the lookup is then skipped.
+# Args: none
+init_pr_lookup() {
+  PR_LOOKUP_SLUG=""
+  PR_LOOKUP_TOKEN=""
+  if ! command -v gh >/dev/null 2>&1; then
+    return 0
+  fi
+  PR_LOOKUP_TOKEN=$(gh auth token 2>/dev/null || true)
+  if [[ -n "$PR_LOOKUP_TOKEN" ]]; then
+    PR_LOOKUP_SLUG=$(remote_slug 2>/dev/null) || PR_LOOKUP_SLUG=""
+  fi
+  return 0
+}
+
+# Check if a merged pull request exists for the branch (gh through tool_run, with the developer token)
+# Args: $1 - branch name without origin/
+# Returns: 0 if a merged pull request has this head, 1 otherwise (also without a login, a remote or docker)
+is_pr_merged() {
+  local branch="$1" count
+  if [[ -z "$PR_LOOKUP_SLUG" ]]; then
+    return 1
+  fi
+  count=$(GH_TOKEN="$PR_LOOKUP_TOKEN" tool_run gh pr list --repo "$PR_LOOKUP_SLUG" --state merged --head "$branch" --json number --jq length </dev/null 2>/dev/null) || return 1
+  [[ "$count" =~ ^[0-9]+$ && "$count" -gt 0 ]]
 }
 
 # Calculate branch age in days
@@ -98,7 +151,13 @@ analyze_local_branches() {
   local active_local=()
   
   git fetch --prune origin 2>/dev/null || true
-  
+
+  # A squash merge made on GitHub is on origin/<main> until the developer pulls.
+  local base="$MAIN_BRANCH"
+  if git rev-parse --verify --quiet "origin/${MAIN_BRANCH}" >/dev/null 2>&1; then
+    base="origin/${MAIN_BRANCH}"
+  fi
+
   while IFS= read -r branch; do
     # Skip protected branches
     # shellcheck disable=SC2310
@@ -107,7 +166,8 @@ analyze_local_branches() {
     fi
     
     # Check if merged
-    if git branch --merged "$MAIN_BRANCH" 2>/dev/null | grep -q "^[* ]*${branch}$"; then
+    # shellcheck disable=SC2310
+    if is_merged "$branch" "$base" || is_pr_merged "$branch"; then
       merged_local+=("$branch")
     else
       # Check age
@@ -122,12 +182,10 @@ analyze_local_branches() {
     fi
   done < <(git branch --format='%(refname:short)' 2>/dev/null | grep -v "^${MAIN_BRANCH}$\|^${RELEASE_BRANCH}$")
   
-  # Output as JSON (using library function to avoid duplication)
-  jq -n \
-    --argjson merged "$(json_array_from_bash "${merged_local[@]}")" \
-    --argjson stale "$(json_array_from_bash "${stale_local[@]}")" \
-    --argjson active "$(json_array_from_bash "${active_local[@]}")" \
-    '{merged: $merged, stale: $stale, active: $active}'
+  json_build \
+    j merged "$(json_array_from_bash "${merged_local[@]}")" \
+    j stale "$(json_array_from_bash "${stale_local[@]}")" \
+    j active "$(json_array_from_bash "${active_local[@]}")"
 }
 
 # Analyze remote branches
@@ -149,7 +207,8 @@ analyze_remote_branches() {
     fi
     
     # Check if merged
-    if git branch -r --merged "origin/$MAIN_BRANCH" 2>/dev/null | grep -q "origin/${branch}$"; then
+    # shellcheck disable=SC2310
+    if is_merged "origin/$branch" "origin/$MAIN_BRANCH" || is_pr_merged "$branch"; then
       merged_remote+=("$branch")
     else
       # Check age
@@ -164,27 +223,45 @@ analyze_remote_branches() {
     fi
   done < <(git branch -r --format='%(refname:short)' 2>/dev/null | grep -v "HEAD\|^origin/${MAIN_BRANCH}$\|^origin/${RELEASE_BRANCH}$")
   
-  # Output as JSON (using library function to avoid duplication)
-  jq -n \
-    --argjson merged "$(json_array_from_bash "${merged_remote[@]}")" \
-    --argjson stale "$(json_array_from_bash "${stale_remote[@]}")" \
-    --argjson active "$(json_array_from_bash "${active_remote[@]}")" \
-    '{merged: $merged, stale: $stale, active: $active}'
+  json_build \
+    j merged "$(json_array_from_bash "${merged_remote[@]}")" \
+    j stale "$(json_array_from_bash "${stale_remote[@]}")" \
+    j active "$(json_array_from_bash "${active_remote[@]}")"
+}
+
+# Print the branches of one analysis, one line per branch as "<group>: <prefix><branch>"
+# Args: $1 - analysis JSON, $2 - prefix of the branch name
+print_branch_lines() {
+  local analysis="$1"
+  local prefix="$2"
+  local line
+
+  while IFS= read -r line; do
+    print_line "$line"
+  done < <(json_query "$analysis" \
+    'to_entries[] | .key as $g | .value[] | "\($g): \($p)\(sub(":[0-9]+$"; ""))"' \
+    -r --arg p "$prefix")
 }
 
 # Format and display analysis report
-# Args: $1 - local analysis JSON, $2 - remote analysis JSON
+# Args: $1 - local analysis JSON, $2 - remote analysis JSON, $3 - local-only, $4 - remote-only
 display_report() {
   local local_json="$1"
   local remote_json="$2"
   local local_only="${3:-false}"
   local remote_only="${4:-false}"
-  
-  logger_info "🧹 Branch Cleanup Report"
+
+  logger_info "Branch Cleanup Report"
   print_line "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+  if [[ "$remote_only" == "false" ]]; then
+    print_branch_lines "$local_json" ""
+  fi
+  if [[ "$local_only" == "false" ]]; then
+    print_branch_lines "$remote_json" "origin/"
+  fi
+
   print_line ""
-  
-  # Display analysis (simplified - actual implementation formats JSON)
   print_line "Use --dry-run to preview, --force to skip confirmation"
   print_line ""
 }
@@ -210,6 +287,7 @@ main() {
   if cli_flag_is_set "local-only"; then local_only=true; fi
   
   logger_info "🔄 Fetching latest from remote..."
+  init_pr_lookup
   
   # Analyze branches
   local local_analysis
@@ -238,31 +316,37 @@ main() {
     exit 0
   fi
   
-  # Get counts
+  local results
+  results=$(json_build \
+    j local_branches "$local_analysis" \
+    j remote_branches "$remote_analysis")
+
   local merged_count
-  merged_count=$(jq -s 'map(.merged | length) | add' <<< "$local_analysis $remote_analysis" || echo "0")
-  
+  merged_count=$(json_query "$results" '[.local_branches.merged, .remote_branches.merged] | map(length) | add')
+
   if [[ "$merged_count" -eq 0 ]]; then
     logger_success "Repository is clean - no action needed"
     exit 0
   fi
-  
+
   # Confirmation (unless --force)
   if [[ "$force" == "false" ]]; then
+    if [[ ! -t 0 ]]; then
+      print_line "Not interactive - use --force to skip the confirmation"
+      exit 0
+    fi
     print_line "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    read -p "Delete merged branches? (y/N): " -n 1 -r
+    print_prompt "Delete merged branches? (y/N): "
+    read -n 1 -r
     print_line ""
-    
+
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      logger_info "Cancelled - no branches deleted"
+      print_line "Cancelled - no branches deleted"
       exit 0
     fi
   fi
-  
-  # Output results as JSON
-  json_build \
-    j local_branches "$local_analysis" \
-    j remote_branches "$remote_analysis"
+
+  print_line "$results"
 }
 
 main "$@"
