@@ -76,6 +76,10 @@
     {
       "name": "pre-commit/linter",
       "enabled": false
+    },
+    {
+      "name": "pre-commit/scope-checks",
+      "enabled": false
     }
   ],
   "claude": []
