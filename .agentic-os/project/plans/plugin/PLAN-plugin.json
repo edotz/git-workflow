@@ -1676,12 +1676,13 @@
           "id": "T4.3",
           "title": "Write the commit command: a conventional message drafted by the provider",
           "depends": [
-            "T4.1"
+            "T4.1",
+            "T4.18"
           ],
           "owner": "bash-author",
           "inputs": [
             {
-              "ref": "bin/lib/provider.sh",
+              "ref": "/home/ohoeft/workspace/edotz.claude-code/bin/lib/provider.sh",
               "why": "provider_run_prompt and provider_available, how the host session drafts text"
             },
             {
@@ -1691,6 +1692,10 @@
             {
               "ref": "bin/lib/tool.sh",
               "why": "tool_run, which runs the commit in the tool image"
+            },
+            {
+              "ref": "bin/lib/remote.sh",
+              "why": "remote_identity, the identity of the developer for the commit"
             }
           ],
           "writes": [
@@ -1722,18 +1727,25 @@
             "CONCEPT-git-workflow-plugin:D8"
           ],
           "brief": {
-            "arguments": "Write app git commit [--message <text>] [--yes] <paths>: it stages the paths named, takes the message from --message or asks provider_run_prompt for a conventional message from the staged diff (D18; the plugin calls no provider binary, and when no provider is available it says so and asks for --message), shows the message, lints it with the lint-commit command, asks the developer to confirm unless --yes is given with --message, and makes the commit through tool_run with the identity of the developer and without the hooks of the repository (decision D37 of the plan: the message was linted here). A refused lint or a declined confirmation commits nothing and leaves the index as it was. tests/git-commit/run.sh runs it with a stub provider command on a throwaway repository.",
+            "arguments": "Write app git commit [--message <text>] [--yes] <paths>: it stages the paths named, takes the message from --message or asks provider_run_prompt for a conventional message from the staged diff (D18; the plugin calls no provider binary, and when no provider is available it says so and asks for --message), shows the message, lints it with the lint-commit command, asks the developer to confirm unless --yes is given with --message, and makes the commit through tool_run with the identity of the developer and without the hooks of the repository (decision D37 of the plan: the message was linted here). A refused lint or a declined confirmation commits nothing and leaves the index as it was. tests/git-commit/run.sh runs it with a stub provider command on a throwaway repository. The identity comes from remote_identity of the remote library (T4.18), never from a raw git config call. The throwaway repository of the test holds an empty .agentic-os directory.",
             "output": "bin/modules/git/commit.sh and tests/git-commit/run.sh; the registration in module.yaml is the task T4.7.",
             "pattern": "bin/modules/git/release.sh: the layout of a command that commits through tool_run",
             "target": "new"
           },
-          "consumes": []
+          "consumes": [
+            {
+              "from": "T4.18",
+              "name": "remote_identity",
+              "signature": "remote_identity <name|email>"
+            }
+          ]
         },
         {
           "id": "T4.4",
           "title": "Write the pr command: push the branch and open the pull request as the developer",
           "depends": [
-            "T4.1"
+            "T4.1",
+            "T4.18"
           ],
           "owner": "bash-author",
           "inputs": [
@@ -1748,6 +1760,10 @@
             {
               "ref": "bin/lib/tool.sh",
               "why": "tool_run"
+            },
+            {
+              "ref": "bin/lib/remote.sh",
+              "why": "remote_slug, the owner/name of the repository the pull request is opened on"
             }
           ],
           "writes": [
@@ -1778,7 +1794,7 @@
             "CONCEPT-git-workflow-plugin:D41"
           ],
           "brief": {
-            "arguments": "Write app git pr [--dry-run] [--draft]: it refuses the main branch, runs check_minimum for every component and refuses a red check, then pushes the current branch and opens the pull request with gh through tool_run as the developer (the developer login in GH_TOKEN, not the App token; the push uses -c credential.helper=!gh auth git-credential as release.sh does). The title is the subject of the only commit, or the branch name made readable when there are several; the body lists the commit subjects. --dry-run prints the branch, the title and the body and changes nothing. tests/git-pr/dry-run.sh checks the dry run, the refusal of the main branch and the refusal of a red check on a throwaway repository.",
+            "arguments": "Write app git pr [--dry-run] [--draft]: it refuses the main branch, runs check_minimum for every component and refuses a red check, then pushes the current branch and opens the pull request with gh through tool_run as the developer (the developer login in GH_TOKEN, not the App token; the push uses -c credential.helper=!gh auth git-credential as release.sh does). The title is the subject of the only commit, or the branch name made readable when there are several; the body lists the commit subjects. --dry-run prints the branch, the title and the body and changes nothing. tests/git-pr/dry-run.sh checks the dry run, the refusal of the main branch and the refusal of a red check on a throwaway repository. The owner/name comes from remote_slug of the remote library (T4.18), never from a copy of the helper of release.sh. The throwaway repository of the test holds an empty .agentic-os directory.",
             "output": "bin/modules/git/pr.sh and tests/git-pr/dry-run.sh; the registration in module.yaml is the task T4.7.",
             "pattern": "bin/modules/git/release.sh: the layout of a command that pushes and calls gh through tool_run",
             "target": "new"
@@ -1788,6 +1804,11 @@
               "from": "T3.5",
               "name": "check_minimum",
               "signature": "check_minimum <component>"
+            },
+            {
+              "from": "T4.18",
+              "name": "remote_slug",
+              "signature": "remote_slug [<remote>]"
             }
           ]
         },
@@ -1844,7 +1865,7 @@
             "CONCEPT-git-workflow-plugin:D30"
           ],
           "brief": {
-            "arguments": "Write bin/lib/rules.sh with rules_load <file>, rules_json <name> <stage> and rules_names, and bin/config/rulesets.yaml with the three rulesets: master (stage development: no pull request and no required check, direct pushes allowed; stage production: pull request, the aggregate check named check, squash merge only, linear history), release (pull request, linear history, no deletion, no force push, the App as the only bypass actor) and legacy (the release rules for the branch patterns the project names). Every ruleset is plain GitHub ruleset JSON built with the library json functions; the stage comes from the setting GIT_WORKFLOW_STAGE of the project-root .env, read from the environment, default development in code, and an unknown stage is refused. The App id is a placeholder the command fills from its configuration. tests/git-rules/build.sh checks the JSON of every name and stage with jq.",
+            "arguments": "Write bin/lib/rules.sh with rules_load <file>, rules_json <name> <stage> and rules_names, and bin/config/rulesets.yaml with the three rulesets: master (stage development: no pull request and no required check, direct pushes allowed; stage production: pull request, the aggregate check named check, squash merge only, linear history), release (pull request, linear history, no deletion, no force push, the App as the only bypass actor) and legacy (the release rules for the branch patterns the project names). Every ruleset is plain GitHub ruleset JSON built with the library json functions; the stage comes from the setting GIT_WORKFLOW_STAGE of the project-root .env, read from the environment, default development in code, and an unknown stage is refused. The bypass actor id is the placeholder APP_ID_PLACEHOLDER, which rules-sync replaces with the value of GIT_WORKFLOW_APP_ID before it sends a ruleset. tests/git-rules/build.sh checks the JSON of every name and stage with jq.",
             "output": "bin/lib/rules.sh, bin/config/rulesets.yaml and tests/git-rules/build.sh.",
             "pattern": "bin/lib/tool.sh: the layout of a plugin library",
             "target": "new"
@@ -1870,7 +1891,8 @@
           "title": "Write the rules-sync command: apply the rulesets as the App",
           "depends": [
             "T3.2",
-            "T4.5"
+            "T4.5",
+            "T4.18"
           ],
           "owner": "bash-author",
           "inputs": [
@@ -1885,6 +1907,10 @@
             {
               "ref": "bin/modules/git/branch-protection.sh",
               "why": "the classic command this one replaces"
+            },
+            {
+              "ref": "bin/lib/remote.sh",
+              "why": "remote_slug, the owner/name of the remote of the repository the rulesets are applied to"
             }
           ],
           "writes": [
@@ -1902,20 +1928,20 @@
             }
           ],
           "verify": {
-            "from": "environment fact: the dry run prints the rulesets it would create or update and changes nothing, and a repository outside the organisation is refused by the token service",
-            "run": "bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh"
+            "from": "environment fact: the dry run changes nothing, the apply fetches the token with the administration set before its first write, a second apply changes nothing, the stage selects the master ruleset and the App id comes from GIT_WORKFLOW_APP_ID",
+            "run": "bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh && for k in 'dry-run' 'second apply' 'stage' 'GIT_WORKFLOW_APP_ID' 'token'; do grep -qi -- \"$k\" tests/git-rules/sync.sh || exit 1; done"
           },
           "status": "pending",
           "why": "The rulesets reach GitHub from one command with the App as the writer, in both phases (decisions D26 and D30 of the concept).",
           "result": "The command app git rules-sync that creates or updates the rulesets of a repository.",
-          "done": "The dry run prints per ruleset whether it would be created or updated and sends nothing; the apply fetches the token with the administration set before its first write and creates or updates each ruleset by name; a second apply changes nothing.",
+          "done": "The dry run prints per ruleset whether it would be created or updated and sends nothing; the apply fetches the token with the administration set before its first write and creates or updates each ruleset by name; a second apply changes nothing. The test covers the dry run without a write, the token before the first write, the second apply, the stage and the App id.",
           "fails": "The rulesets would be applied with a personal token, a repeated apply would create duplicates, or the master ruleset of the wrong stage would be applied.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D30",
             "CONCEPT-git-workflow-plugin:D17"
           ],
           "brief": {
-            "arguments": "Write app git rules-sync [--dry-run|--apply] [--stage <stage>]: for the repository of the remote origin it builds the rulesets with rules_json, reads the existing rulesets of the repository through gh by name, and prints per ruleset create, update or unchanged. --apply fetches the token (permission set administration) before its first write and creates or updates the rulesets through the Rulesets API, never deleting a ruleset it did not name. tests/git-rules/sync.sh runs the dry run against a stub gh that returns canned ruleset lists and checks the three outcomes.",
+            "arguments": "Write app git rules-sync [--dry-run|--apply] [--stage <stage>]: for the repository of the remote origin it builds the rulesets with rules_json, reads the existing rulesets of the repository through gh by name, and prints per ruleset create, update or unchanged. --apply fetches the token (permission set administration) before its first write and creates or updates the rulesets through the Rulesets API, never deleting a ruleset it did not name. tests/git-rules/sync.sh runs the dry run against a stub gh that returns canned ruleset lists and checks the three outcomes. The slug of the repository comes from remote_slug of the remote library (T4.18), never from a copy of the helper of release.sh. The stage comes from --stage or GIT_WORKFLOW_STAGE, default development; the bypass actor id comes from GIT_WORKFLOW_APP_ID of the project-root .env, required for --apply (refused with a message when empty) and left as the placeholder in the dry run. The stub gh of tests/git-rules/sync.sh appends every call to a log, and the test asserts: the dry run logs no write; --apply logs the token request before its first create or update; a second --apply, with the stub returning the created rulesets, logs no write (a second apply changes nothing); --stage production and --stage development send different master rulesets; the bypass actor id equals GIT_WORKFLOW_APP_ID. The throwaway repository holds an empty .agentic-os directory.",
             "output": "bin/modules/git/rules-sync.sh and tests/git-rules/sync.sh; the registration in module.yaml is the task T4.7. branch-protection.sh stays until the retirement phase.",
             "pattern": "bin/modules/git/promote.sh: the layout of a command that fetches a token and calls the API",
             "target": "new"
@@ -1930,6 +1956,11 @@
               "from": "T4.5",
               "name": "rules_json",
               "signature": "rules_json <name> <stage>"
+            },
+            {
+              "from": "T4.18",
+              "name": "remote_slug",
+              "signature": "remote_slug [<remote>]"
             }
           ]
         },
@@ -2023,7 +2054,8 @@
           "id": "T4.9",
           "title": "Write the pre-push guard hook",
           "depends": [
-            "T4.1"
+            "T4.1",
+            "T4.7"
           ],
           "owner": "hook-author",
           "inputs": [
@@ -2049,8 +2081,8 @@
             }
           ],
           "verify": {
-            "from": "environment fact: the hook is executable, registered under the key pre-push and calls app git check",
-            "run": "test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh"
+            "from": "environment fact: the hook is executable, registered under the key pre-push, calls app git check, exits non-zero on a repository with a red component and zero on a green one",
+            "run": "test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master \"$t/r\" && mkdir \"$t/r/.agentic-os\" && printf 'components:\\n  - name: object\\n    paths: [\".\"]\\n' > \"$t/r/components.yaml\" && cd \"$t/r\" && g=\"git -c user.name=t -c user.email=t@example.com\" && $g add -A && $g commit -q -m 'chore: init' && $g commit -q --allow-empty -m 'not conventional' && if PLUGIN_ROOT=\"$r\" bash \"$r/bin/hooks/pre-push/minimum-check\" origin url </dev/null >/dev/null 2>&1; then false; fi && $g commit -q --amend --allow-empty -m 'chore: fine' && PLUGIN_ROOT=\"$r\" bash \"$r/bin/hooks/pre-push/minimum-check\" origin url </dev/null >/dev/null 2>&1; ec=$?; cd /; rm -rf \"$t\"; exit $ec)"
           },
           "status": "pending",
           "why": "A broken direct push is found on the developer machine at once, and no GitHub Action runs on push (decision D54 of the concept).",
@@ -2099,8 +2131,8 @@
             }
           ],
           "verify": {
-            "from": "environment fact: the status names the latest release tag, the commits since it and where the release branch stands",
-            "run": "bash -n bin/modules/git/workflow-status.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git -C $t/r tag v0.1.0 && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'feat: a' && (cd $t/r && PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-status.sh 2>/dev/null | jq -e '.latest_release == \"v0.1.0\" and .unreleased_commits == 1' >/dev/null); ec=$?; rm -rf $t; exit $ec )"
+            "from": "environment fact: the status names per component the latest release tag, the commits since it and the position of the release branch (absent, on the tag, behind it), and no release-please data",
+            "run": "bash -n bin/modules/git/workflow-status.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master \"$t/r\" && mkdir \"$t/r/.agentic-os\" && printf 'components:\\n  - name: object\\n    paths: [\".\"]\\n' > \"$t/r/components.yaml\" && cd \"$t/r\" && g=\"git -c user.name=t -c user.email=t@example.com\" && $g add -A && $g commit -q -m 'chore: init' && git tag v0.1.0 && $g commit -q --allow-empty -m 'feat: a' && run() { PLUGIN_ROOT=\"$r\" GIT_WORKFLOW_RELEASE_BRANCH=rel bash \"$r/bin/modules/git/workflow-status.sh\" 2>/dev/null; } && run | jq -e '.components[0] | .name == \"object\" and .latest_release == \"v0.1.0\" and .commits_since_release == 1 and .release_branch == \"absent\"' >/dev/null && git branch rel v0.1.0 && run | jq -e '.components[0].release_branch == \"on\"' >/dev/null && git tag v0.2.0 && run | jq -e '.components[0] | .latest_release == \"v0.2.0\" and .release_branch == \"behind\"' >/dev/null && if run | grep -qi 'release-please'; then false; fi; ec=$?; cd /; rm -rf \"$t\"; exit $ec)"
           },
           "status": "pending",
           "why": "After squash merge and promote the status must report releases and the release branch, not the retired release-please and Stage Guard state (decision D25 of the concept).",
@@ -2111,7 +2143,7 @@
             "CONCEPT-git-workflow-plugin:D41"
           ],
           "brief": {
-            "arguments": "Change workflow-status.sh: drop the release-please and Stage Guard data, add per component the latest release tag, the number of commits since it and the position of the release branch (GIT_WORKFLOW_RELEASE_BRANCH) against the tag (on it, behind it, absent), keep the JSON output form. The run uses git through tool_run.",
+            "arguments": "Change workflow-status.sh: drop the release-please and Stage Guard data, add per component the latest release tag, the number of commits since it and the position of the release branch (GIT_WORKFLOW_RELEASE_BRANCH) against the tag (on it, behind it, absent), keep the JSON output form. The run uses git through tool_run. The JSON gains a components array with one object per component of components.yaml: name, latest_release, commits_since_release and release_branch (on, behind or absent); the pending_prs, branch_protection and pipeline data of release-please and Stage Guard are dropped, and a missing release branch is reported as absent instead of stopping the command. The throwaway repository of the test holds an empty .agentic-os directory and a components.yaml.",
             "output": "bin/modules/git/workflow-status.sh with the new fields in its JSON.",
             "pattern": "bin/modules/git/workflow-status.sh: the script itself",
             "target": "change"
@@ -2141,8 +2173,8 @@
             }
           ],
           "verify": {
-            "from": "environment fact: a branch whose change landed by squash merge is listed as merged although git does not see it as merged",
-            "run": "bash -n bin/modules/git/branch-cleanup.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && cd $t/r && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x' && git checkout -q master && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x (#1)' && (PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/branch-cleanup.sh 2>/dev/null | grep -q 'feat/x'); ec=$?; cd /; rm -rf $t; exit $ec )"
+            "from": "environment fact: a branch whose change landed by squash merge is printed under merged, and an unmerged branch is not",
+            "run": "bash -n bin/modules/git/branch-cleanup.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master \"$t/r\" && mkdir \"$t/r/.agentic-os\" && cd \"$t/r\" && g=\"git -c user.name=t -c user.email=t@example.com\" && $g commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && $g commit -q -m 'feat: x' && git checkout -q master && git checkout -q -b feat/y && echo y > y && git add y && $g commit -q -m 'feat: y' && git checkout -q master && echo x > x && git add x && $g commit -q -m 'feat: x (#1)' && out=$(PLUGIN_ROOT=\"$r\" bash \"$r/bin/modules/git/branch-cleanup.sh\" --dry-run 2>/dev/null) && printf '%s\\n' \"$out\" | grep -qx 'merged: feat/x' && if printf '%s\\n' \"$out\" | grep -q 'merged: feat/y'; then false; fi; ec=$?; cd /; rm -rf \"$t\"; exit $ec)"
           },
           "status": "pending",
           "why": "A branch that was squash merged is no ancestor of master, so a cleanup that asks git branch --merged never finds it (decision D25 of the concept).",
@@ -2151,7 +2183,7 @@
           "fails": "Squash-merged branches would pile up as stale, or a branch with unmerged work would be listed as safe to delete.",
           "carries": [],
           "brief": {
-            "arguments": "Change branch-cleanup.sh: treat a branch as merged also when git cherry against the main branch shows no commit that is not applied or when the pull request of the branch is merged (gh pr list --state merged --head <branch> through tool_run when a token or login exists), keep the safety checks and the interactive form, and never delete a branch with unmerged work.",
+            "arguments": "Change branch-cleanup.sh: treat a branch as merged also when git cherry against the main branch shows no commit that is not applied or when the pull request of the branch is merged (gh pr list --state merged --head <branch> through tool_run when a token or login exists), keep the safety checks and the interactive form, and never delete a branch with unmerged work. display_report prints one line per branch as <group>: <branch> with the groups merged, stale and active; it prints no branch today. The throwaway repository of the test holds an empty .agentic-os directory.",
             "output": "bin/modules/git/branch-cleanup.sh with the squash-merge detection.",
             "pattern": "bin/modules/git/branch-cleanup.sh: the script itself",
             "target": "change"
@@ -2167,7 +2199,9 @@
             "T4.9",
             "T4.10",
             "T4.11",
-            "T4.13"
+            "T4.13",
+            "T4.17",
+            "T4.19"
           ],
           "owner": "developer",
           "inputs": [
@@ -2190,7 +2224,7 @@
           ],
           "verify": {
             "from": "environment fact: the note records the rulesets, a start, commit and pr, the aggregate check and the guard",
-            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f"
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'rules-sync' '/git:start' '/git:commit' '/git:pr' 'squash' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done"
           },
           "status": "pending",
           "why": "The gate of m4-daily-loop asks that the PR gate with the aggregate check is required and the rulesets are applied with the App as bypass actor; the earlier checks cannot reach GitHub.",
@@ -2203,7 +2237,7 @@
           ],
           "consumes": [],
           "brief": {
-            "arguments": "Start the token service with the sandbox key mounted, run app git rules-sync --dry-run and --apply with GIT_WORKFLOW_STAGE=production on the sandbox repository, make a change with the slash commands /git:start, /git:commit and /git:pr, check that the aggregate check named check is required and green and that the PR is squash merged, then run rules-sync --apply with STAGE=development and check that a direct push is accepted, install the hooks and check that a red direct push is stopped by the pre-push guard. Write what you ran and saw.",
+            "arguments": "Start the token service with the sandbox key mounted, run app git rules-sync --dry-run and --apply with GIT_WORKFLOW_STAGE=production on the sandbox repository, make a change with the slash commands /git:start, /git:commit and /git:pr, check that the aggregate check named check is required and green and that the PR is squash merged, then run rules-sync --apply with GIT_WORKFLOW_STAGE=development and check that a direct push is accepted, install the hooks and check that a red direct push is stopped by the pre-push guard. Write what you ran and saw. The note names rules-sync, /git:start, /git:commit, /git:pr, the squash merge and the pre-push guard, each with what you saw.",
             "output": "A note with the sections Repository and Result.",
             "pattern": "pilot-release.md: the form of a pilot note",
             "target": "new"
@@ -2211,50 +2245,50 @@
         },
         {
           "id": "T4.13",
-          "title": "Author the git slash commands of the plugin in the plugin tier",
+          "title": "Register the git slash commands in the plugin tier",
           "depends": [
-            "T4.7"
+            "T4.7",
+            "T4.16"
           ],
           "owner": "dynamic-author",
           "inputs": [
             {
               "ref": "/home/ohoeft/workspace/edotz.claude-code/bin/commands/commands.yaml",
-              "why": "the registry format: name, namespace, type, description, and how a script command forwards its arguments"
+              "why": "the registry format: name, namespace, type, description, script found through the tier chain and forward-arguments"
             },
             {
               "ref": "bin/modules/git/module.yaml",
               "why": "the names, arguments and descriptions of the seven commands the slash commands wrap"
             },
             {
-              "ref": "plugin.yaml",
-              "why": "provides lists modules and hooks; it gains commands"
+              "ref": "commands/git",
+              "why": "the seven scripts of T4.16 that the entries name"
             }
           ],
           "writes": [
             {
               "scope": ".",
               "paths": [
-                "plugin.yaml",
                 "commands/commands.yaml"
               ]
             }
           ],
           "verify": {
-            "from": "environment fact: the plugin provides commands and registers the seven git commands in its own tier, none in the project tier",
-            "run": "(yq -r '.provides[]' plugin.yaml | grep -qx commands) && (for c in start commit pr check release promote rules-sync; do c=$c yq -e '.commands[] | select(.namespace == \"git\" and .name == strenv(c))' commands/commands.yaml >/dev/null || exit 1; done) && test \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0"
+            "from": "environment fact: the plugin registers the seven git commands as script commands in its own tier, none in the project tier",
+            "run": "(for c in start commit pr check release promote rules-sync; do c=$c yq -e '.commands[] | select(.namespace == \"git\" and .name == strenv(c) and .type == \"script\" and .script == \"git/\" + strenv(c) + \".sh\")' commands/commands.yaml >/dev/null || exit 1; done) && test \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0"
           },
           "status": "pending",
           "why": "A developer types /git:start, /git:commit and /git:pr; the plugin so far reaches them only as bash app git commands, and a slash command registered in the project tier would not ship to consuming projects (decisions D42 to D44 of the plan).",
-          "result": "The plugin provides commands: /git:start, /git:commit, /git:pr, /git:check, /git:release, /git:promote and /git:rules-sync, registered in the plugin tier with the namespace git.",
-          "done": "plugin.yaml lists commands in provides, commands/commands.yaml holds the seven entries with the namespace git, and the project registration .agentic-os/commands/commands.yaml still holds none.",
+          "result": "commands/commands.yaml registers /git:start, /git:commit, /git:pr, /git:check, /git:release, /git:promote and /git:rules-sync in the plugin tier with the namespace git.",
+          "done": "commands/commands.yaml holds the seven entries with the namespace git, type script and the script git/<name>.sh, and the project registration .agentic-os/commands/commands.yaml still holds none.",
           "fails": "The commands would be registered in the project tier and work in this repository only, or a consuming project would not get them, or the pilot T4.12 would run bash app git instead of the slash commands.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D8",
             "CONCEPT-git-workflow-plugin:D41"
           ],
           "brief": {
-            "arguments": "Author the seven slash commands start, commit, pr, check, release, promote and rules-sync with the namespace git, each forwarding its arguments to bash ${BU_ROOT}/app git <name> and showing the argument hint of its module; add commands to provides of plugin.yaml. Take every target directory from bash app tiers registration-dir commands and never from a path of this brief; the session must have the purpose deliverable, which prints commands/commands.yaml of the plugin root, while the purpose project prints .agentic-os/commands/commands.yaml and is wrong for this task.",
-            "output": "plugin.yaml with commands in provides and commands/commands.yaml with the seven entries; the claude fields in the file the registration function prints; the registry .agentic-os/commands/commands.yaml untouched.",
+            "arguments": "Author commands/commands.yaml with the seven entries start, commit, pr, check, release, promote and rules-sync: namespace git, type script, script git/<name>.sh (the scripts of T4.16, found through the tier chain), forward-arguments true, and the argument-hint and the description taken from the module entry of the command in bin/modules/git/module.yaml. Write no claude fields: a plugin tier supplies the registration only, the provider fields come from the project that uses the plugin. Take the registration path from bash app tiers registration-dir commands, never from a path of this brief; the session must have the purpose deliverable, which prints commands/commands.yaml of the plugin root, while the purpose project prints .agentic-os/commands/commands.yaml and is wrong for this task. plugin.yaml is not touched here (T4.17).",
+            "output": "commands/commands.yaml with the seven entries; the registry .agentic-os/commands/commands.yaml untouched.",
             "pattern": "/home/ohoeft/workspace/edotz.claude-code/bin/commands/commands.yaml: the registry format with namespace, type and forward-arguments",
             "target": "new"
           },
@@ -2419,10 +2453,228 @@
             "target": "change"
           },
           "consumes": []
+        },
+        {
+          "id": "T4.16",
+          "title": "Write the seven command scripts of the git slash commands",
+          "depends": [
+            "T4.7"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "/home/ohoeft/workspace/edotz.claude-code/bin/commands/aos/compile.sh",
+              "why": "the layout of a command script: the header entries of the script contract and the exec of the app command"
+            },
+            {
+              "ref": "/home/ohoeft/workspace/edotz.claude-code/bin/config/disclosures.yaml",
+              "why": "the script contract: executable and the header entries Purpose, Usage, Arguments, Output and Exit codes"
+            },
+            {
+              "ref": "bin/modules/git/module.yaml",
+              "why": "the arguments and descriptions of the seven git commands the scripts forward to"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "commands/git/start.sh",
+                "commands/git/commit.sh",
+                "commands/git/pr.sh",
+                "commands/git/check.sh",
+                "commands/git/release.sh",
+                "commands/git/promote.sh",
+                "commands/git/rules-sync.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: each script is executable, parses, has the five header entries of the script contract and execs bash app git <name>",
+            "run": "for c in start commit pr check release promote rules-sync; do f=commands/git/$c.sh; bash -n $f && test -x $f && grep -q \"^# Purpose:\" $f && grep -q \"^# Usage:\" $f && grep -q \"^# Arguments:\" $f && grep -q \"^# Output:\" $f && grep -q \"^# Exit codes:\" $f && grep -q \"exec bash \\\"\\${BU_ROOT}/app\\\" git $c\" $f || exit 1; done"
+          },
+          "status": "pending",
+          "why": "A slash command of the plugin is a script command whose script the compiler finds through the tier chain, so the plugin has to ship the seven scripts (decision D53 of this plan).",
+          "result": "The seven scripts commands/git/start.sh, commit.sh, pr.sh, check.sh, release.sh, promote.sh and rules-sync.sh, each forwarding its arguments to bash ${BU_ROOT}/app git <name>.",
+          "done": "Every script is executable, passes bash -n, has the header entries Purpose, Usage, Arguments, Output and Exit codes, and ends in exec bash \"${BU_ROOT}/app\" git <name> \"$@\".",
+          "fails": "The compile would refuse a script that breaks the contract or is not executable, or a slash command would run another command than its app git name.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D8",
+            "CONCEPT-git-workflow-plugin:D41"
+          ],
+          "brief": {
+            "arguments": "Write commands/git/<name>.sh for start, commit, pr, check, release, promote and rules-sync: each is bash with #!/usr/bin/env bash, set -euo pipefail, the leading comment block with the entries Purpose, Usage, Arguments, Output and Exit codes (one line each, taken from the module entry of the command in bin/modules/git/module.yaml), source \"${BU_ROOT}/lib/core.sh\" and exec bash \"${BU_ROOT}/app\" git <name> \"$@\", with the executable bit set. The scripts carry no logic of their own.",
+            "output": "The seven executable scripts under commands/git/.",
+            "pattern": "/home/ohoeft/workspace/edotz.claude-code/bin/commands/aos/compile.sh: the layout of a command script",
+            "target": "new"
+          },
+          "consumes": []
+        },
+        {
+          "id": "T4.17",
+          "title": "Declare commands in provides of plugin.yaml and compile them",
+          "depends": [
+            "T4.13"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "plugin.yaml",
+              "why": "provides lists modules and hooks; it gains commands"
+            },
+            {
+              "ref": "commands/commands.yaml",
+              "why": "the registration of T4.13 that the compile reads once the plugin provides commands"
+            },
+            {
+              "ref": ".agentic-os/commands/commands.json",
+              "why": "the enable state of the project commands, to which the compile adds new names with enabled true"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "plugin.yaml",
+                ".agentic-os/commands/commands.json"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: the plugin provides commands and the compile writes the seven slash commands under the namespace git",
+            "run": "(yq -r '.provides[]' plugin.yaml | grep -qx commands) && bash ${BU_ROOT}/app compile commands >/dev/null && (for c in start commit pr check release promote rules-sync; do test -f .claude/commands/git/$c.md || exit 1; done)"
+          },
+          "status": "pending",
+          "why": "The plugin tier is scanned for commands only when plugin.yaml lists the surface (decision D53 of this plan).",
+          "result": "plugin.yaml lists commands in provides and the compile produces the seven git slash commands.",
+          "done": "plugin.yaml lists commands in provides, app compile commands exits 0 and .claude/commands/git/ holds the seven commands.",
+          "fails": "The commands would be registered but never scanned, or a consuming project would not get them.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D8"
+          ],
+          "brief": {
+            "arguments": "Add commands to provides of plugin.yaml, run bash ${BU_ROOT}/app compile commands and check that the seven commands are compiled under the namespace git. The compile may add the seven commands to .agentic-os/commands/commands.json; keep what it writes.",
+            "output": "plugin.yaml with commands in provides.",
+            "pattern": "plugin.yaml: the file the change stays in",
+            "target": "change"
+          },
+          "consumes": []
+        },
+        {
+          "id": "T4.18",
+          "title": "Write the remote library: the repository slug and the developer identity",
+          "depends": [],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/release.sh",
+              "why": "_release_remote (lines 118-127) and the identity read (lines 134-140), the code this library replaces for the new commands"
+            },
+            {
+              "ref": "bin/modules/git/promote.sh",
+              "why": "_promote_remote (lines 96-105), the second copy"
+            },
+            {
+              "ref": "bin/lib/tool.sh",
+              "why": "the layout of a plugin library"
+            },
+            {
+              "ref": "tests/git-promote/ff.sh",
+              "why": "how a test builds a throwaway repository with the .agentic-os directory the project bootstrap needs"
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/lib",
+              "paths": [
+                "bin/lib/remote.sh"
+              ]
+            },
+            {
+              "scope": "tests",
+              "paths": [
+                "tests/git-remote/run.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: remote_slug gives owner/name for an https and an ssh remote URL and refuses a repository without the remote, and remote_identity gives the configured name and email",
+            "run": "bash -n bin/lib/remote.sh && bash tests/git-remote/run.sh"
+          },
+          "status": "pending",
+          "why": "The commit, pr and rules-sync commands need the owner/name slug and the developer identity, and release.sh and promote.sh each hold their own copy; a shared library keeps the new commands from adding more copies (decision D56 of this plan).",
+          "result": "bin/lib/remote.sh with remote_slug [<remote>] and remote_identity <name|email>.",
+          "done": "remote_slug prints owner/name for git@github.com:owner/name.git, https://github.com/owner/name.git and https://github.com/owner/name, dies for a missing remote, and remote_identity prints the configured user.name and user.email and dies when one is unset.",
+          "fails": "The three new commands would each carry another copy of the slug code, or would take the slug of a wrong remote, or would commit with an empty identity.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D41"
+          ],
+          "produces": [
+            {
+              "name": "remote_slug",
+              "signature": "remote_slug [<remote>]"
+            },
+            {
+              "name": "remote_identity",
+              "signature": "remote_identity <name|email>"
+            }
+          ],
+          "brief": {
+            "arguments": "Write bin/lib/remote.sh with remote_slug [<remote>] (default origin: the owner/name of the remote URL, for the ssh form git@host:owner/name(.git) and the https form https://host/owner/name(.git); dies with a message when the remote does not exist or the URL has no owner/name) and remote_identity <name|email> (the value of git config user.name or user.email; dies naming the unset key). Both read local git configuration only and need no token or tool image. Follow the layout of bin/lib/tool.sh: source guard BU_STATE_REMOTE, core.sh through ${BU_LIB:-${BASH_SOURCE[0]%/*}}, return 0 at the end of the file. tests/git-remote/run.sh builds a throwaway repository with an empty .agentic-os directory and checks the three URL forms, the missing remote and both identity values.",
+            "output": "bin/lib/remote.sh and tests/git-remote/run.sh.",
+            "pattern": "bin/lib/tool.sh: the layout of a plugin library",
+            "target": "new"
+          },
+          "consumes": []
+        },
+        {
+          "id": "T4.19",
+          "title": "Enable the pre-push guard in the hook registry",
+          "depends": [
+            "T4.9"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "/home/ohoeft/workspace/edotz.claude-code/bin/docs/hook-authoring.md",
+              "why": "Step 2 of the registration: hooks sync lists a new script in hooks.json and hooks enable switches it on"
+            },
+            {
+              "ref": ".agentic-os/hooks/hooks.json",
+              "why": "the enable state of the project hooks, which holds no pre-push entry"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                ".agentic-os/hooks/hooks.json"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: hooks.json lists pre-push/minimum-check as enabled and the hook registration lints clean",
+            "run": "jq -e '.shared[] | select(.name == \"pre-push/minimum-check\" and .enabled == true)' .agentic-os/hooks/hooks.json >/dev/null && bash ${BU_ROOT}/app lint hooks"
+          },
+          "status": "pending",
+          "why": "The pre-push guard stops a red push only when its enable state is in hooks.json (decision D57 of this plan); T4.12 expects the guard to act.",
+          "result": "pre-push/minimum-check is listed and enabled in .agentic-os/hooks/hooks.json.",
+          "done": "hooks.json holds pre-push/minimum-check with enabled true and app lint hooks exits 0.",
+          "fails": "The hook would exist but never run, and the pilot would see a red push go through.",
+          "carries": [
+            "CONCEPT-git-workflow-plugin:D41"
+          ],
+          "brief": {
+            "arguments": "Run bash ${BU_ROOT}/app hooks sync and then bash ${BU_ROOT}/app hooks enable pre-push minimum-check, check the entry in .agentic-os/hooks/hooks.json and run bash ${BU_ROOT}/app lint hooks.",
+            "output": ".agentic-os/hooks/hooks.json with the enabled entry pre-push/minimum-check.",
+            "pattern": ".agentic-os/hooks/hooks.json: the file the change stays in",
+            "target": "change"
+          },
+          "consumes": []
         }
       ],
       "gate": {
-        "run": "(bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh) && (bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh) && (bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh) && (bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh) && (bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh) && (bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh) && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage) && (yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml) && (test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh) && (bash -n bin/modules/git/workflow-status.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git -C $t/r tag v0.1.0 && git -C $t/r -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'feat: a' && (cd $t/r && PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-status.sh 2>/dev/null | jq -e '.latest_release == \"v0.1.0\" and .unreleased_commits == 1' >/dev/null); ec=$?; rm -rf $t; exit $ec )) && (bash -n bin/modules/git/branch-cleanup.sh && ( t=$(mktemp -d) && git init -q -b master $t/r && cd $t/r && git -c user.name=t -c user.email=t@example.com commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x' && git checkout -q master && echo x > x && git add x && git -c user.name=t -c user.email=t@example.com commit -q -m 'feat: x (#1)' && (PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/branch-cleanup.sh 2>/dev/null | grep -q 'feat/x'); ec=$?; cd /; rm -rf $t; exit $ec )) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f) && ((yq -r '.provides[]' plugin.yaml | grep -qx commands) && (for c in start commit pr check release promote rules-sync; do c=$c yq -e '.commands[] | select(.namespace == \"git\" and .name == strenv(c))' commands/commands.yaml >/dev/null || exit 1; done) && test \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0) && (for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\\.env|generate_branch_protection|generate_workflow_callers|generate_release_please_config|apply_branch_protection|init_workflow_env|check_preflight|load_workflow_env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/worktree.sh; test \"$(worktree_resolve_base_branch \"$1\")\" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test \"$(worktree_resolve_base_branch \"$1\")\" = master' _ \"$t\"; ec=$?; rm -rf \"$t\"; exit $ec) && (t=$(mktemp -d) && (cd $t && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_MAIN_BRANCH=trunk GIT_WORKFLOW_RELEASE_BRANCH=trunk bash $OLDPWD/bin/modules/git/workflow-setup.sh validate >/dev/null 2>&1 && ! PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-setup.sh --apply >/dev/null 2>&1); ec=$?; rm -rf $t; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh) && (bash -n bin/lib/worktree.sh && ! grep -n 'PROVIDER_CONFIG_DIR' bin/lib/worktree.sh && (t=$(mktemp -d) && git init -q \"$t/r\" && mkdir \"$t/r/.agentic-os\" && (cd \"$t/r\" && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_WORKTREE_DIR=\"$t/w\" bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source \"${PLUGIN_ROOT}/bin/lib/worktree.sh\"; test \"$(worktree_get_path feat/foo)\" = \"$1/w/r/feat-foo\"; unset GIT_WORKFLOW_WORKTREE_DIR; test \"$(worktree_get_path feat/foo)\" = \"${HOME}/worktrees/r/feat-foo\"' _ \"$t\"); ec=$?; rm -rf \"$t\"; exit $ec))"
+        "run": "(bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh) && (bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh) && (bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh) && (bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh) && (bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh) && (bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh && for k in 'dry-run' 'second apply' 'stage' 'GIT_WORKFLOW_APP_ID' 'token'; do grep -qi -- \"$k\" tests/git-rules/sync.sh || exit 1; done) && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage) && (yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml) && (test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master \"$t/r\" && mkdir \"$t/r/.agentic-os\" && printf 'components:\\n  - name: object\\n    paths: [\".\"]\\n' > \"$t/r/components.yaml\" && cd \"$t/r\" && g=\"git -c user.name=t -c user.email=t@example.com\" && $g add -A && $g commit -q -m 'chore: init' && $g commit -q --allow-empty -m 'not conventional' && if PLUGIN_ROOT=\"$r\" bash \"$r/bin/hooks/pre-push/minimum-check\" origin url </dev/null >/dev/null 2>&1; then false; fi && $g commit -q --amend --allow-empty -m 'chore: fine' && PLUGIN_ROOT=\"$r\" bash \"$r/bin/hooks/pre-push/minimum-check\" origin url </dev/null >/dev/null 2>&1; ec=$?; cd /; rm -rf \"$t\"; exit $ec)) && (bash -n bin/modules/git/workflow-status.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master \"$t/r\" && mkdir \"$t/r/.agentic-os\" && printf 'components:\\n  - name: object\\n    paths: [\".\"]\\n' > \"$t/r/components.yaml\" && cd \"$t/r\" && g=\"git -c user.name=t -c user.email=t@example.com\" && $g add -A && $g commit -q -m 'chore: init' && git tag v0.1.0 && $g commit -q --allow-empty -m 'feat: a' && run() { PLUGIN_ROOT=\"$r\" GIT_WORKFLOW_RELEASE_BRANCH=rel bash \"$r/bin/modules/git/workflow-status.sh\" 2>/dev/null; } && run | jq -e '.components[0] | .name == \"object\" and .latest_release == \"v0.1.0\" and .commits_since_release == 1 and .release_branch == \"absent\"' >/dev/null && git branch rel v0.1.0 && run | jq -e '.components[0].release_branch == \"on\"' >/dev/null && git tag v0.2.0 && run | jq -e '.components[0] | .latest_release == \"v0.2.0\" and .release_branch == \"behind\"' >/dev/null && if run | grep -qi 'release-please'; then false; fi; ec=$?; cd /; rm -rf \"$t\"; exit $ec)) && (bash -n bin/modules/git/branch-cleanup.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master \"$t/r\" && mkdir \"$t/r/.agentic-os\" && cd \"$t/r\" && g=\"git -c user.name=t -c user.email=t@example.com\" && $g commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && $g commit -q -m 'feat: x' && git checkout -q master && git checkout -q -b feat/y && echo y > y && git add y && $g commit -q -m 'feat: y' && git checkout -q master && echo x > x && git add x && $g commit -q -m 'feat: x (#1)' && out=$(PLUGIN_ROOT=\"$r\" bash \"$r/bin/modules/git/branch-cleanup.sh\" --dry-run 2>/dev/null) && printf '%s\\n' \"$out\" | grep -qx 'merged: feat/x' && if printf '%s\\n' \"$out\" | grep -q 'merged: feat/y'; then false; fi; ec=$?; cd /; rm -rf \"$t\"; exit $ec)) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'rules-sync' '/git:start' '/git:commit' '/git:pr' 'squash' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done) && ((for c in start commit pr check release promote rules-sync; do c=$c yq -e '.commands[] | select(.namespace == \"git\" and .name == strenv(c) and .type == \"script\" and .script == \"git/\" + strenv(c) + \".sh\")' commands/commands.yaml >/dev/null || exit 1; done) && test \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0) && (for c in start commit pr check release promote rules-sync; do f=commands/git/$c.sh; bash -n $f && test -x $f && grep -q \"^# Purpose:\" $f && grep -q \"^# Usage:\" $f && grep -q \"^# Arguments:\" $f && grep -q \"^# Output:\" $f && grep -q \"^# Exit codes:\" $f && grep -q \"exec bash \\\"\\${BU_ROOT}/app\\\" git $c\" $f || exit 1; done) && ((yq -r '.provides[]' plugin.yaml | grep -qx commands) && bash ${BU_ROOT}/app compile commands >/dev/null && (for c in start commit pr check release promote rules-sync; do test -f .claude/commands/git/$c.md || exit 1; done)) && (for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\\.env|generate_branch_protection|generate_workflow_callers|generate_release_please_config|apply_branch_protection|init_workflow_env|check_preflight|load_workflow_env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source bin/lib/worktree.sh; test \"$(worktree_resolve_base_branch \"$1\")\" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test \"$(worktree_resolve_base_branch \"$1\")\" = master' _ \"$t\"; ec=$?; rm -rf \"$t\"; exit $ec) && (t=$(mktemp -d) && mkdir $t/.agentic-os && (cd $t && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_MAIN_BRANCH=trunk GIT_WORKFLOW_RELEASE_BRANCH=trunk bash $OLDPWD/bin/modules/git/workflow-setup.sh validate >/dev/null 2>&1 && ! PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-setup.sh --apply >/dev/null 2>&1); ec=$?; rm -rf $t; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh) && (bash -n bin/lib/worktree.sh && ! grep -n 'PROVIDER_CONFIG_DIR' bin/lib/worktree.sh && (t=$(mktemp -d) && git init -q \"$t/r\" && mkdir \"$t/r/.agentic-os\" && (cd \"$t/r\" && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_WORKTREE_DIR=\"$t/w\" bash -c 'set -euo pipefail; source \"${BU_ROOT}/lib/core.sh\"; source \"${PLUGIN_ROOT}/bin/lib/worktree.sh\"; test \"$(worktree_get_path feat/foo)\" = \"$1/w/r/feat-foo\"; unset GIT_WORKFLOW_WORKTREE_DIR; test \"$(worktree_get_path feat/foo)\" = \"${HOME}/worktrees/r/feat-foo\"' _ \"$t\"); ec=$?; rm -rf \"$t\"; exit $ec)) && (bash -n bin/lib/remote.sh && bash tests/git-remote/run.sh) && (jq -e '.shared[] | select(.name == \"pre-push/minimum-check\" and .enabled == true)' .agentic-os/hooks/hooks.json >/dev/null && bash ${BU_ROOT}/app lint hooks)"
       }
     },
     {
@@ -2867,7 +3119,8 @@
       "by": "developer",
       "date": "2026-11-04",
       "scope": "plan-only",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D53"
     },
     {
       "id": "D43",
@@ -2966,6 +3219,56 @@
       "question": "Where app git start puts the worktree",
       "chosen": "GIT_WORKFLOW_WORKTREE_DIR in the project-root .env, default $HOME/worktrees; the worktree is <dir>/<repo-name>/<type>-<name>, the repo name taken from the main worktree; the worktree library changes in its own task T4.15 before T4.2",
       "reason": "worktree.sh built the path under the repository (PROVIDER_CONFIG_DIR/worktrees) although the developer's answer is /home/ohoeft/worktrees, which holds one directory per repository; the developer chose a setting with the per-repository directory on 2026-11-09; a task cannot mix new and existing files, so the library change is a task of its own",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D53",
+      "question": "How the slash commands of the plugin are written now that a script command takes its script from the tier chain (B-62)",
+      "chosen": "The seven commands are script commands: the scripts live at commands/git/<name>.sh and forward to bash ${BU_ROOT}/app git <name>, commands/commands.yaml registers each with the namespace git and script git/<name>.sh, and plugin.yaml gains commands in provides; the work is three tasks, T4.16 for the scripts, T4.13 for the registration and T4.17 for plugin.yaml, instead of the one task of D42",
+      "reason": "B-62 of the framework is done (TODO.md of 2026-11-09): the compiler resolves script through project, plugins and framework; one task cannot mix the existing plugin.yaml with new files; the scripts are bash code with the script contract (executable, header Purpose, Usage, Arguments, Output and Exit codes) and so go to bash-author; the registration goes to dynamic-author; the developer chose to amend T4.13 first on 2026-11-09",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D54",
+      "question": "Which verifies the plan review of 2026-11-09 repairs and strengthens",
+      "chosen": "Every verify and gate segment that runs a script in a throwaway repository creates an .agentic-os directory there, the gate segment of the closed T4.14 included; the five highest-weight proofs are strengthened: the pre-push hook (T4.9) runs against a red and a green repository, the workflow-status adaptation (T4.10) is tested for the tag, the commits since it and the release branch position, the branch-cleanup adaptation (T4.11) names the merged group and leaves an unmerged branch out, rules-sync (T4.6) names five cases its test must cover, and the pilot note (T4.12) must name each result; the remaining proofs wait for the tests the authors write",
+      "reason": "The reviews of the lenses precedent and proofs showed verifies that exit 3 on the project bootstrap or pass while the claim is false; the developer chose these on 2026-11-09",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D55",
+      "question": "Where the App id of the ruleset bypass actor comes from",
+      "chosen": "GIT_WORKFLOW_APP_ID in the project-root .env, required for rules-sync --apply and a placeholder in the rulesets of the library and in the dry run",
+      "reason": "The review lens assumed-code found no setting for the App id; the developer chose the .env setting on 2026-11-09, the pattern of D49, D51 and D52",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D56",
+      "question": "What the commit, pr and rules-sync commands do about the repository slug and the developer identity",
+      "chosen": "A remote library bin/lib/remote.sh with remote_slug and remote_identity, written in task T4.18 before the three commands, which use it; the old copies in release.sh and promote.sh stay for backlog item B-2",
+      "reason": "The review lens precedent found the helper duplicated in release.sh and promote.sh and open in the T3.6 and T3.7 findings; the developer chose the library without the refactor on 2026-11-09",
+      "by": "developer",
+      "date": "2026-11-09",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D57",
+      "question": "Which registry files get a task of their own after the review of 2026-11-09",
+      "chosen": "T4.19 enables pre-push/minimum-check in .agentic-os/hooks/hooks.json after T4.9, and T4.17 lists .agentic-os/commands/commands.json in its writes; the context files bin/lib/.evolve.json, bin-lib.md and bin-modules.md are kept by the orchestrator at commit time, not by a task; the lint modules gap between a new script and its registration in T4.7 is dismissed, as no lint runs per task",
+      "reason": "The review lens registrations found the hook enable-state and the commands manifest unlisted and the lens order found the script-before-registration gap; the developer chose the coverage on 2026-11-09",
       "by": "developer",
       "date": "2026-11-09",
       "scope": "durable",
@@ -3356,6 +3659,45 @@
       ],
       "reason": "The inputs of T4.1, T4.2 and T4.5 were checked against the code: the STAGE source and the adapters/git/branch-protection.yaml input were gone, worktree.sh puts worktrees under the repository, worktree_create reuses an existing branch and the tests need the .agentic-os directory; the developer settled the two decisions on 2026-11-09",
       "by": "developer"
+    },
+    {
+      "date": "2026-11-09",
+      "change": "Split T4.13 into T4.16 (seven command scripts), T4.13 (registration only) and T4.17 (plugin.yaml provides and compile); D53 supersedes D42; T4.12 and the P4 gate follow",
+      "affects": [
+        "P4",
+        "T4.12",
+        "T4.13",
+        "T4.16",
+        "T4.17",
+        "D42",
+        "D53"
+      ],
+      "reason": "B-62 of the framework is done, so the plugin ships the scripts of its script commands at commands/git/<name>.sh; one task could not mix the existing plugin.yaml with new files, and the scripts are bash code under the script contract; the developer chose to amend T4.13 first on 2026-11-09",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-09",
+      "change": "Plan review round: mkdir .agentic-os in the unpassable verifies and gate segments, five strengthened proofs, new T4.18 remote library and T4.19 hook enable, commands.json in T4.17, GIT_WORKFLOW_APP_ID, provider.sh input path; D54 to D57",
+      "affects": [
+        "P4",
+        "T4.3",
+        "T4.4",
+        "T4.5",
+        "T4.6",
+        "T4.9",
+        "T4.10",
+        "T4.11",
+        "T4.12",
+        "T4.17",
+        "T4.18",
+        "T4.19",
+        "D54",
+        "D55",
+        "D56",
+        "D57"
+      ],
+      "reason": "The five plan review lenses of 2026-11-09 found verifies that exit 3 on the project bootstrap or pass while the claim is false, registry files no task covered, no source for the App id and a duplicated slug helper; the developer settled the findings in two rounds",
+      "by": "claude"
     }
   ],
   "dismissals": [
