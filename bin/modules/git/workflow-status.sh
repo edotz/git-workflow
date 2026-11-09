@@ -14,15 +14,11 @@ source "${BU_LIB}/json.sh"
 source "${PLUGIN_ROOT}/bin/lib/github.sh"
 source "${BU_LIB}/cli.sh"
 
-# Load workflow.env with override — project config takes precedence over ambient shell
-WORKFLOW_ENV_FILE="${PROJECT_ROOT}/.github/workflow.env"
-[[ -f "$WORKFLOW_ENV_FILE" ]] && env_parse_file "$WORKFLOW_ENV_FILE" "true" "workflow.env" || true
-
 # ============================================
 # Configuration
 # ============================================
-readonly MAIN_BRANCH="${PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH}"
-readonly RELEASE_BRANCH="${PLUGIN_EDOTZ_GIT_WORKFLOW_RELEASE_BRANCH}"
+readonly MAIN_BRANCH="${GIT_WORKFLOW_MAIN_BRANCH:-master}"
+readonly RELEASE_BRANCH="${GIT_WORKFLOW_RELEASE_BRANCH:-master}"
 readonly PACKAGE_FILE="${PACKAGE_FILE:-package.json}"
 
 # ============================================

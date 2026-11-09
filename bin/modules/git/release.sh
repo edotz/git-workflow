@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Git Release - release the components that changed since their latest tag: a dry run or the apply
 # Usage: app git release (--dry-run | --apply) [--draft] [--pre <channel>]
-# Settings: MAIN_BRANCH (default: PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH), TOKEN_SERVICE_URL, TOKEN_SERVICE_PORT
+# Settings: GIT_WORKFLOW_MAIN_BRANCH (default: master), TOKEN_SERVICE_URL, TOKEN_SERVICE_PORT
 # Decisions: D15, D28, D33, D40 of the concept; D28, D29 of the plan (no LLM step, the README markers)
 set -euo pipefail
 
@@ -413,7 +413,7 @@ main() {
   if [[ "$dry" == "$apply" ]]; then
     die_with "$BU_EXIT_USAGE" "release: give exactly one of --dry-run and --apply"
   fi
-  main_branch="${MAIN_BRANCH:-${PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH:-master}}"
+  main_branch="${GIT_WORKFLOW_MAIN_BRANCH:-master}"
 
   git_ensure_repo
   cd "$PROJECT_ROOT"

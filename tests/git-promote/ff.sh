@@ -50,7 +50,7 @@ git -C "$repo" push -q origin "${c0}:refs/heads/release"
 git -C "$repo" fetch -q origin
 
 run_promote() {
-  (cd "$repo" && env -u GH_TOKEN TOKEN_SERVICE_URL=http://127.0.0.1:9 MAIN_BRANCH=master RELEASE_BRANCH=release bash "$promote" "$@" 2>&1)
+  (cd "$repo" && env -u GH_TOKEN TOKEN_SERVICE_URL=http://127.0.0.1:9 GIT_WORKFLOW_MAIN_BRANCH=master GIT_WORKFLOW_RELEASE_BRANCH=release bash "$promote" "$@" 2>&1)
 }
 
 rc=0
@@ -107,7 +107,7 @@ if [[ "$rc" -eq 0 && "$out" == *"absent"* && "$out" == *"$c1"* ]]; then ok=yes; 
 case_result "an absent release branch is created at the commit of the tag" "$ok"
 
 rc=0
-out="$(cd "$repo" && env -u GH_TOKEN MAIN_BRANCH=master RELEASE_BRANCH=master bash "$promote" v1.0.0 --dry-run 2>&1)" || rc=$?
+out="$(cd "$repo" && env -u GH_TOKEN GIT_WORKFLOW_MAIN_BRANCH=master GIT_WORKFLOW_RELEASE_BRANCH=master bash "$promote" v1.0.0 --dry-run 2>&1)" || rc=$?
 ok=no
 if [[ "$rc" -eq 0 && "$out" == *"nothing to promote"* ]]; then ok=yes; fi
 case_result "a release branch equal to the main branch does nothing" "$ok"

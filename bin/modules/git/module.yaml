@@ -56,8 +56,7 @@ commands:
         description: "Path of the private key file of the App (environment variable); the key is never copied into an image"
         required: true
   - name: "workflow-setup"
-    requires: [git, gh, envsubst]
-    description: "Validate .github/workflow.env and resolve the workflow configuration."
+    description: "Validate the branch settings GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH and print them."
   - name: "workflow-status"
     requires: [git, gh]
     description: "Collect structured status data for the trunk-based workflow."

@@ -93,11 +93,8 @@ worktree_create() {
   local name="${1:-}"
   [[ -n "$name" ]] || die "worktree_create: name required"
 
-  local root
-  root=$(git rev-parse --show-toplevel 2>/dev/null) || die "worktree_create: not a git repository"
-
   local base_branch
-  base_branch=$(worktree_resolve_base_branch "$root")
+  base_branch=$(worktree_resolve_base_branch)
 
   local path
   path=$(worktree_get_path "$name")
@@ -146,25 +143,12 @@ worktree_prune() {
   logger_success "Worktree prune complete"
 }
 
-# Resolve the main branch name from .github/workflow.env.
-# Args:
-#   $1 - cwd: Main repo root (absolute path)
+# Resolve the main branch name from GIT_WORKFLOW_MAIN_BRANCH (project .env or process environment).
 # Returns: Branch name (stdout), defaults to "master"
-# Example: worktree_resolve_base_branch "$cwd"
+# Example: worktree_resolve_base_branch
 worktree_resolve_base_branch() {
-  local cwd="${1:-}"
-  [[ -n "$cwd" ]] || die "worktree_resolve_base_branch: cwd required"
-
-  local base_branch="master"
-  local workflow_env="${cwd}/.github/workflow.env"
-
-  if [[ -f "$workflow_env" ]]; then
-    local mb
-    mb="$(grep -E '^MAIN_BRANCH=' "$workflow_env" | cut -d= -f2 | tr -d '"' | tr -d "'")"
-    [[ -n "$mb" ]] && base_branch="$mb"
-  fi
-
-  echo "$base_branch"
+  echo "${GIT_WORKFLOW_MAIN_BRANCH:-master}"  # out:return
+  return 0
 }
 
 # ============================================

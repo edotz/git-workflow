@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Git Promote - fast-forward the release branch to the commit of a release tag
 # Usage: app git promote <tag> (--dry-run | --apply)
-# Settings: MAIN_BRANCH and RELEASE_BRANCH (default: PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH and
-#           PLUGIN_EDOTZ_GIT_WORKFLOW_RELEASE_BRANCH), TOKEN_SERVICE_URL, TOKEN_SERVICE_PORT
+# Settings: GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH (default: master), TOKEN_SERVICE_URL,
+#           TOKEN_SERVICE_PORT
 # Decisions: D16, D27, D52 of the concept: the release branch moves to the release commit of a tag, fast-forward only,
 #            and never to the head of master
 set -euo pipefail
@@ -125,8 +125,8 @@ main() {
   if [[ "$dry" == "$apply" ]]; then
     die_with "$BU_EXIT_USAGE" "promote: give exactly one of --dry-run and --apply"
   fi
-  main_branch="${MAIN_BRANCH:-${PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH:-master}}"
-  release_branch="${RELEASE_BRANCH:-${PLUGIN_EDOTZ_GIT_WORKFLOW_RELEASE_BRANCH:-master}}"
+  main_branch="${GIT_WORKFLOW_MAIN_BRANCH:-master}"
+  release_branch="${GIT_WORKFLOW_RELEASE_BRANCH:-master}"
 
   git_ensure_repo
   cd "$PROJECT_ROOT"
