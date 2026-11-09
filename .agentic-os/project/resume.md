@@ -1,29 +1,30 @@
 ## State
-- PLAN-plugin (B-1) active: P1 to P3 done; P4 detailed as T4.1 to T4.19, only T4.14 done (closed by hand: no docker here). The plan was reviewed on 2026-11-09 with five lenses (reports plan-review-*.md under the session reports) and the findings settled as D54 to D57. `plan check`, `app lint all full` and `app compile all` pass.
-- Branch chore/git-workflow-concept is pushed up to c3f182f; the tree is clean except the untracked .claude/output-styles.
-- Settings live in the project-root .env, the only env file the framework loads: GIT_WORKFLOW_MAIN_BRANCH=master and GIT_WORKFLOW_RELEASE_BRANCH=0.x are set; GIT_WORKFLOW_STAGE, GIT_WORKFLOW_WORKTREE_DIR (default $HOME/worktrees) and GIT_WORKFLOW_APP_ID come with T4.5, T4.15 and T4.6.
-- The leaked classic token is revoked; gh has a stored login (ohoeft); .envrc is ignored.
+- PLAN-plugin (B-1) active, P4: T4.1 to T4.11, T4.13 to T4.15, T4.18, T4.19 done; T4.16 dropped (D59); T4.17 pending; T4.12 is the developer's pilot. All findings settled but T4.13 finding 2 (argument-hint). Shellcheck runs from node_modules through the lint; docker is installed here.
+- Branch chore/git-workflow-concept is pushed up to 81f10f2. Uncommitted, not from the plan: adapters/git/hooks/hooks.yaml (rewritten by compile hooks, "the plugin owns it") and untracked .git-templates/hooks/ (pre-push, pre-commit, commit-msg shims); plus .claude/output-styles. The developer decides on the first two.
+- .env sets GIT_WORKFLOW_MAIN_BRANCH=master and GIT_WORKFLOW_RELEASE_BRANCH=0.x; GIT_WORKFLOW_STAGE, GIT_WORKFLOW_WORKTREE_DIR, GIT_WORKFLOW_APP_ID and GIT_WORKFLOW_LEGACY_BRANCHES are not set (the App id is needed for rules-sync --apply, the legacy setting for the legacy ruleset).
 
 ## Open
-1. START: author group 1 with /aos:bash-authoring under the bash-framework and bash-utility rules: T4.15 (worktree dir), T4.18 (remote library), T4.1 (check), T4.5 (rules library). Then T4.2; T4.3, T4.4, T4.6; T4.7; T4.10, T4.11; T4.8 inline; T4.9; T4.16, T4.13, T4.17, T4.19; T4.12 is the developer's pilot.
-2. Concept git-workflow-plugin: record the dependency on B-62 and continue /aos:concept (Q12 open).
-3. Context files at commit time, no task: bin-lib.md and bin/lib/.evolve.json after T4.5, T4.15 and T4.18; bin-modules.md after T4.7.
-4. T4.8 replaces status-checks.yml, whose header names workflow.env; P6 is outlined (classic protection code, bin/modules/git/templates).
-5. Untested sketches: the new verifies of T4.6 and T4.9 to T4.12; the docker tests need docker. B-2 holds the old slug copies; the token-service digest should move into the pins. Developer: check .npmrc of edotz.nodejs-project; keep or retire the sandbox.
+1. START: T4.17 (inline): add commands to provides in plugin.yaml, run app compile commands, check .claude/commands/git/*.md for the seven commands, the argument-hint and disable-model-invocation on pr, release, promote and rules-sync, and write .agentic-os/commands/commands.claude.yaml (D60); then settle T4.13 finding 2.
+2. Decide what to do with the generated hooks.yaml change and .git-templates/ (the pre-push guard fires only through those shims).
+3. T4.12 pilot (developer): the Done check names no second rules-sync apply (only a real apply shows GitHub default fields breaking unchanged); run a real git push through the shim; re-run tests/git-promote/ff.sh and tests/git-release/dry-run.sh, closed by hand in T4.14 when docker was thought missing.
+4. Context: .evolve.json of .github/workflows names github-workflows.md, which does not exist; the purpose in bin/modules/.evolve.json is stale.
+5. Framework owner: git.sh git_get_commit_details breaks on a quoted subject and git_conventional_commit_stats drops the oldest commit (workflow-status counts itself); lib info does not list plugin libraries; no framework blueprint fills COMMAND_TOOL_DISPATCH; cli_parse takes the word after an unknown flag as its value.
+6. P5 and P6 are outlined; B-2 holds the old slug copies; the classic protection code goes in P6.
 
 ## Decided
-- D49, D50: the branch settings come from the project-root .env only (GIT_WORKFLOW_ keys, master in code) and workflow-setup is reduced to validate, because the framework loads no project .env.defaults.
-- D51, D52: GIT_WORKFLOW_STAGE; the worktree dir is a setting and T4.15 comes before T4.2.
-- D53: the slash commands are script commands, commands/git/<name>.sh forwarding to app git <name> (B-62 is done), in three tasks T4.16, T4.13, T4.17.
-- D55, D56, D57: the App id is GIT_WORKFLOW_APP_ID; T4.18 holds the remote library and release and promote wait for B-2; T4.19 enables the pre-push hook and T4.17 lists commands.json.
+- D58: rules-sync skips a ruleset whose branch setting is unset and prints skipped; master always applies (T4.5 made rules_json exit 3).
+- D59: slash commands are type tool calling bash app git <name> directly; no forwarding scripts; blueprints under commands/blueprints/tool-dispatch/.
+- D60: pr, release, promote and rules-sync get disable-model-invocation in this project's commands.claude.yaml only.
+- Release ruleset takes its branch from GIT_WORKFLOW_RELEASE_BRANCH, master has the App as bypass (D16, D30). The pre-push hook runs the plugin check.sh, not app git check (no plugin registry in a throwaway project).
+- One review per task, findings fixed by hand, no fix rounds.
 
 ## Traps
-- No git stash. Never print a token. Commit header 100 characters at most. A failed commit leaves its files staged.
-- `app plan amend --dry-run` writes the plan: test the jq program offline on a merged copy.
-- A temp repo of a verify or test needs an empty .agentic-os directory, or the bootstrap exits 3.
-- This tool shell skips .env (inherited bootstrap): check settings with `env -i HOME="$HOME" PATH="$PATH" bash ${BU_ROOT}/app git workflow-setup`. A shell with the old GH_TOKEN export fails: use a new one. SSH to GitHub fails now and then; https with the gh credential helper works.
-- Tool output can arrive abbreviated: Read the file when exact text matters.
+- A failed commit leaves its files staged: a header over 100 characters put code into the plan commit once.
+- Agents say shellcheck is not installed; it is in node_modules/.bin. lib info needs the .sh suffix.
+- plan amend: replace text literally in python, never jq sub (regex); test the program on a copy.
+- dynamic-author can stop early or lose its report: SendMessage it to continue and send the report as plain text.
+- No git stash. Never print a token.
 
 ## Read first
-- plan facts for T4.15, T4.18, T4.1, T4.5; the resume note; the review reports.
-- Memory: MEMORY.md, feedback-plan-amend-dry-run, project-sandbox-pilot-setup, feedback-orchestrator-authoring-and-review.
+- Memory: MEMORY.md, feedback-orchestrator-authoring-and-review, feedback-plan-amend-dry-run.
+- PLAN-plugin; reports T4.13, T4.6 under the session reports.

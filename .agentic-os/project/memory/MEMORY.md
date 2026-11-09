@@ -1,8 +1,9 @@
 ## Now
-- m6-retire-old: workflow.env, its templates, branch-protection.yaml, all callables and the old reference docs are removed; left are the status-checks.yml header (T4.8), the classic templates and the classic protection code (P6)
-- m4-daily-loop: P4 detailed as T4.1 to T4.19 and reviewed (D54 to D57), T4.14 done; next the authoring of T4.15, T4.18, T4.1, T4.5, then T4.2, T4.3, T4.4, T4.6; slash commands are T4.16, T4.13, T4.17; the pilot T4.12 is the developer's
+- m6-retire-old: the status-checks.yml header went with T4.8; left are the classic templates and the classic protection code (P6)
+- m4-daily-loop: P4 done but T4.17 (plugin.yaml provides, compile, command guard D60) and the developer's pilot T4.12; decide the generated hooks.yaml and .git-templates first
 
 ## Log
+- 2026-11-09 plugin (a24bcf21): authored P4 in two rounds with parallel authors and one review each, registered the commands and the pre-push guard, amended the plan (D58 to D60), pushed up to 81f10f2
 - 2026-11-09 plugin (a24bcf21): closed the session with the handoff; branch pushed up to c3f182f; the authoring of group 1 is next
 - 2026-11-09 plugin (a24bcf21): aligned T4.1, T4.2, T4.5 (D51, D52, T4.15), split T4.13 (D53, T4.16, T4.17), reviewed the plan with five lenses and settled the findings (D54 to D57, T4.18, T4.19), rotated the leaked token and stored a gh login, ignored .envrc, committed and pushed up to the review round
 - 2026-11-09 plugin (a24bcf21): T4.14 done (branch settings GIT_WORKFLOW_ keys, workflow-setup reduced to validate), both findings accepted, project .env sets master and 0.x
