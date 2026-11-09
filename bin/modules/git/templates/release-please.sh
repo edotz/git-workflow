@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Release Please Config Templates
 # Heredoc templates for release-please-config.json generation.
 # Source this file before calling generate_release_please_config().

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Branch Protection YAML Templates
 # Heredoc templates for branch-protection.yaml generation.
 # Source this file before calling generate_branch_protection().

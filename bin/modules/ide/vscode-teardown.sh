@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # VS Code worktree teardown
 # Removes the Project Manager entry for a worktree.
 #

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Workflow Caller Templates
 # Heredoc templates for GitHub Actions workflow file generation.
 # Source this file before calling generate_workflow_callers().
