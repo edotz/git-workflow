@@ -5,10 +5,10 @@ paths:
 
 # Shell modules
 
-Shell command modules of the plugin: git (the daily loop start, commit, pr and check; rules-sync; release, promote, worktree, workflow status and setup, branch cleanup, branch protection, commit lint, token service) and ide (vscode profiles and project setup).
+Shell command modules of the plugin: git (the daily loop start, commit, pr and check; rules-sync; release, promote, split, worktree, workflow status and setup, branch cleanup, branch protection, commit lint, token service) and ide (vscode profiles and project setup).
 
 ## Purpose and conventions
-- Two module domains, git (15 commands) and ide (3 commands), each listed in a module.yaml; the module.yaml layout is a framework requirement (developer's answer).
+- Two module domains, git (17 commands) and ide (3 commands), each listed in a module.yaml; the module.yaml layout is a framework requirement (developer's answer).
 - Commands run as `bash $BU_ROOT/app <domain> <command>` (bin/modules/ide/module.yaml).
 - Module scripts run under `set -euo pipefail`.
 - Plugin setting keys in bin/config/env.defaults start with `PLUGIN_EDOTZ_GIT_WORKFLOW_`. The branch settings are the exception: `GIT_WORKFLOW_MAIN_BRANCH` and `GIT_WORKFLOW_RELEASE_BRANCH` are defined in the project-root `.env`, which the framework loads (the process environment wins); scripts read them from the environment with `master` as the fallback in code (D49).

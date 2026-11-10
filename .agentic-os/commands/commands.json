@@ -132,6 +132,12 @@
       "enabled": true,
       "description": "Use before a pull request or a push, and to see which component is red.",
       "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "split",
+      "enabled": true,
+      "description": "Use when a component with its own child repository has changes or releases that the child has to receive.",
+      "origin": "plugin:edotz.git-workflow"
     }
   ],
   "claude": []

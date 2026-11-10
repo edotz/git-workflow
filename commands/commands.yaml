@@ -54,3 +54,9 @@ commands:
     type: tool
     description: "Use when the branch rules of the repository must follow bin/config/rulesets.yaml or the stage changes."
     argument-hint: "[--dry-run|--apply] [--stage <development|production>]"
+
+  - name: split
+    namespace: git
+    type: tool
+    description: "Use when a component with its own child repository has changes or releases that the child has to receive."
+    argument-hint: "[component] [--dry-run|--apply] [--confirm <owner/repo>]"

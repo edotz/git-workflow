@@ -5,11 +5,11 @@ paths:
 
 # Shell libraries
 
-Plugin-local bash libraries sourced by the git modules through PLUGIN_ROOT: github.sh, worktree.sh and the release-flow libraries check.sh, component.sh, remote.sh, rules.sh, token.sh, tool.sh and version.sh.
+Plugin-local bash libraries sourced by the git modules through PLUGIN_ROOT: github.sh, worktree.sh and the release-flow libraries check.sh, component.sh, remote.sh, rules.sh, split.sh, token.sh, tool.sh and version.sh.
 
 ## Purpose and conventions
 - github.sh (gh api wrappers) and worktree.sh (git worktree helpers) are plugin-local libraries; scripts source them as `${PLUGIN_ROOT}/bin/lib/<name>.sh` (product.md).
-- The release-flow libraries: component.sh reads components.yaml, version.sh gives the next version, tag and version files of a component, check.sh runs the minimum check of a component, remote.sh gives the owner/name of a remote and the developer identity from the local git configuration, rules.sh builds the GitHub ruleset JSON of master, release and legacy from bin/config/rulesets.yaml (the stage from GIT_WORKFLOW_STAGE, the branches from GIT_WORKFLOW_RELEASE_BRANCH and GIT_WORKFLOW_LEGACY_BRANCHES), token.sh fetches the installation token from the token service, tool.sh runs every tool in the tool image.
+- The release-flow libraries: component.sh reads components.yaml, version.sh gives the next version, tag and version files of a component, check.sh runs the minimum check of a component, remote.sh gives the owner/name of a remote and the developer identity from the local git configuration, rules.sh builds the GitHub ruleset JSON of master, release and legacy from bin/config/rulesets.yaml (the stage from GIT_WORKFLOW_STAGE, the branches from GIT_WORKFLOW_RELEASE_BRANCH and GIT_WORKFLOW_LEGACY_BRANCHES), token.sh fetches the installation token from the token service, split.sh gives the head of the split of a component from its first path, and tool.sh runs every tool in the tool image.
 - Each library has a source guard variable `BU_STATE_<NAME>` and resolves core.sh through `${BU_LIB:-${BASH_SOURCE[0]%/*}}`.
 - Worktrees live in `<GIT_WORKFLOW_WORKTREE_DIR or $HOME/worktrees>/<repo-name>/<name with / as ->`; the repo name is the main worktree's directory name, the same inside a linked worktree. The base must be an absolute path (a leading `~` is expanded) and is read at call time.
 - The shebang `#!/bin/bash` stays in this directory (developer's answer).
