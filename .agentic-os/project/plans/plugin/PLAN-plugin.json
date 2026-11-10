@@ -3083,7 +3083,8 @@
           "last_verify": {
             "at": "2026-11-10T10:45:37Z",
             "exit": 0
-          }
+          },
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T5.1.md"
         },
         {
           "id": "T5.2",
@@ -3472,7 +3473,8 @@
           "last_verify": {
             "at": "2026-11-10T10:45:38Z",
             "exit": 0
-          }
+          },
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T6.2.md"
         },
         {
           "id": "T6.3",
