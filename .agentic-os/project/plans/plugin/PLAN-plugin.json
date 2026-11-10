@@ -3215,6 +3215,14 @@
             {
               "ref": "tests/git-promote/ff.sh",
               "why": "a test with local bare repositories as remotes"
+            },
+            {
+              "ref": "bin/modules/git/promote.sh",
+              "why": "ls-remote exit 2 is told from any other failure; the apply reads the default branch of the child with ls-remote --symref HEAD the same way, so it needs no GitHub API call and works against a bare repository"
+            },
+            {
+              "ref": "bin/modules/git/module.yaml",
+              "why": "the registration of the git commands, to which split is added by this task"
             }
           ],
           "writes": [
@@ -3223,30 +3231,53 @@
               "paths": [
                 "tests/git-split/apply.sh",
                 "bin/lib/split.sh",
-                "bin/modules/git/split.sh"
+                "bin/modules/git/split.sh",
+                "tests/git-split/dry-run.sh",
+                "bin/modules/git/module.yaml"
               ]
             }
           ],
           "verify": {
             "from": "environment fact: a bare repository stands in for the child and the apply pushes to it",
-            "run": "bash -n bin/modules/git/split.sh && out=$(bash tests/git-split/apply.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 7 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL'"
+            "run": "bash -n bin/modules/git/split.sh && out=$(bash tests/git-split/apply.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 13 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && grep -q 'name: \"split\"' bin/modules/git/module.yaml && bash ${BU_ROOT}/app lint modules && out=$(bash tests/git-split/dry-run.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL'"
           },
-          "status": "pending",
+          "status": "done",
           "why": "Decision D64 fixes the baseline: tag the old child head, show the dry run, confirm the child, force-push with lease. Without the apply no component reaches a child repository.",
-          "result": "split --apply pushes the split head and the tags of the component to the child; for a child with unrelated history it tags the old head legacy/pre-split first and pushes with force-with-lease only for a child the developer confirmed; a repeated apply does nothing; one apply pushes one child.",
-          "done": "tests/git-split/apply.sh exits 0 with a bare child: an up-to-date child is left alone, an unrelated child is refused without the confirmation and rebased onto the split after it, the old head survives as legacy/pre-split, a second apply reports nothing to do, and one apply pushes one child.",
-          "fails": "A child repository would lose its old history, or a force push would run for a child nobody confirmed.",
+          "result": "split --apply pushes the split head and the tags of the component to the child; for a child with unrelated history it tags the old head legacy/pre-split first and pushes with force-with-lease only for a child the developer confirmed; a repeated apply does nothing; one apply pushes one child. The branch is GIT_WORKFLOW_MAIN_BRANCH of the monorepo on every child, with no per-child setting (D73); the apply refuses when the default branch of the child differs from it (D74); one component with two paths is split in the test (D75). split_head splits the first path of the component only (D76), and split is registered in module.yaml.",
+          "done": "tests/git-split/apply.sh exits 0 with a bare child: an up-to-date child is left alone, an unrelated child is refused without the confirmation and rebased onto the split after it, the old head survives as legacy/pre-split, a second apply reports nothing to do, and one apply pushes one child. The apply pushes the split head to GIT_WORKFLOW_MAIN_BRANCH of the monorepo and to no other branch of the child, refuses with a message naming both branches when the default branch of the child differs, and a component with two paths splits to a head that holds the first path only (D76).",
+          "fails": "A child repository would lose its old history, or a force push would run for a child nobody confirmed. A child would receive the split on a branch that is not its default, or a component with several paths would lose one of them. A workspace component would carry its dependency packages into the child, or splitsh-lite would refuse the call for a component with two paths.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D38",
             "CONCEPT-git-workflow-plugin:D6"
           ],
           "brief": {
-            "arguments": "Extend split.sh: --apply takes --confirm <owner/repo> and pushes one child per apply: the split head to its default branch and the tags <component>/vX.Y.Z as <component> versions. The URL comes from owner, repo and host of the component. The push passes the installation token to the tool as GH_TOKEN for this call and uses -c credential.helper='!gh auth git-credential' (tool_run passes only GH_TOKEN, so an http.extraheader is not passed); one token_fetch per apply. For a child that does not share history it tags the old head legacy/pre-split on the child first, refuses without --confirm for that child and pushes with --force-with-lease against the head it read in the dry run (D64, D67). The test prints one 'ok   <case>' line per case (up-to-date child left alone, unrelated child refused without --confirm, unrelated child pushed after --confirm, old head kept as legacy/pre-split, tags pushed, second apply does nothing, one child per apply) and 'FAIL <case>' with a non-zero exit otherwise.",
+            "arguments": "Extend split.sh: --apply takes --confirm <owner/repo> and pushes one child per apply: the split head to its default branch and the tags <component>/vX.Y.Z as <component> versions. The URL comes from owner, repo and host of the component. The push passes the installation token to the tool as GH_TOKEN for this call and uses -c credential.helper='!gh auth git-credential' (tool_run passes only GH_TOKEN, so an http.extraheader is not passed); one token_fetch per apply. For a child that does not share history it tags the old head legacy/pre-split on the child first, refuses without --confirm for that child and pushes with --force-with-lease against the head it read in the dry run (D64, D67). The test prints one 'ok   <case>' line per case (up-to-date child left alone, unrelated child refused without --confirm, unrelated child pushed after --confirm, old head kept as legacy/pre-split, tags pushed, second apply does nothing, one child per apply) and 'FAIL <case>' with a non-zero exit otherwise. The child takes the rules of the monorepo and no setting of its own (D73): the branch pushed to is GIT_WORKFLOW_MAIN_BRANCH of the monorepo, and only that branch plus the component tags are pushed. Read the default branch of the child with ls-remote --symref HEAD, which needs no GitHub API call and works against a bare repository; when it differs from GIT_WORKFLOW_MAIN_BRANCH the apply refuses with a message naming both branches and pushes nothing (D74). The test adds three cases to the seven: a non-default setting such as trunk reaches the trunk of a child whose default branch is trunk and no other branch, a child whose default branch differs is refused with both names in the message and nothing pushed, and a component with two paths splits to a head that holds the first path only and none of the others (D75, D76). split_head of bin/lib/split.sh splits the first path of the component, because splitsh-lite refuses several bare prefixes that land in the same directory and the other paths are change-detection paths, not child content (D76); the dry run, whose cases pass with single paths, stays as it is except that its obsolete case that --apply is not built is removed. Register split in bin/modules/git/module.yaml (requires git, docker, gh and curl, with the flags --dry-run, --apply and --confirm), which the developer asked for and which lint modules needs once split.sh exists.",
             "output": "split.sh with the apply and tests/git-split/apply.sh.",
             "pattern": "bin/modules/git/promote.sh: the apply after a confirmed dry run, and tests/git-promote/ff.sh",
             "target": "change"
           },
-          "consumes": []
+          "consumes": [],
+          "findings": [
+            {
+              "file": "bin/modules/git/split.sh",
+              "line": 176,
+              "severity": "wrong result",
+              "summary": "an annotated child tag was compared by its tag object id and blocked the apply for good; fixed by hand by keeping the peeled line",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/split.sh",
+              "line": 206,
+              "severity": "style",
+              "summary": "a refused push of legacy/pre-split gave only the raw git message; fixed by hand with a hint",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T5.3.md",
+          "last_verify": {
+            "at": "2026-11-10T11:46:10Z",
+            "exit": 0
+          }
         },
         {
           "id": "T5.4",
@@ -3258,7 +3289,7 @@
           "inputs": [
             {
               "ref": "bin/modules/git/module.yaml",
-              "why": "the registration of the git commands, to which split is added"
+              "why": "already holds the entry of split (T5.3); the count of git commands in bin-modules.md follows it"
             },
             {
               "ref": "commands/commands.yaml",
@@ -3297,7 +3328,6 @@
             {
               "scope": ".",
               "paths": [
-                "bin/modules/git/module.yaml",
                 "commands/commands.yaml",
                 "commands/blueprints/tool-dispatch/split.md",
                 ".agentic-os/commands/commands.claude.yaml",
@@ -3322,7 +3352,7 @@
             "CONCEPT-git-workflow-plugin:D41"
           ],
           "brief": {
-            "arguments": "Add the command split to bin/modules/git/module.yaml, then the entry split (namespace git, type tool) with a trigger-condition description and the argument-hint [--dry-run|--apply] [--confirm <owner/repo>] to commands/commands.yaml, write the blueprint tool-dispatch/split.md like rules-sync.md, add split with disable-model-invocation: true to commands.claude.yaml, run app compile commands and keep what it writes to commands.json. The module.yaml entry requires [git, gh] and lists the flags --dry-run, --apply and --confirm. Add split to the library list of bin-lib.md and bin/lib/.evolve.json and to the git commands of bin-modules.md and bin/modules/.evolve.json, and set the count in the phrase 'git (<n> commands)' of bin-modules.md to the number of entries of module.yaml.",
+            "arguments": "The command split is already registered in bin/modules/git/module.yaml (T5.3, on the developer's request); add the entry split (namespace git, type tool) with a trigger-condition description and the argument-hint [--dry-run|--apply] [--confirm <owner/repo>] to commands/commands.yaml, write the blueprint tool-dispatch/split.md like rules-sync.md, add split with disable-model-invocation: true to commands.claude.yaml, run app compile commands and keep what it writes to commands.json. The module.yaml entry of split exists already; check that it lists the flags --dry-run, --apply and --confirm. Add split to the library list of bin-lib.md and bin/lib/.evolve.json and to the git commands of bin-modules.md and bin/modules/.evolve.json, and set the count in the phrase 'git (<n> commands)' of bin-modules.md to the number of entries of module.yaml.",
             "output": "The registration, the blueprint and the guard for split.",
             "pattern": "commands/blueprints/tool-dispatch/rules-sync.md",
             "target": "change"
@@ -4617,6 +4647,46 @@
       "date": "2026-11-10",
       "scope": "plan-only",
       "status": "decided"
+    },
+    {
+      "id": "D73",
+      "question": "Which branch of a child repository a split pushes to, and whether a child has settings of its own",
+      "chosen": "The children of a monorepo stick to the rules of the monorepo with no extra configuration: a split pushes to GIT_WORKFLOW_MAIN_BRANCH of the monorepo on every child, and no per-child branch field or setting exists",
+      "reason": "The developer stated the rule on 2026-11-10 while the child branch was open after the review of the split dry run; it matches what the dry run already reads",
+      "by": "developer",
+      "date": "2026-11-10",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D74",
+      "question": "What the split apply does when the default branch of the child differs from GIT_WORKFLOW_MAIN_BRANCH",
+      "chosen": "It refuses with a message naming both branches and pushes nothing; the default branch is read with ls-remote --symref HEAD",
+      "reason": "A split into the wrong branch is hard to undo and there is no per-child setting to correct it, so the child has to follow the rule; the developer chose the recommended option on 2026-11-10",
+      "by": "developer",
+      "date": "2026-11-10",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D75",
+      "question": "Which run proves a component with several paths in splitsh-lite",
+      "chosen": "The apply test of the split apply task runs one component with two paths and checks that the split head holds both directories; the sandbox pilot does not carry it",
+      "reason": "The multi-prefix behaviour is a splitsh-lite fact that a local test proves on every change; the review of the dry run found that no run had done it; the developer chose the recommended option on 2026-11-10",
+      "by": "developer",
+      "date": "2026-11-10",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D76",
+      "question": "What a split puts into the child repository when a component has several paths",
+      "chosen": "Only the first path: the own directory of the component is the root of the child; the other paths, such as shared code or the workspace dependencies of a workspace component, count for change detection only and are not split",
+      "reason": "splitsh-lite refuses several bare prefixes that land in the same directory ('Cannot have two prefix splits under the same directory'), so split_head failed for every component with two paths; the dependency packages of a workspace component do not belong in a standalone child; the developer chose the recommended option on 2026-11-10; it corrects the content of D75",
+      "by": "developer",
+      "date": "2026-11-10",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -5168,6 +5238,30 @@
         "D72"
       ],
       "reason": "The administration token of the production App found no ruleset and classic protection with required status checks on master of typo3-cms, php-project and nodejs-project; rules-sync leaves classic protection in place and T6.2 only names it; the developer approved the amendment on 2026-11-10",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-10",
+      "change": "The split apply pushes to GIT_WORKFLOW_MAIN_BRANCH of the monorepo on every child with no per-child setting, refuses when the default branch of the child differs, and its test also splits one component with two paths; the verify requires 10 ok lines; D73 to D75 record the rule and the two answers",
+      "affects": [
+        "T5.3",
+        "D73",
+        "D74",
+        "D75"
+      ],
+      "reason": "The developer stated on 2026-11-10 that the child repositories stick to the rules of the monorepo with no extra configuration, answered the refusal and the two-path questions, and approved the amendment",
+      "by": "developer"
+    },
+    {
+      "date": "2026-11-10",
+      "change": "A split puts only the first path of a component into the child repository; T5.3 writes tests/git-split/dry-run.sh and bin/modules/git/module.yaml, names split_head splitting the first path in its result, done and brief, and its verify requires 13 ok lines, lint modules and the dry-run test; T5.4 no longer writes module.yaml; D76 records the rule and corrects D75",
+      "affects": [
+        "T5.3",
+        "T5.4",
+        "D75",
+        "D76"
+      ],
+      "reason": "The first run of splitsh-lite with two paths showed that it refuses several bare prefixes in the same directory, so split_head failed for any component with two paths; the dependency packages of a workspace component do not belong in a standalone child; the developer chose the first path only and asked to register split in module.yaml on 2026-11-10",
       "by": "developer"
     }
   ],
