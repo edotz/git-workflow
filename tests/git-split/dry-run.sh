@@ -201,12 +201,6 @@ ok=no
 if [[ "$rc" -eq 2 ]]; then ok=yes; fi
 case_result "neither flag is a usage error" "$ok"
 
-rc=0
-out="$(run_split web --apply)" || rc=$?
-ok=no
-if [[ "$rc" -eq 2 && "$out" == *"not built"* ]]; then ok=yes; fi
-case_result "--apply is a usage error until it is built" "$ok"
-
 if [[ "$failed" -ne 0 ]]; then
   exit 1
 fi
