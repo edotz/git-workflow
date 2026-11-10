@@ -429,7 +429,7 @@ Release each component on its own, split components marked split: yes with split
 | Title | Task | Owner | Depends | Status |
 |---|---|---|---|---|
 | Prove the dry run of several components with a fixture repository | T5.1 | bash-author | - | done |
-| Add the split command with its dry run | T5.2 | bash-author | T5.1 | pending |
+| Add the split command with its dry run | T5.2 | bash-author | T5.1 | done |
 | Add the split apply with the baseline of an existing child | T5.3 | inline | T5.2 | pending |
 | Register split in the git module and as a guarded slash command | T5.4 | inline | T5.3 | pending |
 | Run the monorepo in a sandbox | T5.5 | developer | T5.1, T5.3, T5.4 | pending |

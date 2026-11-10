@@ -3063,21 +3063,21 @@
               "line": 35,
               "severity": "convention",
               "summary": "trap finish EXIT overwrote the framework cleanup trap that core.sh installs; fixed by hand with register_cleanup",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "tests/git-release/multi.sh",
               "line": 48,
               "severity": "style",
               "summary": "the fixture runs inherited the project environment that core.sh exports; fixed by hand with env -u for PROJECT_ROOT, AOS_ROOT, SESSION_DIR and AOS_TIER_CHAIN",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/release.sh",
               "line": 0,
               "severity": "convention",
               "summary": "the dry run prints Nothing to release and lists no component when its tag is ahead of the version in its version file and a newer feat commit touches its paths; reported by the author, cause unconfirmed",
-              "state": "open"
+              "state": "dismissed"
             }
           ],
           "last_verify": {
@@ -3133,7 +3133,7 @@
             "from": "environment fact: splitsh-lite splits the paths of a component in the tool image",
             "run": "bash -n bin/modules/git/split.sh && bash -n bin/lib/split.sh && out=$(bash tests/git-split/dry-run.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 6 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL'"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The concept lists split as a command and the plan has none: a component with split yes cannot reach its child repository, and the baseline of the existing children needs a dry run first (D64).",
           "result": "The script bin/modules/git/split.sh with --dry-run: for each component with split yes it runs splitsh-lite through the tool image on its paths and prints the head the child would get, whether the child shares history with it, and the tree difference to the child head; it changes nothing.",
           "done": "tests/git-split/dry-run.sh exits 0: a split head is printed per split component, a child with unrelated history is reported as needing a baseline, an unsplit component is skipped, a failed read of the child is reported as a failed read and not as a baseline, and neither --dry-run nor --apply is a usage error.",
@@ -3148,7 +3148,49 @@
             "pattern": "bin/modules/git/promote.sh: a command with --dry-run and --apply, and tests/git-promote/ff.sh for the test",
             "target": "new"
           },
-          "consumes": []
+          "consumes": [],
+          "findings": [
+            {
+              "file": "bin/modules/git/split.sh",
+              "line": 159,
+              "severity": "wrong result",
+              "summary": "a dying helper under if ! was swallowed, so an unknown component or a component without history exited 0; fixed in fix round 1",
+              "state": "accepted"
+            },
+            {
+              "file": "tests/git-split/dry-run.sh",
+              "line": 154,
+              "severity": "convention",
+              "summary": "no case covered an unknown component or a split with no history; fixed in fix round 1",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/split.sh",
+              "line": 70,
+              "severity": "wrong result",
+              "summary": "a failed git diff or an ancestry error was swallowed and printed tree difference none with exit 0; fixed in fix round 2",
+              "state": "accepted"
+            },
+            {
+              "file": "bin/modules/git/split.sh",
+              "line": 35,
+              "severity": "style",
+              "summary": "four component_field subshells per component in the loop; still open",
+              "state": "dismissed"
+            },
+            {
+              "file": "bin/modules/git/split.sh",
+              "line": 1,
+              "severity": "convention",
+              "summary": "the script is not registered in module.yaml until T5.4; still open",
+              "state": "open"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T5.2.md",
+          "last_verify": {
+            "at": "2026-11-10T11:06:29Z",
+            "exit": 0
+          }
         },
         {
           "id": "T5.3",
@@ -3460,14 +3502,14 @@
               "line": 149,
               "severity": "style",
               "summary": "the classic protection read merged stderr into the JSON it parsed, so a gh notice could show required checks as none; fixed by hand with a validity check",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/rules-sync.sh",
               "line": 129,
               "severity": "style",
               "summary": "the foreign ruleset loop had no stable order and the managed branches no dedupe; fixed by hand with sorted names and a membership check",
-              "state": "open"
+              "state": "accepted"
             }
           ],
           "last_verify": {
