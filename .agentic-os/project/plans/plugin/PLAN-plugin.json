@@ -3183,7 +3183,7 @@
               "line": 1,
               "severity": "convention",
               "summary": "the script is not registered in module.yaml until T5.4; still open",
-              "state": "open"
+              "state": "accepted"
             }
           ],
           "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T5.2.md",
