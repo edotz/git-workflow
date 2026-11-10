@@ -3415,7 +3415,7 @@
             "from": "environment fact: a sandbox monorepo with two components and a sandbox child repository",
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-monorepo.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'components.yaml' 'push' 'rerun' 'latest=false' 'releases/tag' 'split' 'baseline' 'legacy/pre-split' 'second apply'; do grep -qiF -- \"$k\" $f || exit 1; done"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The monorepo release and the split ran in fixtures only; the milestone gate of m5-monorepo asks for each component released on its own and a confirmed split dry run per child repository. It also proves the apply of a release of several components on real GitHub, which a fixture cannot (D66).",
           "result": "A sandbox monorepo with two components, one of them split into a sandbox child repository that already has unrelated history, released with the apply, rerun and split with the commands, and a note that records what was run and seen.",
           "done": "The note pilot-monorepo.md has the sections Repository and Result and names components.yaml, the push of each component, --latest=false, the explicit release tag, split, the baseline, legacy/pre-split the second apply and the rerun of an interrupted apply, each with what you saw.",
@@ -3430,7 +3430,12 @@
             "pattern": "pilot-daily-loop.md: the form of a pilot note",
             "target": "new"
           },
-          "consumes": []
+          "consumes": [],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T5.5.md",
+          "last_verify": {
+            "at": "2026-11-10T16:38:15Z",
+            "exit": 0
+          }
         }
       ],
       "gate": {
