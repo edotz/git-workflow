@@ -3281,7 +3281,7 @@
         },
         {
           "id": "T5.4",
-          "title": "Register split in the git module and as a guarded slash command",
+          "title": "Register split in the git module and as a slash command",
           "depends": [
             "T5.3"
           ],
@@ -3301,7 +3301,7 @@
             },
             {
               "ref": ".agentic-os/commands/commands.claude.yaml",
-              "why": "the guard of D60, which gains split"
+              "why": "the provider entries of the git commands, which gain split with the value false (D78)"
             },
             {
               "ref": "plugin.yaml",
@@ -3341,23 +3341,44 @@
           ],
           "verify": {
             "from": "environment fact: the compile writes the eighth slash command under the namespace git",
-            "run": "bash ${BU_ROOT}/app git split --help | grep -q dry-run && bash ${BU_ROOT}/app git split --help | grep -q -- --confirm && grep -q 'name: \"split\"' bin/modules/git/module.yaml && bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app compile commands >/dev/null && test -f .claude/commands/git/split.md && grep -q 'disable-model-invocation: true' .claude/commands/git/split.md && grep -q 'argument-hint' .claude/commands/git/split.md && yq -e '.commands[] | select(.name == \"split\")' commands/commands.yaml >/dev/null && [ \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0 ] && for f in .agentic-os/adapters/claude/templates/rules/bin-lib.md .agentic-os/adapters/claude/templates/rules/bin-modules.md bin/lib/.evolve.json bin/modules/.evolve.json; do grep -qi 'split' $f || exit 1; done && n=$(grep -c '^  - name:' bin/modules/git/module.yaml) && grep -q \"git ($n commands)\" .agentic-os/adapters/claude/templates/rules/bin-modules.md"
+            "run": "bash ${BU_ROOT}/app git split --help | grep -q dry-run && bash ${BU_ROOT}/app git split --help | grep -q -- --confirm && grep -q 'name: \"split\"' bin/modules/git/module.yaml && bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app compile commands >/dev/null && test -f .claude/commands/git/split.md && ! grep -q 'disable-model-invocation' .claude/commands/git/split.md && grep -q 'argument-hint' .claude/commands/git/split.md && yq -e '.commands[] | select(.name == \"split\")' commands/commands.yaml >/dev/null && [ \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0 ] && for f in .agentic-os/adapters/claude/templates/rules/bin-lib.md .agentic-os/adapters/claude/templates/rules/bin-modules.md bin/lib/.evolve.json bin/modules/.evolve.json; do grep -qi 'split' $f || exit 1; done && n=$(grep -c '^  - name:' bin/modules/git/module.yaml) && grep -q \"git ($n commands)\" .agentic-os/adapters/claude/templates/rules/bin-modules.md"
           },
-          "status": "pending",
-          "why": "D43 of this plan keeps split app-only until P5 builds it; the command pushes to other repositories, so it gets the same guard as pr, release, promote and rules-sync (D60).",
-          "result": "split is registered in the git module and /git:split in the plugin tier, compiled with disable-model-invocation: true.",
-          "done": ".claude/commands/git/split.md exists after app compile commands, carries the argument-hint and disable-model-invocation: true, and dispatches to app git split. The rule files and the two .evolve.json files name split and the git command count of bin-modules.md matches module.yaml.",
+          "status": "done",
+          "why": "D43 of this plan keeps split app-only until P5 builds it; the command pushes to other repositories, so it joins the other git slash commands, which the model may invoke (D78).",
+          "result": "split is registered in the git module and /git:split in the plugin tier, compiled without a model invocation guard (D78).",
+          "done": ".claude/commands/git/split.md exists after app compile commands, carries the argument-hint and no disable-model-invocation line, and dispatches to app git split. The rule files and the two .evolve.json files name split and the git command count of bin-modules.md matches module.yaml.",
           "fails": "A model could start a force push to a child repository on its own initiative.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D41"
           ],
           "brief": {
-            "arguments": "The command split is already registered in bin/modules/git/module.yaml (T5.3, on the developer's request); add the entry split (namespace git, type tool) with a trigger-condition description and the argument-hint [--dry-run|--apply] [--confirm <owner/repo>] to commands/commands.yaml, write the blueprint tool-dispatch/split.md like rules-sync.md, add split with disable-model-invocation: true to commands.claude.yaml, run app compile commands and keep what it writes to commands.json. The module.yaml entry of split exists already; check that it lists the flags --dry-run, --apply and --confirm. Add split to the library list of bin-lib.md and bin/lib/.evolve.json and to the git commands of bin-modules.md and bin/modules/.evolve.json, and set the count in the phrase 'git (<n> commands)' of bin-modules.md to the number of entries of module.yaml.",
-            "output": "The registration, the blueprint and the guard for split.",
+            "arguments": "The command split is already registered in bin/modules/git/module.yaml (T5.3, on the developer's request); add the entry split (namespace git, type tool) with a trigger-condition description and the argument-hint [--dry-run|--apply] [--confirm <owner/repo>] to commands/commands.yaml, write the blueprint tool-dispatch/split.md like rules-sync.md, add split with disable-model-invocation: false to commands.claude.yaml, run app compile commands and keep what it writes to commands.json. The module.yaml entry of split exists already; check that it lists the flags --dry-run, --apply and --confirm. Add split to the library list of bin-lib.md and bin/lib/.evolve.json and to the git commands of bin-modules.md and bin/modules/.evolve.json, and set the count in the phrase 'git (<n> commands)' of bin-modules.md to the number of entries of module.yaml.",
+            "output": "The registration and the blueprint of split, with its provider entry.",
             "pattern": "commands/blueprints/tool-dispatch/rules-sync.md",
             "target": "change"
           },
-          "consumes": []
+          "consumes": [],
+          "findings": [
+            {
+              "file": ".agentic-os/commands/commands.claude.yaml",
+              "line": 2,
+              "severity": "convention",
+              "summary": "The header comment still calls the file the side-effect guard of D60, which D78 supersedes",
+              "state": "accepted"
+            },
+            {
+              "file": ".agentic-os/project/resume.md",
+              "line": 8,
+              "severity": "style",
+              "summary": "The T5.4 line of the resume note still says to write a guard for split; the note is rewritten by the handoff",
+              "state": "dismissed"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T5.4.md",
+          "last_verify": {
+            "at": "2026-11-10T16:04:01Z",
+            "exit": 0
+          }
         },
         {
           "id": "T5.5",
@@ -3413,7 +3434,7 @@
         }
       ],
       "gate": {
-        "run": "(bash -n bin/modules/git/release.sh && out=$(bash tests/git-release/multi.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 4 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL') && (bash -n bin/modules/git/split.sh && bash -n bin/lib/split.sh && out=$(bash tests/git-split/dry-run.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 6 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-split/apply.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 7 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL') && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app compile commands >/dev/null && bash ${BU_ROOT}/app git split --help | grep -q dry-run && test -f .claude/commands/git/split.md && grep -q 'disable-model-invocation: true' .claude/commands/git/split.md && grep -q 'argument-hint' .claude/commands/git/split.md && yq -e '.commands[] | select(.name == \"split\")' commands/commands.yaml >/dev/null && [ \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0 ]) && f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-monorepo.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'components.yaml' 'push' 'rerun' 'latest=false' 'releases/tag' 'split' 'baseline' 'legacy/pre-split' 'second apply'; do grep -qiF -- \"$k\" $f || exit 1; done"
+        "run": "(bash -n bin/modules/git/release.sh && out=$(bash tests/git-release/multi.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 4 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL') && (bash -n bin/modules/git/split.sh && bash -n bin/lib/split.sh && out=$(bash tests/git-split/dry-run.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 6 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-split/apply.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 7 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL') && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app compile commands >/dev/null && bash ${BU_ROOT}/app git split --help | grep -q dry-run && test -f .claude/commands/git/split.md && ! grep -q 'disable-model-invocation' .claude/commands/git/split.md && grep -q 'argument-hint' .claude/commands/git/split.md && yq -e '.commands[] | select(.name == \"split\")' commands/commands.yaml >/dev/null && [ \"$(yq '.commands | length' .agentic-os/commands/commands.yaml)\" = 0 ]) && f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-monorepo.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'components.yaml' 'push' 'rerun' 'latest=false' 'releases/tag' 'split' 'baseline' 'legacy/pre-split' 'second apply'; do grep -qiF -- \"$k\" $f || exit 1; done"
       }
     },
     {
@@ -3552,6 +3573,7 @@
           "id": "T6.3",
           "title": "Migrate edotz.typo3-cms to the new workflow",
           "depends": [
+            "T5.4",
             "T6.1",
             "T6.2"
           ],
@@ -3588,19 +3610,19 @@
           ],
           "verify": {
             "from": "environment fact: edotz.typo3-cms runs the new workflow and no old release file is left",
-            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'release-please' 'rules-sync' 'pre-push' 'baseline' 'squash' 'release'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.typo3-cms && test -f $d/components.yaml && test ! -f $d/release-please-config.json && test ! -f $d/.release-please-manifest.json && test ! -f $d/.github/workflows/release-please.yml && test ! -f $d/.github/workflows/backport.yml && test -f $d/.github/workflows/status-checks.yml && test ! -f $d/.github/workflows/commit-lint.yml && test ! -f $d/.github/workflows/php-cs-fixer.yml && [ \"$(yq '.components | length' $d/components.yaml)\" = 1 ] && grep -q 'composer.json' $d/components.yaml && grep -q 'ext_emconf.php' $d/components.yaml && grep -q 'php-cs-fixer' $d/components.yaml && grep -q 'disable-model-invocation: true' $d/.agentic-os/commands/commands.claude.yaml && s=edotz/typo3-cms && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'release-please' 'rules-sync' 'pre-push' 'baseline' 'squash' 'release'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.typo3-cms && test -f $d/components.yaml && test ! -f $d/release-please-config.json && test ! -f $d/.release-please-manifest.json && test ! -f $d/.github/workflows/release-please.yml && test ! -f $d/.github/workflows/backport.yml && test -f $d/.github/workflows/status-checks.yml && test ! -f $d/.github/workflows/commit-lint.yml && test ! -f $d/.github/workflows/php-cs-fixer.yml && [ \"$(yq '.components | length' $d/components.yaml)\" = 1 ] && grep -q 'composer.json' $d/components.yaml && grep -q 'ext_emconf.php' $d/components.yaml && grep -q 'php-cs-fixer' $d/components.yaml && s=edotz/typo3-cms && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
           },
           "status": "pending",
           "why": "typo3-cms is the single repository with a release history, 21 tags and release-please, and it needs nothing from the monorepo work: it proves the cutover on a real repository first (D61).",
-          "result": "edotz.typo3-cms has components.yaml for one component with composer.json and ext_emconf.php as version files, its latest release-please tag as the baseline, the aggregate check, the rulesets of rules-sync with no foreign ruleset left, the shims and an enabled pre-push guard, and one release made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml with php-cs-fixer declared as a check, and the repository carries its own guard for the side-effect commands (D70, D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
-          "done": "The note migrate-typo3-cms.md has the sections Repository and Result and names components.yaml, release-please, rules-sync, the pre-push guard, the baseline, the squash merge and the release, each with what you saw; release-please-config.json, .release-please-manifest.json, release-please.yml and backport.yml are gone from the repository. status-checks.yml is present, commit-lint.yml and php-cs-fixer.yml are gone, components.yaml declares one component with both version files and the php-cs-fixer check, and .agentic-os/commands/commands.claude.yaml carries disable-model-invocation: true for pr, release, promote and rules-sync. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
+          "result": "edotz.typo3-cms has components.yaml for one component with composer.json and ext_emconf.php as version files, its latest release-please tag as the baseline, the aggregate check, the rulesets of rules-sync with no foreign ruleset left, the shims and an enabled pre-push guard, and one release made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml with php-cs-fixer declared as a check (D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
+          "done": "The note migrate-typo3-cms.md has the sections Repository and Result and names components.yaml, release-please, rules-sync, the pre-push guard, the baseline, the squash merge and the release, each with what you saw; release-please-config.json, .release-please-manifest.json, release-please.yml and backport.yml are gone from the repository. status-checks.yml is present, commit-lint.yml and php-cs-fixer.yml are gone, components.yaml declares one component with both version files and the php-cs-fixer check. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
           "fails": "The repository would run two release mechanisms at once, or the first release would double the version of the last release-please tag. Master would be unprotected between the removal of the classic protection and the creation of the ruleset, or the old required checks would keep blocking the pull requests.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D19",
             "CONCEPT-git-workflow-plugin:D17"
           ],
           "brief": {
-            "arguments": "In edotz.typo3-cms, on a branch started with /git:start: write components.yaml, delete the release-please files and the two workflows backport.yml and release-please.yml, copy status-checks.yml from the plugin, delete commit-lint.yml and php-cs-fixer.yml and declare the php-cs-fixer command under checks in components.yaml, write .agentic-os/commands/commands.claude.yaml with disable-model-invocation: true for pr, release, promote and rules-sync, set GIT_WORKFLOW_RELEASE_BRANCH and the stage in .env, run rules-sync --dry-run and --apply, remove every foreign ruleset it names, run app git shims and app hooks enable pre-push minimum-check, merge the change by pull request, then run release --dry-run and --apply and promote. Write what you ran and saw. Read the classic protection of master first (gh api repos/edotz/typo3-cms/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72).",
+            "arguments": "In edotz.typo3-cms, on a branch started with /git:start: write components.yaml, delete the release-please files and the two workflows backport.yml and release-please.yml, copy status-checks.yml from the plugin, delete commit-lint.yml and php-cs-fixer.yml and declare the php-cs-fixer command under checks in components.yaml, set GIT_WORKFLOW_RELEASE_BRANCH and the stage in .env, run rules-sync --dry-run and --apply, remove every foreign ruleset it names, run app git shims and app hooks enable pre-push minimum-check, merge the change by pull request, then run release --dry-run and --apply and promote. Write what you ran and saw. Read the classic protection of master first (gh api repos/edotz/typo3-cms/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72).",
             "output": "A note with the sections Repository and Result, and the repository without release-please.",
             "pattern": "pilot-daily-loop.md: the form of a pilot note",
             "target": "new"
@@ -3696,12 +3718,12 @@
           ],
           "verify": {
             "from": "environment fact: edotz.php-project releases its components itself and splits them to the children",
-            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'merge-split-repo' 'split' 'baseline' 'legacy/pre-split' 'latest=false' 'rules-sync' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.php-project && test -f $d/components.yaml && test ! -f $d/.github/workflows/merge-split-repo.yml && test -d $d/.github/workflows && ! ls $d/.github/workflows | grep -qE 'sync-to-monorepo|post-release|release-please|backport|commit-lint|php-cs-fixer' && test -f $d/.github/workflows/status-checks.yml && [ \"$(yq '.components | length' $d/components.yaml)\" -ge 8 ] && grep -q 'split: yes' $d/components.yaml && grep -q 'php-cs-fixer' $d/components.yaml && grep -q 'disable-model-invocation: true' $d/.agentic-os/commands/commands.claude.yaml && s=edotz/php-project && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'merge-split-repo' 'split' 'baseline' 'legacy/pre-split' 'latest=false' 'rules-sync' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.php-project && test -f $d/components.yaml && test ! -f $d/.github/workflows/merge-split-repo.yml && test -d $d/.github/workflows && ! ls $d/.github/workflows | grep -qE 'sync-to-monorepo|post-release|release-please|backport|commit-lint|php-cs-fixer' && test -f $d/.github/workflows/status-checks.yml && [ \"$(yq '.components | length' $d/components.yaml)\" -ge 8 ] && grep -q 'split: yes' $d/components.yaml && grep -q 'php-cs-fixer' $d/components.yaml && s=edotz/php-project && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
           },
           "status": "pending",
           "why": "php-project is the pilot monorepo: its children release and sync back today, and in the new design the monorepo releases and the children are split targets (D61, D64).",
-          "result": "edotz.php-project has components.yaml with one component per package, every package that has a child repository declared split yes with its owner and repo, the children baselined one by one, the old child workflows replaced, and the first component releases made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml, and the repository carries its own guard for the side-effect commands, split included (D70, D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
-          "done": "The note migrate-php-project.md has the sections Repository and Result and names components.yaml, merge-split-repo, split, the baseline, legacy/pre-split, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone. status-checks.yml is present, the old commit-lint and php-cs-fixer workflows are gone, components.yaml declares at least 8 components and at least one with split: yes, and .agentic-os/commands/commands.claude.yaml carries disable-model-invocation: true. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
+          "result": "edotz.php-project has components.yaml with one component per package, every package that has a child repository declared split yes with its owner and repo, the children baselined one by one, the old child workflows replaced, and the first component releases made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml (D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
+          "done": "The note migrate-php-project.md has the sections Repository and Result and names components.yaml, merge-split-repo, split, the baseline, legacy/pre-split, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone. status-checks.yml is present, the old commit-lint and php-cs-fixer workflows are gone, components.yaml declares at least 8 components and at least one with split: yes. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
           "fails": "A child repository would be force pushed before its dry run was confirmed, or the old child workflow would keep syncing releases back into the monorepo. Master would be unprotected between the removal of the classic protection and the creation of the ruleset, or the old required checks would keep blocking the pull requests.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D19",
@@ -3709,7 +3731,7 @@
             "CONCEPT-git-workflow-plugin:D56"
           ],
           "brief": {
-            "arguments": "In edotz.php-project on a branch: write components.yaml for the eight packages (paths packages/<name>, version_files composer.json where it keeps a version key), mark the packages with a child repository split yes, run split --dry-run per child and confirm each, baseline the children with --apply --confirm, remove merge-split-repo.yml and the old callers, apply rules-sync, shims and the pre-push guard, merge by pull request, then release and promote the changed components. Switch off the old release workflow in each child repository. Write what you ran and saw. Copy status-checks.yml from the plugin and delete the old commit-lint.yml and php-cs-fixer.yml, declaring their commands under checks in components.yaml, and write .agentic-os/commands/commands.claude.yaml with disable-model-invocation: true for pr, release, promote, rules-sync and split. Read the classic protection of master first (gh api repos/edotz/php-project/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72).",
+            "arguments": "In edotz.php-project on a branch: write components.yaml for the eight packages (paths packages/<name>, version_files composer.json where it keeps a version key), mark the packages with a child repository split yes, run split --dry-run per child and confirm each, baseline the children with --apply --confirm, remove merge-split-repo.yml and the old callers, apply rules-sync, shims and the pre-push guard, merge by pull request, then release and promote the changed components. Switch off the old release workflow in each child repository. Write what you ran and saw. Copy status-checks.yml from the plugin and delete the old commit-lint.yml and php-cs-fixer.yml, declaring their commands under checks in components.yaml. Read the classic protection of master first (gh api repos/edotz/php-project/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72).",
             "output": "A note with the sections Repository and Result, and the repository on the new workflow.",
             "pattern": "migrate-typo3-cms.md: the form of a migration note",
             "target": "new"
@@ -3755,12 +3777,12 @@
           ],
           "verify": {
             "from": "environment fact: edotz.nodejs-project releases its components itself and splits them to the children",
-            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-nodejs-project.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'workspace' 'merge-split-repo' 'split' 'baseline' 'latest=false' 'rules-sync' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.nodejs-project && test -f $d/components.yaml && test ! -f $d/.github/workflows/merge-split-repo.yml && test -d $d/.github/workflows && ! ls $d/.github/workflows | grep -qE 'sync-to-monorepo|post-release|release-please|backport|commit-lint|php-cs-fixer' && test -f $d/.github/workflows/status-checks.yml && [ \"$(yq '.components | length' $d/components.yaml)\" -ge 10 ] && grep -q 'split: yes' $d/components.yaml && grep -q 'workspace:' $d/components.yaml && grep -q 'disable-model-invocation: true' $d/.agentic-os/commands/commands.claude.yaml && s=edotz/nodejs-project && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-nodejs-project.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'workspace' 'merge-split-repo' 'split' 'baseline' 'latest=false' 'rules-sync' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.nodejs-project && test -f $d/components.yaml && test ! -f $d/.github/workflows/merge-split-repo.yml && test -d $d/.github/workflows && ! ls $d/.github/workflows | grep -qE 'sync-to-monorepo|post-release|release-please|backport|commit-lint|php-cs-fixer' && test -f $d/.github/workflows/status-checks.yml && [ \"$(yq '.components | length' $d/components.yaml)\" -ge 10 ] && grep -q 'split: yes' $d/components.yaml && grep -q 'workspace:' $d/components.yaml && s=edotz/nodejs-project && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
           },
           "status": "pending",
           "why": "nodejs-project is the second monorepo, on pnpm after T6.4: it repeats the cutover of php-project with the workspace field and the node publish that belongs to the consumer (D39).",
-          "result": "edotz.nodejs-project has components.yaml with a workspace component per package, the split children baselined one by one, the old workflows gone, the rulesets, shims and the pre-push guard in place, and the first component releases made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml, and the repository carries its own guard for the side-effect commands, split included (D70, D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
-          "done": "The note migrate-nodejs-project.md has the sections Repository and Result and names components.yaml, workspace, merge-split-repo, split, the baseline, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone. status-checks.yml is present, the old commit-lint and php-cs-fixer workflows are gone, components.yaml declares at least 10 components and at least one with split: yes, and .agentic-os/commands/commands.claude.yaml carries disable-model-invocation: true. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
+          "result": "edotz.nodejs-project has components.yaml with a workspace component per package, the split children baselined one by one, the old workflows gone, the rulesets, shims and the pre-push guard in place, and the first component releases made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml (D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
+          "done": "The note migrate-nodejs-project.md has the sections Repository and Result and names components.yaml, workspace, merge-split-repo, split, the baseline, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone. status-checks.yml is present, the old commit-lint and php-cs-fixer workflows are gone, components.yaml declares at least 10 components and at least one with split: yes. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
           "fails": "The components would take their paths from a hand written list that drifts from the workspace graph, or a split child would be released twice, by the old workflow and by the new one. Master would be unprotected between the removal of the classic protection and the creation of the ruleset, or the old required checks would keep blocking the pull requests.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D19",
@@ -3768,7 +3790,7 @@
             "CONCEPT-git-workflow-plugin:D39"
           ],
           "brief": {
-            "arguments": "In edotz.nodejs-project on a branch: write components.yaml with workspace set to the pnpm package name of each component and version_files package.json, mark the packages with a child repository split yes, run split --dry-run per child and confirm each, baseline with --apply --confirm, remove merge-split-repo.yml and the old callers, apply rules-sync, shims and the pre-push guard, merge by pull request, then release and promote the changed components. Switch off the old release workflow in each child. Write what you ran and saw. Copy status-checks.yml from the plugin and delete the old commit-lint.yml and php-cs-fixer.yml, declaring their commands under checks in components.yaml, and write .agentic-os/commands/commands.claude.yaml with disable-model-invocation: true for pr, release, promote, rules-sync and split. Read the classic protection of master first (gh api repos/edotz/nodejs-project/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72).",
+            "arguments": "In edotz.nodejs-project on a branch: write components.yaml with workspace set to the pnpm package name of each component and version_files package.json, mark the packages with a child repository split yes, run split --dry-run per child and confirm each, baseline with --apply --confirm, remove merge-split-repo.yml and the old callers, apply rules-sync, shims and the pre-push guard, merge by pull request, then release and promote the changed components. Switch off the old release workflow in each child. Write what you ran and saw. Copy status-checks.yml from the plugin and delete the old commit-lint.yml and php-cs-fixer.yml, declaring their commands under checks in components.yaml. Read the classic protection of master first (gh api repos/edotz/nodejs-project/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72).",
             "output": "A note with the sections Repository and Result, and the repository on the new workflow.",
             "pattern": "migrate-php-project.md: the form of a migration note",
             "target": "new"
@@ -4526,7 +4548,8 @@
       "by": "developer",
       "date": "2026-11-09",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D78"
     },
     {
       "id": "D61",
@@ -4626,7 +4649,8 @@
       "by": "developer",
       "date": "2026-11-10",
       "scope": "plan-only",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D78"
     },
     {
       "id": "D71",
@@ -4683,6 +4707,26 @@
       "question": "What a split puts into the child repository when a component has several paths",
       "chosen": "Only the first path: the own directory of the component is the root of the child; the other paths, such as shared code or the workspace dependencies of a workspace component, count for change detection only and are not split",
       "reason": "splitsh-lite refuses several bare prefixes that land in the same directory ('Cannot have two prefix splits under the same directory'), so split_head failed for every component with two paths; the dependency packages of a workspace component do not belong in a standalone child; the developer chose the recommended option on 2026-11-10; it corrects the content of D75",
+      "by": "developer",
+      "date": "2026-11-10",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D77",
+      "question": "What orders two tasks when the verify of one reads a file the other writes",
+      "chosen": "The task whose verify reads the file depends on the task that writes it, so they never share a group; T6.3 depends on T5.4 for .agentic-os/commands/commands.claude.yaml",
+      "reason": "lint artifacts changed failed because T5.4 and T6.3 ran in group 1 while T5.4 writes the file the verify of T6.3 names",
+      "by": "developer",
+      "date": "2026-11-10",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D78",
+      "question": "Whether the git slash commands with side effects carry disable-model-invocation: true",
+      "chosen": "No: the model may invoke every git slash command, split included, in this repository and in the migrated repositories; split has the value false in .agentic-os/commands/commands.claude.yaml, the migrations write no guard file, and the guard clause of D65 no longer holds",
+      "reason": "the developer allows model invocation on all git custom slash commands (commit 37f9d26 already set the four values to false); it supersedes D60, which proved true for pr, release, promote and rules-sync, and D70, which had the migrated repositories write the guard",
       "by": "developer",
       "date": "2026-11-10",
       "scope": "durable",
@@ -5263,6 +5307,32 @@
       ],
       "reason": "The first run of splitsh-lite with two paths showed that it refuses several bare prefixes in the same directory, so split_head failed for any component with two paths; the dependency packages of a workspace component do not belong in a standalone child; the developer chose the first path only and asked to register split in module.yaml on 2026-11-10",
       "by": "developer"
+    },
+    {
+      "date": "2026-11-10",
+      "change": "T5.4 joins the depends of T6.3; D77 records that a task whose verify reads a file another task writes depends on that task",
+      "affects": [
+        "T6.3",
+        "D77"
+      ],
+      "reason": "T5.4 and T6.3 shared group 1 and T5.4 writes .agentic-os/commands/commands.claude.yaml, which the verify of T6.3 names for typo3-cms; lint artifacts changed failed on it; the developer approved the amendment on 2026-11-10",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-10",
+      "change": "D78 allows model invocation on all git slash commands and supersedes D60 and D70; T5.4 and the P5 gate give split no guard (value false, verify requires no disable-model-invocation line); T6.3, T6.5 and T6.6 no longer write a guard file",
+      "affects": [
+        "D60",
+        "D70",
+        "D78",
+        "T5.4",
+        "T6.3",
+        "T6.5",
+        "T6.6",
+        "P5"
+      ],
+      "reason": "the developer allows model invocation on all git custom slash commands; commit 37f9d26 had already set the four values to false, so the guard of D60 and its verifies no longer held; the developer chose all repositories and approved the amendment on 2026-11-10",
+      "by": "claude"
     }
   ],
   "dismissals": [
