@@ -87,7 +87,7 @@
     },
     {
       "name": "session-start/git-shims",
-      "enabled": false
+      "enabled": true
     }
   ],
   "claude": []

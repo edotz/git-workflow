@@ -2463,7 +2463,7 @@
             "from": "environment fact: the note records the rulesets, a start, commit and pr, the aggregate check and the guard",
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'rules-sync' '/git:start' '/git:commit' '/git:pr' 'squash' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The gate of m4-daily-loop asks that the PR gate with the aggregate check is required and the rulesets are applied with the App as bypass actor; the earlier checks cannot reach GitHub.",
           "result": "A note that records the daily loop and the rulesets in the sandbox repository.",
           "done": "The note names the repository and the result: rules-sync applied with the App, a change made with /git:start, /git:commit and /git:pr, the aggregate check required and green, the squash merge, and a red direct push stopped by the pre-push guard.",
@@ -2478,6 +2478,10 @@
             "output": "A note with the sections Repository and Result.",
             "pattern": "pilot-release.md: the form of a pilot note",
             "target": "new"
+          },
+          "last_verify": {
+            "at": "2026-11-10T09:23:23Z",
+            "exit": 0
           }
         },
         {

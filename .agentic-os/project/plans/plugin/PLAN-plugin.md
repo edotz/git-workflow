@@ -267,7 +267,7 @@ Build start, commit and pr, the aggregate status check, rules-sync with the STAG
 | Write the pre-push guard hook | T4.9 | hook-author | T4.1, T4.7 | done |
 | Adapt workflow-status to squash merge and promote | T4.10 | bash-author | T4.1, T4.14 | done |
 | Adapt branch-cleanup to squash merge | T4.11 | bash-author | T4.1, T4.14 | done |
-| Run the daily loop in the sandbox | T4.12 | developer | T4.7, T4.8, T4.9, T4.10, T4.11, T4.13, T4.17, T4.19 | pending |
+| Run the daily loop in the sandbox | T4.12 | developer | T4.7, T4.8, T4.9, T4.10, T4.11, T4.13, T4.17, T4.19 | done |
 | Register the git slash commands in the plugin tier | T4.13 | dynamic-author | T4.7 | done |
 | Take the branch settings from the project .env and reduce workflow-setup to validate | T4.14 | bash-author | - | done |
 | Move the worktree directory to the GIT_WORKFLOW_WORKTREE_DIR setting | T4.15 | bash-author | T4.14 | done |
