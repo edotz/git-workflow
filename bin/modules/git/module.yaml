@@ -104,6 +104,23 @@ commands:
     arguments:
       - name: "--check"
         description: "Report what is missing or stale and change nothing; exit 1 when something is"
+  - name: "split"
+    requires: [git, docker, gh, curl]
+    description: "Split a component into its child repository: the dry run shows the split head, the ancestry and the tree difference; the apply pushes the split head and the component tags to the branch of the monorepo, one child per run."
+    when: "A component with split yes has changes or releases that its child repository has to receive"
+    examples:
+      - "bash $BU_ROOT/app git split web --dry-run"
+      - "bash $BU_ROOT/app git split web --apply"
+      - "bash $BU_ROOT/app git split lib --apply --confirm own/lib"
+    arguments:
+      - name: "component"
+        description: "Component to split; the dry run takes every split component without it, the apply needs exactly one"
+      - name: "--dry-run"
+        description: "Print the split head, the ancestry to the child head and the tree difference and change nothing"
+      - name: "--apply"
+        description: "Push the split head to GIT_WORKFLOW_MAIN_BRANCH of the child and the component tags as vX.Y.Z, with the installation token of the App"
+      - name: "--confirm"
+        description: "owner/repo of the child, needed to replace a child that does not descend from the split; its old head is kept as legacy/pre-split"
   - name: "start"
     requires: [git, docker]
     description: "Create the branch <type>/<name> and its worktree from the main branch and print the worktree path."
