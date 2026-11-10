@@ -28,7 +28,8 @@ cli_add_flag "dry-run" "n" "Print the split head, the ancestry to the child head
 cli_add_flag "apply"   "a" "Push the split head and the component tags to the child repository, one child per run"
 cli_add_option "confirm" "c" "owner/repo of the child: needed to replace a child that does not descend from the split" ""
 
-_SPLIT_AUTH=(-c "credential.helper=" -c "credential.helper=!gh auth git-credential")
+# No repository hooks: the shims of a clone call agentic-os, which the tool image lacks.
+_SPLIT_AUTH=(-c "core.hooksPath=/dev/null" -c "credential.helper=" -c "credential.helper=!gh auth git-credential")
 
 # ============================================
 # Private Helpers

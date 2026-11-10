@@ -27,7 +27,8 @@ _PROMOTE_TARGET=""
 _PROMOTE_CURRENT=""
 _PROMOTE_SLUG=""
 _PROMOTE_URL=""
-_PROMOTE_AUTH=(-c "credential.helper=" -c "credential.helper=!gh auth git-credential")
+# No repository hooks: the shims of a clone call agentic-os, which the tool image lacks.
+_PROMOTE_AUTH=(-c "core.hooksPath=/dev/null" -c "credential.helper=" -c "credential.helper=!gh auth git-credential")
 
 # ============================================
 # Private Helpers

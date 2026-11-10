@@ -47,7 +47,8 @@ _RELEASE_README_CHANGED="no"
 _RELEASE_SLUG=""
 _RELEASE_URL=""
 _RELEASE_ID=()
-_RELEASE_AUTH=(-c "credential.helper=" -c "credential.helper=!gh auth git-credential")
+# No repository hooks: the shims of a clone call agentic-os, which the tool image lacks, and the checks ran on the host.
+_RELEASE_AUTH=(-c "core.hooksPath=/dev/null" -c "credential.helper=" -c "credential.helper=!gh auth git-credential")
 
 # ============================================
 # Private Helpers
