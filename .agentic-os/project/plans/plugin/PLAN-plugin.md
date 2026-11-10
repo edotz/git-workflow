@@ -19,8 +19,8 @@ Five notes in the concept's notes directory, one of them recording the sandbox: 
 - P2 Tool image: 4 tasks
 - P3 Release core: 11 tasks
 - P4 Daily loop and guards: 18 tasks
-- P5 Monorepo: 0 tasks
-- P6 Retire the old approach: 0 tasks
+- P5 Monorepo: 5 tasks
+- P6 Retire the old approach: 8 tasks
 
 ### Cost
 
@@ -422,13 +422,127 @@ Build start, commit and pr, the aggregate status check, rules-sync with the STAG
 
 Gate: (bash -n bin/modules/git/check.sh && bash tests/git-check/run.sh) && (bash -n bin/modules/git/start.sh && bash tests/git-start/run.sh) && (bash -n bin/modules/git/commit.sh && bash tests/git-commit/run.sh) && (bash -n bin/modules/git/pr.sh && bash tests/git-pr/dry-run.sh) && (bash -n bin/lib/rules.sh && bash tests/git-rules/build.sh) && (bash -n bin/modules/git/rules-sync.sh && bash tests/git-rules/sync.sh && for k in 'dry-run' 'second apply' 'stage' 'GIT_WORKFLOW_APP_ID' 'token'; do grep -qi -- "$k" tests/git-rules/sync.sh || exit 1; done) && (bash ${BU_ROOT}/app lint modules && bash ${BU_ROOT}/app git check --help | grep -q component && bash ${BU_ROOT}/app git start --help | grep -q type && bash ${BU_ROOT}/app git commit --help | grep -q message && bash ${BU_ROOT}/app git pr --help | grep -q dry-run && bash ${BU_ROOT}/app git rules-sync --help | grep -q stage) && (yamllint -d relaxed .github/workflows/status-checks.yml && grep -q '^  check:' .github/workflows/status-checks.yml && ! grep -q 'stage-guard' .github/workflows/status-checks.yml) && (test -x bin/hooks/pre-push/minimum-check && bash -n bin/hooks/pre-push/minimum-check && bash ${BU_ROOT}/app lint hooks && bash tests/git-check/run.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master "$t/r" && mkdir "$t/r/.agentic-os" && printf 'components:\n  - name: object\n    paths: ["."]\n' > "$t/r/components.yaml" && cd "$t/r" && g="git -c user.name=t -c user.email=t@example.com" && $g add -A && $g commit -q -m 'chore: init' && $g commit -q --allow-empty -m 'not conventional' && if PLUGIN_ROOT="$r" bash "$r/bin/hooks/pre-push/minimum-check" origin url </dev/null >/dev/null 2>&1; then false; fi && $g commit -q --amend --allow-empty -m 'chore: fine' && PLUGIN_ROOT="$r" bash "$r/bin/hooks/pre-push/minimum-check" origin url </dev/null >/dev/null 2>&1; ec=$?; cd /; rm -rf "$t"; exit $ec)) && (bash -n bin/modules/git/workflow-status.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master "$t/r" && mkdir "$t/r/.agentic-os" && printf 'components:\n  - name: object\n    paths: ["."]\n' > "$t/r/components.yaml" && cd "$t/r" && g="git -c user.name=t -c user.email=t@example.com" && $g add -A && $g commit -q -m 'chore: init' && git tag v0.1.0 && $g commit -q --allow-empty -m 'feat: a' && run() { PLUGIN_ROOT="$r" GIT_WORKFLOW_RELEASE_BRANCH=rel bash "$r/bin/modules/git/workflow-status.sh" 2>/dev/null; } && run | jq -e '.components[0] | .name == "object" and .latest_release == "v0.1.0" and .commits_since_release == 1 and .release_branch == "absent"' >/dev/null && git branch rel v0.1.0 && run | jq -e '.components[0].release_branch == "on"' >/dev/null && git tag v0.2.0 && run | jq -e '.components[0] | .latest_release == "v0.2.0" and .release_branch == "behind"' >/dev/null && if run | grep -qi 'release-please'; then false; fi; ec=$?; cd /; rm -rf "$t"; exit $ec)) && (bash -n bin/modules/git/branch-cleanup.sh && (r=$PWD; t=$(mktemp -d) && git init -q -b master "$t/r" && mkdir "$t/r/.agentic-os" && cd "$t/r" && g="git -c user.name=t -c user.email=t@example.com" && $g commit -q --allow-empty -m 'chore: init' && git checkout -q -b feat/x && echo x > x && git add x && $g commit -q -m 'feat: x' && git checkout -q master && git checkout -q -b feat/y && echo y > y && git add y && $g commit -q -m 'feat: y' && git checkout -q master && echo x > x && git add x && $g commit -q -m 'feat: x (#1)' && out=$(PLUGIN_ROOT="$r" bash "$r/bin/modules/git/branch-cleanup.sh" --dry-run 2>/dev/null) && printf '%s\n' "$out" | grep -qx 'merged: feat/x' && if printf '%s\n' "$out" | grep -q 'merged: feat/y'; then false; fi; ec=$?; cd /; rm -rf "$t"; exit $ec)) && (f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-daily-loop.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'rules-sync' '/git:start' '/git:commit' '/git:pr' 'squash' 'pre-push'; do grep -qiF -- "$k" $f || exit 1; done) && ((for c in start commit pr check release promote rules-sync; do c=$c yq -e '.commands[] | select(.namespace == "git" and .name == strenv(c))' commands/commands.yaml >/dev/null || exit 1; done) && test "$(yq '.commands | length' .agentic-os/commands/commands.yaml)" = 0 && test ! -e commands/git) && ((yq -r '.provides[]' plugin.yaml | grep -qx commands) && bash ${BU_ROOT}/app compile commands >/dev/null && (for c in start commit pr check release promote rules-sync; do test -f .claude/commands/git/$c.md || exit 1; done) && (for c in pr release promote rules-sync; do grep -q 'disable-model-invocation: true' .claude/commands/git/$c.md || exit 1; done)) && (for f in bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh; do bash -n $f || exit 1; done && ! grep -nE 'PLUGIN_EDOTZ_GIT_WORKFLOW_(MAIN|RELEASE)_BRANCH|workflow\.env|generate_branch_protection|generate_workflow_callers|generate_release_please_config|apply_branch_protection|init_workflow_env|check_preflight|load_workflow_env' bin/lib/worktree.sh bin/modules/git/release.sh bin/modules/git/promote.sh bin/modules/git/workflow-status.sh bin/modules/git/branch-cleanup.sh bin/modules/git/workflow-setup.sh bin/config/env.defaults && (t=$(mktemp -d) && PLUGIN_ROOT=$PWD GIT_WORKFLOW_MAIN_BRANCH=trunk bash -c 'set -euo pipefail; source "${BU_ROOT}/lib/core.sh"; source bin/lib/worktree.sh; test "$(worktree_resolve_base_branch "$1")" = trunk; unset GIT_WORKFLOW_MAIN_BRANCH; test "$(worktree_resolve_base_branch "$1")" = master' _ "$t"; ec=$?; rm -rf "$t"; exit $ec) && (t=$(mktemp -d) && mkdir $t/.agentic-os && (cd $t && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_MAIN_BRANCH=trunk GIT_WORKFLOW_RELEASE_BRANCH=trunk bash $OLDPWD/bin/modules/git/workflow-setup.sh validate >/dev/null 2>&1 && ! PLUGIN_ROOT=$OLDPWD bash $OLDPWD/bin/modules/git/workflow-setup.sh --apply >/dev/null 2>&1); ec=$?; rm -rf $t; exit $ec) && bash tests/git-promote/ff.sh && bash tests/git-release/dry-run.sh) && (bash -n bin/lib/worktree.sh && ! grep -n 'PROVIDER_CONFIG_DIR' bin/lib/worktree.sh && (t=$(mktemp -d) && git init -q "$t/r" && mkdir "$t/r/.agentic-os" && (cd "$t/r" && PLUGIN_ROOT=$OLDPWD GIT_WORKFLOW_WORKTREE_DIR="$t/w" bash -c 'set -euo pipefail; source "${BU_ROOT}/lib/core.sh"; source "${PLUGIN_ROOT}/bin/lib/worktree.sh"; test "$(worktree_get_path feat/foo)" = "$1/w/r/feat-foo"; unset GIT_WORKFLOW_WORKTREE_DIR; test "$(worktree_get_path feat/foo)" = "${HOME}/worktrees/r/feat-foo"' _ "$t"); ec=$?; rm -rf "$t"; exit $ec)) && (bash -n bin/lib/remote.sh && bash tests/git-remote/run.sh) && (jq -e '.shared[] | select(.name == "pre-push/minimum-check" and .enabled == true)' .agentic-os/hooks/hooks.json >/dev/null && bash ${BU_ROOT}/app lint hooks)
 
-## P5 Monorepo (outlined)
+## P5 Monorepo (detailed)
 
 Release each component on its own, split components marked split: yes with splitsh-lite, baseline the existing child repositories and apply --latest=false in multi-component repositories (roadmap milestone m5-monorepo).
 
-## P6 Retire the old approach (outlined)
+| Title | Task | Owner | Depends | Status |
+|---|---|---|---|---|
+| Prove the release of several components with a fixture repository | T5.1 | bash-author | - | pending |
+| Add the split command with its dry run | T5.2 | bash-author | T5.1 | pending |
+| Add the split apply with the baseline of an existing child | T5.3 | inline | T5.2 | pending |
+| Register split in the git module and as a guarded slash command | T5.4 | inline | T5.3 | pending |
+| Run the monorepo in a sandbox | T5.5 | developer | T5.1, T5.3, T5.4 | pending |
+
+**Prove the release of several components with a fixture repository** (T5.1)
+- Why: D56 of the concept says a repository with several components creates every release with --latest=false and links the README to explicit component tags; the code does it, but nothing proves it for two components and for the single component that keeps the latest release.
+- Result: A test that releases two components of one fixture repository and one component of another, with a stubbed gh; a defect it finds in release.sh is recorded as a finding of this task and fixed by an amendment.
+- Done: tests/git-release/multi.sh exits 0: two components get their own tags and release commits, both Releases are created with --latest=false, each README block links releases/tag/<component>/vX.Y.Z, and a single component repository keeps the normal latest release.
+- Fails: A monorepo release would move releases/latest from one component to the other or link the README to a tag that belongs to a different component.
+- Carries: How one latest release per repository works with several components (CONCEPT-git-workflow-plugin:D56); The versioning unit and the tag format (CONCEPT-git-workflow-plugin:D38)
+
+**Add the split command with its dry run** (T5.2)
+- Why: The concept lists split as a command and the plan has none: a component with split yes cannot reach its child repository, and the baseline of the existing children needs a dry run first (D64).
+- Result: The script bin/modules/git/split.sh with --dry-run: for each component with split yes it runs splitsh-lite through the tool image on its paths and prints the head the child would get, whether the child shares history with it, and the tree difference to the child head; it changes nothing.
+- Done: tests/git-split/dry-run.sh exits 0: a split head is printed per split component, a child with unrelated history is reported as needing a baseline, an unsplit component is skipped, and neither --dry-run nor --apply is a usage error.
+- Fails: The first apply on an existing child repository would be a blind force push, or a split component would be skipped without a word.
+- Carries: The command surface and the fate of the seven existing commands (CONCEPT-git-workflow-plugin:D41); The versioning unit and the tag format (CONCEPT-git-workflow-plugin:D38)
+
+**Add the split apply with the baseline of an existing child** (T5.3)
+- Why: Decision D64 fixes the baseline: tag the old child head, show the dry run, confirm the child, force-push with lease. Without the apply no component reaches a child repository.
+- Result: split --apply pushes the split head and the tags of the component to the child; for a child with unrelated history it tags the old head legacy/pre-split first and pushes with force-with-lease only for a child the developer confirmed; a repeated apply does nothing.
+- Done: tests/git-split/apply.sh exits 0 with a bare child: an up-to-date child is left alone, an unrelated child is refused without the confirmation and rebased onto the split after it, the old head survives as legacy/pre-split, and a second apply reports nothing to do.
+- Fails: A child repository would lose its old history, or a force push would run for a child nobody confirmed.
+- Carries: The versioning unit and the tag format (CONCEPT-git-workflow-plugin:D38); How the CLI obtains the app token (CONCEPT-git-workflow-plugin:D6)
+
+**Register split in the git module and as a guarded slash command** (T5.4)
+- Why: D43 of this plan keeps split app-only until P5 builds it; the command pushes to other repositories, so it gets the same guard as pr, release, promote and rules-sync (D60).
+- Result: split is registered in the git module and /git:split in the plugin tier, compiled with disable-model-invocation: true.
+- Done: .claude/commands/git/split.md exists after app compile commands, carries the argument-hint and disable-model-invocation: true, and dispatches to app git split.
+- Fails: A model could start a force push to a child repository on its own initiative.
+- Carries: The command surface and the fate of the seven existing commands (CONCEPT-git-workflow-plugin:D41)
+
+**Run the monorepo in a sandbox** (T5.5)
+- Why: The monorepo release and the split ran in fixtures only; the milestone gate of m5-monorepo asks for each component released on its own and a confirmed split dry run per child repository.
+- Result: A sandbox monorepo with two components, one of them split into a sandbox child repository that already has unrelated history, released and split with the commands, and a note that records what was run and seen.
+- Done: The note pilot-monorepo.md has the sections Repository and Result and names components.yaml, --latest=false, the explicit release tag, split, the baseline, legacy/pre-split and the second apply, each with what you saw.
+- Fails: The first real child repository would be the first time the split runs against GitHub.
+- Carries: How one latest release per repository works with several components (CONCEPT-git-workflow-plugin:D56); The versioning unit and the tag format (CONCEPT-git-workflow-plugin:D38)
+
+Gate: (bash -n bin/modules/git/release.sh && bash tests/git-release/multi.sh) && (bash -n bin/modules/git/split.sh && bash -n bin/lib/split.sh && bash tests/git-split/dry-run.sh && bash tests/git-split/apply.sh && bash ${BU_ROOT}/app git split --help | grep -q dry-run) && (bash ${BU_ROOT}/app lint modules) && (test -f .claude/commands/git/split.md && grep -q 'disable-model-invocation: true' .claude/commands/git/split.md) && f=.agentic-os/project/concepts/git-workflow-plugin/notes/pilot-monorepo.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'components.yaml' 'latest=false' 'split' 'baseline' 'legacy/pre-split'; do grep -qiF -- "$k" $f || exit 1; done
+
+## P6 Retire the old approach (detailed)
 
 Remove the old CI except status-checks.yml, replace the classic protection code, and correct the stale project context wording (roadmap milestone m6-retire-old).
+
+| Title | Task | Owner | Depends | Status |
+|---|---|---|---|---|
+| Provide the production GitHub App and its token service key | T6.1 | developer | - | pending |
+| Make rules-sync name the rulesets it does not manage | T6.2 | inline | - | pending |
+| Migrate edotz.typo3-cms to the new workflow | T6.3 | developer | T6.1, T6.2 | pending |
+| Migrate edotz.nodejs-project from yarn to pnpm | T6.4 | developer | - | pending |
+| Migrate edotz.php-project, the pilot monorepo, to the new workflow | T6.5 | developer | T5.5, T6.1, T6.2, T6.3 | pending |
+| Migrate edotz.nodejs-project to the new workflow | T6.6 | developer | T5.5, T6.1, T6.2, T6.4, T6.5 | pending |
+| Retire the classic protection code and the old templates of the plugin | T6.7 | bash-author | T6.3, T6.5, T6.6 | pending |
+| Correct the project context to the new workflow | T6.8 | inline | T6.6, T6.7 | pending |
+
+**Provide the production GitHub App and its token service key** (T6.1)
+- Why: Every migrated repository releases and rules-syncs as the App, and the sandbox App with its test key is no production key; nothing in the plan creates the production App.
+- Result: The production GitHub App exists in the organisation with the permissions of the sandbox App, is installed on edotz/typo3-cms, edotz/php-project, edotz/nodejs-project and their child repositories, its key stays a read-only file on the developer machine, and its id is known as GIT_WORKFLOW_APP_ID.
+- Done: The note app-production.md has the sections App and Result, names the installation on each of the three repositories, the token service with the production key, GIT_WORKFLOW_APP_ID and the bypass of the App, holds no key and no token, and a token for the production App was obtained through the service.
+- Fails: The first real release would stop for a missing App, or a key would be copied into a repository.
+- Carries: Replacement of the personal access token (CONCEPT-git-workflow-plugin:D4); How the CLI obtains the app token (CONCEPT-git-workflow-plugin:D6)
+
+**Make rules-sync name the rulesets it does not manage** (T6.2)
+- Why: In the sandbox pilot an old ruleset kept declining a direct push while rules-sync reported success; every migrated repository can carry rulesets or classic protection of the old approach.
+- Result: rules-sync, dry run and apply, prints a line for every ruleset and every classic branch protection it did not create and that covers a branch it manages; it deletes nothing.
+- Done: tests/git-rules/foreign.sh exits 0: a foreign ruleset on master is named with its id, a ruleset managed by name is not, classic branch protection on a managed branch is named, and the existing sync test still passes.
+- Fails: A migrated repository would keep a rule that nobody can see and that declines a push.
+- Carries: How the rulesets replace the classic branch protection code (CONCEPT-git-workflow-plugin:D26)
+
+**Migrate edotz.typo3-cms to the new workflow** (T6.3)
+- Why: typo3-cms is the single repository with a release history, 21 tags and release-please, and it needs nothing from the monorepo work: it proves the cutover on a real repository first (D61).
+- Result: edotz.typo3-cms has components.yaml for one component with composer.json and ext_emconf.php as version files, its latest release-please tag as the baseline, the aggregate check, the rulesets of rules-sync with no foreign ruleset left, the shims and an enabled pre-push guard, and one release made as the App.
+- Done: The note migrate-typo3-cms.md has the sections Repository and Result and names components.yaml, release-please, rules-sync, the pre-push guard, the baseline, the squash merge and the release, each with what you saw; release-please-config.json, .release-please-manifest.json, release-please.yml and backport.yml are gone from the repository.
+- Fails: The repository would run two release mechanisms at once, or the first release would double the version of the last release-please tag.
+- Carries: Which parts of the old CI the plugin removes (CONCEPT-git-workflow-plugin:D19); What stays of the STAGE concept and the Stage Guard (CONCEPT-git-workflow-plugin:D17)
+
+**Migrate edotz.nodejs-project from yarn to pnpm** (T6.4)
+- Why: The component declaration takes the paths of a JavaScript component from the pnpm workspace graph, and nodejs-project is a yarn workspace (D63).
+- Result: edotz.nodejs-project is a pnpm workspace: pnpm-workspace.yaml, pnpm-lock.yaml and packageManager pnpm@10, no yarn files, with all ten packages installing and building.
+- Done: The note migrate-nodejs-pnpm.md has the sections Repository and Result and names pnpm-workspace.yaml, packageManager, pnpm-lock.yaml, yarn, install and build, each with what you saw; the repository has pnpm-workspace.yaml and pnpm-lock.yaml and neither .yarnrc.yml nor yarn.lock.
+- Fails: The package manager of ten packages would change in the same step as the release workflow, so a failure could not be told apart.
+- Carries: Whether JS components take their paths from the workspace graph (CONCEPT-git-workflow-plugin:D46)
+
+**Migrate edotz.php-project, the pilot monorepo, to the new workflow** (T6.5)
+- Why: php-project is the pilot monorepo: its children release and sync back today, and in the new design the monorepo releases and the children are split targets (D61, D64).
+- Result: edotz.php-project has components.yaml with one component per package, every package that has a child repository declared split yes with its owner and repo, the children baselined one by one, the old child workflows replaced, and the first component releases made as the App.
+- Done: The note migrate-php-project.md has the sections Repository and Result and names components.yaml, merge-split-repo, split, the baseline, legacy/pre-split, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone.
+- Fails: A child repository would be force pushed before its dry run was confirmed, or the old child workflow would keep syncing releases back into the monorepo.
+- Carries: Which parts of the old CI the plugin removes (CONCEPT-git-workflow-plugin:D19); How the baseline of existing child repositories is done (CONCEPT-git-workflow-plugin:D43); How one latest release per repository works with several components (CONCEPT-git-workflow-plugin:D56)
+
+**Migrate edotz.nodejs-project to the new workflow** (T6.6)
+- Why: nodejs-project is the second monorepo, on pnpm after T6.4: it repeats the cutover of php-project with the workspace field and the node publish that belongs to the consumer (D39).
+- Result: edotz.nodejs-project has components.yaml with a workspace component per package, the split children baselined one by one, the old workflows gone, the rulesets, shims and the pre-push guard in place, and the first component releases made as the App.
+- Done: The note migrate-nodejs-project.md has the sections Repository and Result and names components.yaml, workspace, merge-split-repo, split, the baseline, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone.
+- Fails: The components would take their paths from a hand written list that drifts from the workspace graph, or a split child would be released twice, by the old workflow and by the new one.
+- Carries: Which parts of the old CI the plugin removes (CONCEPT-git-workflow-plugin:D19); Whether JS components take their paths from the workspace graph (CONCEPT-git-workflow-plugin:D46); Where the plugin ends (CONCEPT-git-workflow-plugin:D39)
+
+**Retire the classic protection code and the old templates of the plugin** (T6.7)
+- Why: The classic protection code is the last of the old approach in the plugin once the three repositories run on rulesets (D26, D41, roadmap m6-retire-old); T6.2 keeps the foreign-ruleset check that replaces it.
+- Result: The plugin carries no classic branch protection command, template or API function, and run-status is folded into workflow-status or removed, as D41 allows.
+- Done: The commands branch-protection and the three old templates are gone, github.sh holds no classic protection function, the module registration names none, and the rules-sync tests pass.
+- Fails: A consuming repository could still call the classic protection and silently undo the rulesets.
+- Carries: How the rulesets replace the classic branch protection code (CONCEPT-git-workflow-plugin:D26); The command surface and the fate of the seven existing commands (CONCEPT-git-workflow-plugin:D41); Which parts of the old CI the plugin removes (CONCEPT-git-workflow-plugin:D19)
+
+**Correct the project context to the new workflow** (T6.8)
+- Why: The concept says the plan updates the context that still holds the old merge-commit, gh-wf and entrypoint wording, and the ledger of the roadmap names the same for m6-retire-old.
+- Result: The identity, architecture and product files and the two .evolve.json files describe the workflow that runs: squash merge, rulesets, App, promote, status-checks.yml with the aggregate check and the tool image.
+- Done: None of the three context files mentions release-please, gh-wf, stage-guard, merge commits only or the heredoc templates, and the two .evolve.json files name existing documents and the present purpose.
+- Fails: Every later session would read the old approach as the project fact.
+- Carries: Purpose of the work (CONCEPT-git-workflow-plugin:D14)
+
+Gate: (for r in edotz.typo3-cms edotz.php-project edotz.nodejs-project; do d=$HOME/workspace/$r; test -f $d/components.yaml || exit 1; test ! -f $d/release-please-config.json || exit 1; if ls $d/.github/workflows | grep -qE 'release-please|backport|merge-split-repo|sync-to-monorepo|post-release'; then exit 1; fi; done) && (test ! -e bin/modules/git/branch-protection.sh && ! grep -q 'branch-protection' bin/modules/git/module.yaml && bash ${BU_ROOT}/app lint modules && bash tests/git-rules/sync.sh && bash tests/git-rules/foreign.sh) && (! grep -qiE 'gh-wf|release-please|merge commits only|stage-guard' .agentic-os/project/identity.md .agentic-os/project/architecture.md .agentic-os/project/product.md)
 
 ## Review focus
 
@@ -511,6 +625,11 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 - D58 [decided] What rules-sync does with a ruleset whose branch setting is unset -> rules-sync skips a ruleset whose branch setting is unset (release without GIT_WORKFLOW_RELEASE_BRANCH, legacy without GIT_WORKFLOW_LEGACY_BRANCHES) and prints skipped for it; master always applies; tests/git-rules/sync.sh covers it (T4.5 made rules_json exit 3 for an unset branch setting after D16 and D31, so rules-sync would die on a project without legacy branches; the developer approved the amendment on 2026-11-09; developer, 2026-11-09, durable)
 - D59 [decided] How the git slash commands call the app commands after B-62 -> The slash commands call the app commands directly (bash app git <name> with the typed arguments); no script under commands/git/ forwards to them; T4.16 is dropped, and T4.13 authors the seven commands through the dynamic authoring pipeline, whose template judge and tier judge settle the command type and the tier (A forwarding script per command only repeats the app command; the developer said so on 2026-11-09 and named the dynamic authoring pipeline as the way to author the commands. It supersedes D53, which chose seven forwarding scripts.; developer, 2026-11-09, durable)
 - D60 [decided] How the four commands with side effects are kept from running on a model's initiative -> T4.17 writes .agentic-os/commands/commands.claude.yaml with disable-model-invocation: true for pr, release, promote and rules-sync and proves it in the compiled commands; the guard covers this project only, because a plugin tier cannot ship provider fields and a consuming project sets its own (The capability review of T4.13 noted that nothing guards the commands with side effects; provider fields come from the adapter baseline or the project commands.claude.yaml (provider-config.md); the developer approved the amendment on 2026-11-09; developer, 2026-11-09, durable)
+- D61 [decided] In which order are the monorepo build (P5) and the migrations of the three repositories done -> P5 core is built and piloted in the sandbox while edotz.typo3-cms, which needs nothing from P5, migrates first as the real-world proof; edotz.php-project is the pilot monorepo, then edotz.nodejs-project (The developer chose the recommended option on 2026-11-10: the single repository proves the release-please cutover early, and the monorepos wait for the split and the sandbox pilot; developer, 2026-11-10, plan-only)
+- D62 [decided] Where the work of P5 and P6 is planned -> In PLAN-plugin: P5 and P6 are detailed by one amend, and no plan is written per repository (The developer chose the recommended option on 2026-11-10: the roadmap milestones m5-monorepo and m6-retire-old and every decision stay in one place; developer, 2026-11-10, plan-only)
+- D63 [decided] How the components of edotz.nodejs-project get their paths, which is a yarn workspace while the declaration knows only a pnpm workspace -> edotz.nodejs-project migrates to pnpm, so its components use the workspace field and take their paths from the pnpm workspace graph (D7 of this plan, concept D46) (The developer chose the migration on 2026-11-10 over declaring paths by hand and over a yarn reader; the migration is a task of P6 and comes before the declaration; developer, 2026-11-10, durable)
+- D64 [decided] How the first split baselines an existing child repository whose history shares no SHAs with a splitsh-lite split (concept D43) -> Per child: the old head is tagged legacy/pre-split on the child, split --dry-run shows the new head and the tree difference, the developer confirms that child, and split --apply force-pushes with lease; a repeated apply does nothing (The developer chose the recommended option on 2026-11-10: nothing is lost, and every child repository is its own confirmation; php-project already keeps a legacy/1.x-cutoff tag as the same pattern; developer, 2026-11-10, durable)
+- D65 [decided] Where split lives and how it is run (concept D51, D41, D43 of this plan) -> split is the command app git split in the git domain, with a dry run and an apply, and the eighth slash command /git:split with disable-model-invocation: true, because it pushes to other repositories (Concept D41 names app git split and D43 of this plan says split joins the slash commands when P5 builds it; the developer confirmed the wording on 2026-11-10 when approving the amendment; developer, 2026-11-10, durable)
 
 ## Revisions
 
@@ -547,3 +666,4 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 - 2026-11-09 T4.16 dropped, T4.13 authors the slash commands through the dynamic authoring pipeline and calls the app commands directly, T4.17 and the P4 gate follow, D59 supersedes D53 (affects P4, T4.13, T4.16, T4.17, D53, D59) -- A forwarding script per slash command only repeats the app command; the developer said so on 2026-11-09 and named the dynamic authoring pipeline as the way to author the commands (developer)
 - 2026-11-09 T4.13 loses the input commands/git, the seven scripts of the dropped T4.16 (affects T4.13, D59) -- The amendment of D59 dropped T4.16 and left its scripts in the inputs of T4.13; the developer approved the removal on 2026-11-09 (developer)
 - 2026-11-09 T4.17 also writes .agentic-os/commands/commands.claude.yaml with disable-model-invocation: true for pr, release, promote and rules-sync, proves it in the compiled commands and reads argument-hint in the compile; the P4 gate follows; D60 records the rule (affects P4, T4.17, D60) -- The capability review of T4.13 noted that nothing keeps the four commands with side effects from running on a model's initiative; the developer approved the amendment on 2026-11-09 (developer)
+- 2026-11-10 P5 and P6 are detailed: P5 holds the multi-component release test, the split command with its dry run, apply and baseline, its slash command and a sandbox monorepo pilot; P6 holds the production App, the foreign ruleset report, the migrations of typo3-cms, nodejs-project (pnpm first) and php-project, retiring the classic protection code and correcting the project context; D61 to D65 record the order, the plan shape, pnpm, the baseline and the split surface (affects P5, P6, T5.1, T5.2, T5.3, T5.4, T5.5, T6.1, T6.2, T6.3, T6.4, T6.5, T6.6, T6.7, T6.8, D61, D62, D63, D64, D65) -- The developer asked on 2026-11-10 for the monorepo workflow and the migration of the repositories on the old approach, chose the order and the plan shape, and approved the amendment (developer)
