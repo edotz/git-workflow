@@ -1,0 +1,16 @@
+version: "1.0"
+# Project-tier provider config for claude commands: the side-effect guard (D60) for this project only.
+
+commands:
+
+  - name: pr
+    disable-model-invocation: true
+
+  - name: release
+    disable-model-invocation: true
+
+  - name: promote
+    disable-model-invocation: true
+
+  - name: rules-sync
+    disable-model-invocation: true

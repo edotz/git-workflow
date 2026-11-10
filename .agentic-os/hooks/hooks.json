@@ -84,6 +84,10 @@
     {
       "name": "pre-push/minimum-check",
       "enabled": true
+    },
+    {
+      "name": "session-start/git-shims",
+      "enabled": false
     }
   ],
   "claude": []

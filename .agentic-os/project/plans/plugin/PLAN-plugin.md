@@ -272,7 +272,7 @@ Build start, commit and pr, the aggregate status check, rules-sync with the STAG
 | Take the branch settings from the project .env and reduce workflow-setup to validate | T4.14 | bash-author | - | done |
 | Move the worktree directory to the GIT_WORKFLOW_WORKTREE_DIR setting | T4.15 | bash-author | T4.14 | done |
 | Write the seven command scripts of the git slash commands | T4.16 | bash-author | T4.7 | dropped |
-| Declare commands in provides of plugin.yaml and compile them | T4.17 | inline | T4.13 | pending |
+| Declare commands in provides of plugin.yaml and compile them | T4.17 | inline | T4.13 | done |
 | Write the remote library: the repository slug and the developer identity | T4.18 | bash-author | - | done |
 | Enable the pre-push guard in the hook registry | T4.19 | inline | T4.9 | done |
 

@@ -90,6 +90,48 @@
       "enabled": true,
       "description": "Use when tasks of a plan must be written and reviewed as hook scripts, one hook per task; takes plan task ids.",
       "origin": "framework"
+    },
+    {
+      "name": "start",
+      "enabled": true,
+      "description": "Use when work on a new change starts and it needs its own branch and worktree.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "rules-sync",
+      "enabled": true,
+      "description": "Use when the branch rules of the repository must follow bin/config/rulesets.yaml or the stage changes.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "release",
+      "enabled": true,
+      "description": "Use when master holds changes of a component that are ready to be released.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "promote",
+      "enabled": true,
+      "description": "Use when a release is made and the release branch has to follow its tag.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "pr",
+      "enabled": true,
+      "description": "Use when a feature branch is committed and ready for review as a pull request.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "commit",
+      "enabled": true,
+      "description": "Use when changes on a feature branch are ready to be committed with a conventional message.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "check",
+      "enabled": true,
+      "description": "Use before a pull request or a push, and to see which component is red.",
+      "origin": "plugin:edotz.git-workflow"
     }
   ],
   "claude": []

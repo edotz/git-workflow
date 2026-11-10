@@ -2539,7 +2539,7 @@
               "line": 8,
               "severity": "convention",
               "summary": "[who-knows-what] argument-hint is unconfirmed for a plugin registration of the tool type",
-              "state": "open"
+              "state": "dismissed"
             },
             {
               "file": ".agentic-os/hooks/hooks.json",
@@ -2838,7 +2838,7 @@
             "from": "environment fact: the plugin provides commands and the compile writes the seven slash commands under the namespace git",
             "run": "(yq -r '.provides[]' plugin.yaml | grep -qx commands) && bash ${BU_ROOT}/app compile commands >/dev/null && (for c in start commit pr check release promote rules-sync; do test -f .claude/commands/git/$c.md || exit 1; done) && (for c in pr release promote rules-sync; do grep -q 'disable-model-invocation: true' .claude/commands/git/$c.md || exit 1; done)"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The plugin tier is scanned for commands only when plugin.yaml lists the surface (decisions D53 and D59 of this plan).",
           "result": "plugin.yaml lists commands in provides and the compile produces the seven git slash commands.",
           "done": "plugin.yaml lists commands in provides, app compile commands exits 0 and .claude/commands/git/ holds the seven commands. The four commands pr, release, promote and rules-sync are compiled with disable-model-invocation: true.",
@@ -2852,7 +2852,11 @@
             "pattern": "plugin.yaml: the file the change stays in",
             "target": "change"
           },
-          "consumes": []
+          "consumes": [],
+          "last_verify": {
+            "at": "2026-11-10T08:59:40Z",
+            "exit": 0
+          }
         },
         {
           "id": "T4.18",
