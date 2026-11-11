@@ -480,9 +480,9 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 | Provide the production GitHub App and its token service key | T6.1 | developer | - | done |
 | Make rules-sync name the rulesets it does not manage | T6.2 | inline | - | done |
 | Migrate edotz.typo3-cms to the new workflow | T6.3 | developer | T5.4, T6.1, T6.2 | done |
-| Migrate edotz.nodejs-project from yarn to pnpm | T6.4 | developer | - | pending |
+| Migrate edotz.nodejs-project from yarn to pnpm | T6.4 | developer | - | done |
 | Migrate edotz.php-project, the pilot monorepo, to the new workflow | T6.5 | developer | T5.5, T6.1, T6.2, T6.3, T6.9, T6.12, T6.14 | done |
-| Migrate edotz.nodejs-project to the new workflow | T6.6 | developer | T5.5, T6.1, T6.2, T6.4, T6.5, T6.9, T6.12, T6.16 | pending |
+| Migrate edotz.nodejs-project to the new workflow | T6.6 | developer | T5.5, T6.1, T6.2, T6.4, T6.5, T6.9, T6.12, T6.16 | done |
 | Retire the classic protection code, run-status and the old templates of the plugin | T6.7 | inline | T6.3, T6.5, T6.6 | pending |
 | Correct the project context to the new workflow | T6.8 | inline | T6.6, T6.7 | pending |
 | Add the baseline mode to git promote for a diverged release branch | T6.9 | inline | T3.7, T3.10 | done |
