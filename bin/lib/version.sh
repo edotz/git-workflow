@@ -1,9 +1,9 @@
 #!/bin/bash
 # Component Version Library
 # Requires: core.sh, strings.sh, json.sh, files.sh, tool.sh, component.sh, docker
-# Provides: version_next, version_tag, version_write, version_cliff, version_latest_tag: the next version of a
-#           component, its tag, the version files of its release commit, git-cliff with the plugin configuration and
-#           the latest tag of a component. No LLM step (D28): git-cliff decides the bump, the CLI composes the
+# Provides: version_next, version_tag, version_write, version_cliff, version_latest_tag, version_notes_args: the next
+#           version of a component, its tag, the version files of its release commit, git-cliff with the plugin
+#           configuration, the latest tag of a component and the arguments of its release notes. No LLM step (D28): git-cliff decides the bump, the CLI composes the
 #           pre-release. A component is loaded (component_load) before any call; the calls run from the repository root.
 # State: sets _VERSION_BUMPED, _VERSION_COUNTED, _VERSION_READ, _VERSION_PHP_OUT as private results of its helpers.
 
@@ -21,6 +21,7 @@ source "${BASH_SOURCE[0]%/*}/component.sh"
 
 _VERSION_BUMPED=""
 _VERSION_COUNTED=0
+VERSION_NOTES_ARGS=()
 _VERSION_READ=""
 _VERSION_PHP_OUT=""
 
@@ -82,6 +83,55 @@ _version_scope() {
   return 0
 }
 
+# Set VERSION_NOTES_ARGS to the git-cliff arguments of the notes of one release, for version_cliff: the commits of the
+# release as a range, so that the place of a baseline tag does not matter, and the paths of the component.
+# Args:
+#   $1 - component name
+#   $2 - tag of the release
+#   $3 - mode: new (the commits since the latest tag, as the release tag) or latest (the notes of the existing tag,
+#        without its own release commit)
+#   $4 - version: decides the tags that count as the previous release, all tags of the component for a pre-release,
+#        stable tags otherwise
+# Sets: VERSION_NOTES_ARGS
+# Exits: 4 when the tag of mode latest does not exist
+# Example: version_notes_args web web/v1.1.0 new 1.1.0
+version_notes_args() {
+  local name="${1:-}" tag="${2:-}" mode="${3:-}" version="${4:-}" prefix pattern which previous sha
+  [[ -n "$name" && -n "$tag" && -n "$version" ]] || die_with "$BU_EXIT_USAGE" "version_notes_args: component, tag and version required"
+  if [[ "$mode" != "new" && "$mode" != "latest" ]]; then
+    die_with "$BU_EXIT_USAGE" "version_notes_args: the mode is new or latest, got '${mode}'"
+  fi
+  prefix="$(component_tag_prefix "$name")" || return $?
+  if [[ "$version" == *-* ]]; then
+    pattern="^${prefix}v"
+    which="any"
+  else
+    pattern="^${prefix}v[0-9]+\\.[0-9]+\\.[0-9]+\$"
+    which="stable"
+  fi
+  local -a head=()
+  if [[ "$mode" == "new" ]]; then
+    previous="$(version_latest_tag "$name" "$which")" || return $?
+    if [[ -n "$previous" ]]; then
+      head+=("${previous}..HEAD")
+    fi
+    head+=(--tag-pattern "$pattern" --tag "$tag")
+  else
+    sha="$(tool_run git rev-parse --verify --quiet "refs/tags/${tag}^{commit}" </dev/null)" \
+      || die_with "$BU_EXIT_NOT_FOUND" "version_notes_args: the tag ${tag} does not exist"
+    previous="$(version_latest_tag "$name" "$which" "${sha}^")" || return $?
+    if [[ -n "$previous" ]]; then
+      head+=("${previous}..${tag}")
+    else
+      head+=(--latest)
+    fi
+    head+=(--tag-pattern "$pattern" --skip-commit "$sha")
+  fi
+  _version_scope "$name" "" || return $?
+  VERSION_NOTES_ARGS=("${head[@]}" "${_VERSION_ARGS[@]}")
+  return 0
+}
+
 # Count the commits of a component in a range that make a release: git-cliff prints an empty range as the version
 # 0.1.0, so "no change" has to be read from the commits, not from the version.
 # Args:
@@ -91,7 +141,7 @@ _version_scope() {
 _version_counted() {
   local name="$1" range="$2" out
   _version_scope "$name" "$range" || return $?
-  out=$(version_cliff "${_VERSION_ARGS[@]}" --context 2>/dev/null) || die_with "$BU_EXIT_CONFIG" "version: git-cliff failed for the component ${name}"
+  out=$(version_cliff "${_VERSION_ARGS[@]}" --context) || die_with "$BU_EXIT_CONFIG" "version: git-cliff failed for the component ${name}"
   _VERSION_COUNTED=$(json_query "$out" '[.[].commits[]] | length' -r) || die_with "$BU_EXIT_CONFIG" "version: git-cliff gave no commits list for the component ${name}"
   return 0
 }
@@ -107,7 +157,7 @@ _version_counted() {
 _version_bump() {
   local name="$1" pattern="$2" prefix="$3" range="$4" out
   _version_scope "$name" "$range" || return $?
-  out=$(version_cliff "${_VERSION_ARGS[@]}" --bumped-version --tag-pattern "$pattern" 2>/dev/null) \
+  out=$(version_cliff "${_VERSION_ARGS[@]}" --bumped-version --tag-pattern "$pattern") \
     || die_with "$BU_EXIT_CONFIG" "version: git-cliff failed for the component ${name}"
   out="${out#"${prefix}"v}"
   if ! version_valid "$out"; then
