@@ -3,8 +3,9 @@
 # Usage: app git pr [--dry-run] [--draft]
 # Settings: GIT_WORKFLOW_MAIN_BRANCH (default: master); GH_TOKEN, the token of the developer login, for the push
 # and the pull request (not the App token); a dry run needs no token
-# Refuses the main branch and a red minimum check. The title is the subject of the only commit of the branch, or the
-# branch name made readable when there are several; the body lists the commit subjects, oldest first.
+# Refuses the main branch, a red minimum check and a title that lint-commit refuses (a dry run too). The title is the
+# subject of the only commit of the branch, or the branch name made readable when there are several; the body lists
+# the commit subjects, oldest first.
 set -euo pipefail
 
 source "${BU_ROOT}/lib/core.sh"
@@ -82,6 +83,21 @@ _pr_text() {
   return 0
 }
 
+# Refuse a title that commitlint refuses; the title is never rewritten, a squash merge puts it on the main branch.
+# Reads: _PR_TITLE
+_pr_lint_title() {
+  local file reason
+  file="$(mktemp)"
+  printf '%s\n' "$_PR_TITLE" > "$file"
+  if ! reason="$(bash "${PLUGIN_ROOT}/bin/modules/git/lint-commit.sh" "$file" 2>&1)"; then
+    rm -f "$file"
+    logger_error "$reason"
+    die_with "$BU_EXIT_CONFIG" "pr: the title '${_PR_TITLE}' did not pass commitlint, see the reason above, nothing was pushed"
+  fi
+  rm -f "$file"
+  return 0
+}
+
 # Push the branch and open the pull request, both with the token of the developer.
 # Args: $1 - slug (owner/name)  $2 - main branch  $3 - branch  $4 - draft (yes or no)
 _pr_open() {
@@ -129,6 +145,7 @@ main() {
   component_load "${PROJECT_ROOT}/components.yaml"
   _pr_check
   _pr_text "$main_branch" "$branch"
+  _pr_lint_title
 
   if [[ "$dry" == "yes" ]]; then
     print_header "pull request"
