@@ -489,7 +489,7 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 | Lint the pull request title in pr.sh and in the status-checks job | T6.10 | inline | T4.4, T4.8 | done |
 | Test a clone with a pre-push shim that pushes in the tool image | T6.11 | inline | T4.9, T5.5 | done |
 | Settle the branch roles of edotz.typo3-cms: release branch 2.x and legacy branch 1.x | T6.12 | developer | T6.2, T6.3, T6.9 | done |
-| Replace the classic protection on master of edotz.git-workflow with the ruleset | T6.13 | developer | T6.2 | pending |
+| Replace the classic protection on master of edotz.git-workflow with the ruleset | T6.13 | developer | T6.2 | done |
 | Make the split skip with a warning a child tag at another commit | T6.14 | inline | T5.3 | done |
 | Fix the open findings of T6.10, T6.11 and T6.14 | T6.15 | inline | T6.10, T6.11, T6.14 | done |
 | Give the split apply a token set with the workflows permission | T6.16 | inline | T6.14 | done |

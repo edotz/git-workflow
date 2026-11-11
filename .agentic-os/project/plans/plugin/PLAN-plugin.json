@@ -4257,11 +4257,15 @@
             "from": "environment fact: edotz/git-workflow carries classic branch protection on master",
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/app-production.md; grep -q '^## Protection of git-workflow' $f && ! grep -qiE 'TBD|TODO' $f && s=edotz/git-workflow && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The plugin repository protects master with the classic rules that the new approach replaces, while every migrated repository uses the ruleset.",
           "result": "rules-sync --apply created the ruleset master on edotz/git-workflow and the classic protection of master is removed.",
           "done": "The note app-production.md has the section Protection of git-workflow with what you saw, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
-          "fails": "Master unprotected between the removal of the classic protection and the creation of the ruleset."
+          "fails": "Master unprotected between the removal of the classic protection and the creation of the ruleset.",
+          "last_verify": {
+            "at": "2026-11-11T16:04:54Z",
+            "exit": 0
+          }
         },
         {
           "id": "T6.14",
