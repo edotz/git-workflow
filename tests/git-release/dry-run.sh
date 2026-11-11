@@ -8,6 +8,7 @@ set -euo pipefail
 
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 export PLUGIN_ROOT="$root"
+export PLUGIN_LIB="${PLUGIN_ROOT}/bin/lib"
 release="${root}/bin/modules/git/release.sh"
 failed=0
 
@@ -105,7 +106,7 @@ echo c > "${repo}/c"
 git -C "$repo" add c
 
 tool_git() {
-  (cd "$repo" && PLUGIN_ROOT="$root" bash -c 'source "${BU_ROOT}/lib/core.sh"; source "${PLUGIN_ROOT}/bin/lib/tool.sh"; tool_run git "$@" </dev/null' _ "$@" >/dev/null 2>&1)
+  (cd "$repo" && PLUGIN_ROOT="$root" PLUGIN_LIB="${root}/bin/lib" bash -c 'source "${BU_ROOT}/lib/core.sh"; source "${PLUGIN_ROOT}/bin/lib/tool.sh"; tool_run git "$@" </dev/null' _ "$@" >/dev/null 2>&1)
 }
 
 rc=0

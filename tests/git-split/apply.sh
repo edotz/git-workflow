@@ -12,6 +12,7 @@ set -euo pipefail
 
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 export PLUGIN_ROOT="$root"
+export PLUGIN_LIB="${PLUGIN_ROOT}/bin/lib"
 split="${root}/bin/modules/git/split.sh"
 failed=0
 

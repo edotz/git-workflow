@@ -9,6 +9,7 @@ set -euo pipefail
 
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 export PLUGIN_ROOT="$root"
+export PLUGIN_LIB="${PLUGIN_ROOT}/bin/lib"
 check="${root}/bin/modules/git/check.sh"
 failed=0
 

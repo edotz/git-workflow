@@ -9,11 +9,11 @@ source "${BU_ROOT}/lib/core.sh"
 source "${BU_LIB}/cli.sh"
 source "${BU_LIB}/git.sh"
 source "${BU_LIB}/files.sh"
-source "${PLUGIN_ROOT}/bin/lib/tool.sh"
-source "${PLUGIN_ROOT}/bin/lib/component.sh"
-source "${PLUGIN_ROOT}/bin/lib/token.sh"
-source "${PLUGIN_ROOT}/bin/lib/version.sh"
-source "${PLUGIN_ROOT}/bin/lib/check.sh"
+source "${PLUGIN_LIB}/tool.sh"
+source "${PLUGIN_LIB}/component.sh"
+source "${PLUGIN_LIB}/token.sh"
+source "${PLUGIN_LIB}/version.sh"
+source "${PLUGIN_LIB}/check.sh"
 
 cli_set_spec \
   name        "${MODULE_NAME:-release}" \

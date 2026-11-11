@@ -11,10 +11,10 @@ set -euo pipefail
 source "${BU_ROOT}/lib/core.sh"
 source "${BU_LIB}/cli.sh"
 source "${BU_LIB}/json.sh"
-source "${PLUGIN_ROOT}/bin/lib/rules.sh"
-source "${PLUGIN_ROOT}/bin/lib/remote.sh"
-source "${PLUGIN_ROOT}/bin/lib/token.sh"
-source "${PLUGIN_ROOT}/bin/lib/tool.sh"
+source "${PLUGIN_LIB}/rules.sh"
+source "${PLUGIN_LIB}/remote.sh"
+source "${PLUGIN_LIB}/token.sh"
+source "${PLUGIN_LIB}/tool.sh"
 
 cli_set_spec \
   name        "${MODULE_NAME:-rules-sync}" \

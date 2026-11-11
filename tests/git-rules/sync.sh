@@ -140,7 +140,7 @@ run_sync() {
   local project="$1"
   shift
   RC=0
-  OUT="$(cd "$project" && env -i HOME="$WORK" PATH="${STUBS}:${PATH}" BU_ROOT="$BU_ROOT" PLUGIN_ROOT="$ROOT" \
+  OUT="$(cd "$project" && env -i HOME="$WORK" PATH="${STUBS}:${PATH}" BU_ROOT="$BU_ROOT" PLUGIN_ROOT="$ROOT" PLUGIN_LIB="${ROOT}/bin/lib" \
     STUB_DIR="$STUB_DIR" "${EXTRA_ENV[@]}" bash "${ROOT}/bin/modules/git/rules-sync.sh" "$@" 2>&1)" || RC=$?
   return 0
 }

@@ -8,6 +8,7 @@ set -euo pipefail
 
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 export PLUGIN_ROOT="$root"
+export PLUGIN_LIB="${PLUGIN_ROOT}/bin/lib"
 failed=0
 
 case_result() {

@@ -15,8 +15,8 @@ source "${BU_ROOT}/lib/core.sh"
 source "${BU_LIB}/git.sh"
 source "${BU_LIB}/json.sh"
 source "${BU_LIB}/cli.sh"
-source "${PLUGIN_ROOT}/bin/lib/tool.sh"
-source "${PLUGIN_ROOT}/bin/lib/component.sh"
+source "${PLUGIN_LIB}/tool.sh"
+source "${PLUGIN_LIB}/component.sh"
 
 # ============================================
 # Configuration

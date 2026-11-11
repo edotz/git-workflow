@@ -8,6 +8,7 @@ TEST_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 PLUGIN_ROOT="$(cd "${TEST_DIR}/../.." && pwd)"
 BU_ROOT="${BU_ROOT:-/home/ohoeft/workspace/edotz.claude-code/bin}"
 export PLUGIN_ROOT BU_ROOT
+export PLUGIN_LIB="${PLUGIN_ROOT}/bin/lib"
 
 COMMIT="${PLUGIN_ROOT}/bin/modules/git/commit.sh"
 WORK="$(mktemp -d)"

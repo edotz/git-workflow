@@ -140,7 +140,7 @@ add_ruleset() {
 # Args: $1.. - arguments of rules-sync
 run_sync() {
   RC=0
-  OUT="$(cd "$PROJECT" && env -i HOME="$WORK" PATH="${STUBS}:${PATH}" BU_ROOT="$BU_ROOT" PLUGIN_ROOT="$ROOT" \
+  OUT="$(cd "$PROJECT" && env -i HOME="$WORK" PATH="${STUBS}:${PATH}" BU_ROOT="$BU_ROOT" PLUGIN_ROOT="$ROOT" PLUGIN_LIB="${ROOT}/bin/lib" \
     STUB_DIR="$STUB_DIR" GIT_WORKFLOW_RELEASE_BRANCH=release GIT_WORKFLOW_APP_ID=4711 \
     bash "${ROOT}/bin/modules/git/rules-sync.sh" "$@" 2>&1)" || RC=$?
   return 0

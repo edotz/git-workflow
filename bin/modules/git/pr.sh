@@ -10,10 +10,10 @@ set -euo pipefail
 source "${BU_ROOT}/lib/core.sh"
 source "${BU_LIB}/cli.sh"
 source "${BU_LIB}/git.sh"
-source "${PLUGIN_ROOT}/bin/lib/tool.sh"
-source "${PLUGIN_ROOT}/bin/lib/component.sh"
-source "${PLUGIN_ROOT}/bin/lib/check.sh"
-source "${PLUGIN_ROOT}/bin/lib/remote.sh"
+source "${PLUGIN_LIB}/tool.sh"
+source "${PLUGIN_LIB}/component.sh"
+source "${PLUGIN_LIB}/check.sh"
+source "${PLUGIN_LIB}/remote.sh"
 
 cli_set_spec \
   name        "${MODULE_NAME:-pr}" \

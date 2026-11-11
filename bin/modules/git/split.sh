@@ -14,10 +14,10 @@ set -euo pipefail
 source "${BU_ROOT}/lib/core.sh"
 source "${BU_LIB}/cli.sh"
 source "${BU_LIB}/git.sh"
-source "${PLUGIN_ROOT}/bin/lib/tool.sh"
-source "${PLUGIN_ROOT}/bin/lib/component.sh"
-source "${PLUGIN_ROOT}/bin/lib/split.sh"
-source "${PLUGIN_ROOT}/bin/lib/token.sh"
+source "${PLUGIN_LIB}/tool.sh"
+source "${PLUGIN_LIB}/component.sh"
+source "${PLUGIN_LIB}/split.sh"
+source "${PLUGIN_LIB}/token.sh"
 
 cli_set_spec \
   name        "${MODULE_NAME:-split}" \

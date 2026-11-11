@@ -7,6 +7,7 @@ set -euo pipefail
 TEST_DIR="${BASH_SOURCE[0]%/*}"
 PLUGIN_ROOT="$(cd "${TEST_DIR}/../.." && pwd -P)"
 export PLUGIN_ROOT
+export PLUGIN_LIB="${PLUGIN_ROOT}/bin/lib"
 : "${BU_ROOT:?BU_ROOT must point at the framework bin directory}"
 
 REPO="$(mktemp -d)"

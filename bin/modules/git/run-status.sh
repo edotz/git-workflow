@@ -9,7 +9,7 @@ set -euo pipefail
 # ============================================
 source "${BU_ROOT}/lib/core.sh"
 source "${BU_LIB}/json.sh"
-source "${PLUGIN_ROOT}/bin/lib/github.sh"
+source "${PLUGIN_LIB}/github.sh"
 source "${BU_LIB}/cli.sh"
 
 # ============================================

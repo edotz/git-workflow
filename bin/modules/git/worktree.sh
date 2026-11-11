@@ -9,7 +9,7 @@ set -euo pipefail
 # Load Libraries
 # ============================================
 source "${BU_ROOT}/lib/core.sh"
-source "${PLUGIN_ROOT}/bin/lib/worktree.sh"
+source "${PLUGIN_LIB}/worktree.sh"
 source "${BU_LIB}/git.sh"
 source "${BU_LIB}/cli.sh"
 
