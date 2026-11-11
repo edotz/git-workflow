@@ -1,0 +1,6 @@
+components:
+  - name: git-workflow
+    paths: ["."]
+    version: none
+    checks:
+      - 'PATH="$PWD/node_modules/.bin:$PATH" shellcheck bin/lib/*.sh bin/modules/*/*.sh bin/hooks/*/* tests/*/*.sh'
