@@ -59,4 +59,4 @@ commands:
     namespace: git
     type: tool
     description: "Use when a component with its own child repository has changes or releases that the child has to receive."
-    argument-hint: "[component] [--dry-run|--apply] [--confirm <owner/repo>]"
+    argument-hint: "[component] --dry-run | <component> --apply [--confirm <owner/repo>]"
