@@ -3984,11 +3984,16 @@
             "from": "environment fact: a bare repository stands in the remote with a release branch that is not an ancestor of the release commit",
             "run": "bash -n bin/modules/git/promote.sh && out=$(bash tests/git-promote/baseline.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 8 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-promote/ff.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && grep -q 'legacy/pre-promote' bin/modules/git/promote.sh && grep -q -- '--confirm' bin/modules/git/promote.sh && bash ${BU_ROOT}/app lint modules"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The release branches of typo3-cms, php-project and nodejs-project are diverged from master, and promote only fast-forwards, so none of them can be promoted.",
           "result": "git promote has the baseline mode of D81 and a test that runs it against a bare remote.",
           "done": "tests/git-promote/baseline.sh shows ok lines for: the dry run naming the divergence, the apply without --confirm refused, the apply with --confirm tagging legacy/pre-promote and force-pushing with a lease, a second apply doing nothing, a tag that is not a release commit refused, and the fast-forward case unchanged; ff.sh stays green.",
-          "fails": "A branch force-pushed without --confirm or without the freeze tag, or a fast-forwardable branch forced instead of fast-forwarded."
+          "fails": "A branch force-pushed without --confirm or without the freeze tag, or a fast-forwardable branch forced instead of fast-forwarded.",
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T6.9.md",
+          "last_verify": {
+            "at": "2026-11-11T12:01:09Z",
+            "exit": 0
+          }
         },
         {
           "id": "T6.10",

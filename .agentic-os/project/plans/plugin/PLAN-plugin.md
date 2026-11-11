@@ -485,7 +485,7 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 | Migrate edotz.nodejs-project to the new workflow | T6.6 | developer | T5.5, T6.1, T6.2, T6.4, T6.5, T6.9, T6.12 | pending |
 | Retire the classic protection code, run-status and the old templates of the plugin | T6.7 | inline | T6.3, T6.5, T6.6 | pending |
 | Correct the project context to the new workflow | T6.8 | inline | T6.6, T6.7 | pending |
-| Add the baseline mode to git promote for a diverged release branch | T6.9 | inline | T3.7, T3.10 | pending |
+| Add the baseline mode to git promote for a diverged release branch | T6.9 | inline | T3.7, T3.10 | done |
 | Lint the pull request title in pr.sh and in the status-checks job | T6.10 | inline | T4.4, T4.8 | pending |
 | Test a clone with a pre-push shim that pushes in the tool image | T6.11 | inline | T4.9, T5.5 | pending |
 | Settle the branch roles of edotz.typo3-cms: release branch 2.x and legacy branch 1.x | T6.12 | developer | T6.2, T6.3, T6.9 | pending |
