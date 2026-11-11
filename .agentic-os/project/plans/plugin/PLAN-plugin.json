@@ -3732,7 +3732,7 @@
             "from": "environment fact: edotz.php-project releases its components itself and splits them to the children",
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'merge-split-repo' 'split' 'baseline' 'legacy/pre-split' 'latest=false' 'rules-sync' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.php-project && test -f $d/components.yaml && test ! -f $d/.github/workflows/merge-split-repo.yml && test -d $d/.github/workflows && ! ls $d/.github/workflows | grep -qE 'sync-to-monorepo|post-release|release-please|backport|commit-lint|php-cs-fixer' && test -f $d/.github/workflows/status-checks.yml && [ \"$(yq '.components | length' $d/components.yaml)\" -ge 8 ] && grep -q 'split: yes' $d/components.yaml && grep -q 'php-cs-fixer' $d/components.yaml && s=edotz/php-project && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1 && s=edotz/php-project && chk() { id=$(env -u GH_TOKEN gh api repos/$s/rulesets --jq \".[] | select(.name==\\\"$1\\\") | .id\") && [ -n \"$id\" ] && env -u GH_TOKEN gh api repos/$s/rulesets/$id --jq '.conditions.ref_name.include | join(\",\")' | grep -qx \"refs/heads/$2\"; } && chk release 2.x && chk legacy 1.x && env -u GH_TOKEN gh api repos/$s/git/ref/tags/legacy/1.x-freeze >/dev/null && for b in 1.x 2.x; do env -u GH_TOKEN gh api repos/$s/branches/$b/protection 2>&1 | grep -q 'Branch not protected' || exit 1; done && ! env -u GH_TOKEN gh api \"repos/$s/git/trees/1.x?recursive=1\" --jq '.tree[].path' | grep -qE 'merge-split-repo|workflows/(commit-lint|php-cs-fixer)' && grep -qiF -- 'freeze' $f && grep -qiF -- 'GIT_WORKFLOW_RELEASE_BRANCH' $f"
           },
-          "status": "pending",
+          "status": "done",
           "why": "php-project is the pilot monorepo: its children release and sync back today, and in the new design the monorepo releases and the children are split targets (D61, D64). The old 1.x and 2.x lines of php-project need their roles settled too: 1.x is legacy, 2.x the release branch (D79, D80).",
           "result": "edotz.php-project has components.yaml with one component per package, every package that has a child repository declared split yes with its owner and repo, the children baselined one by one, the old child workflows replaced, and the first component releases made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml (D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
           "done": "The note migrate-php-project.md has the sections Repository and Result and names components.yaml, merge-split-repo, split, the baseline, legacy/pre-split, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone. status-checks.yml is present, the old commit-lint and php-cs-fixer workflows are gone, components.yaml declares at least 8 components and at least one with split: yes. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master. The note also names freeze, GIT_WORKFLOW_RELEASE_BRANCH and the baseline of 2.x; the rulesets release and legacy name 2.x and 1.x, the classic protection of 1.x and 2.x is gone, legacy/1.x-freeze is on GitHub and 1.x holds no old workflow.",
@@ -3748,7 +3748,11 @@
             "pattern": "migrate-typo3-cms.md: the form of a migration note",
             "target": "new"
           },
-          "consumes": []
+          "consumes": [],
+          "last_verify": {
+            "at": "2026-11-11T12:53:19Z",
+            "exit": 0
+          }
         },
         {
           "id": "T6.6",
