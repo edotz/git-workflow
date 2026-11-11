@@ -77,29 +77,42 @@ _release_home_file() {
   return 0
 }
 
-# Build the git-cliff arguments of one release in _RELEASE_CLIFF.
+# Build the git-cliff arguments of one release in _RELEASE_CLIFF, for version_cliff: the commits of the release as a
+# range, so that the place of a baseline tag does not matter, and the paths of the component.
 # Args:
 #   $1 - component name
 #   $2 - prefix: tag prefix of the component
 #   $3 - tag: the tag of the release
 #   $4 - mode: new (the commits since the latest tag, as the release tag) or latest (the notes of the existing tag,
 #        without its own release commit)
-#   $5 - version: decides the tag pattern, all tags of the component for a pre-release, stable tags otherwise
+#   $5 - version: decides the tags that count as the previous release, all tags of the component for a pre-release,
+#        stable tags otherwise
 _release_cliff_args() {
-  local name="$1" prefix="$2" tag="$3" mode="$4" version="$5" pattern dir
+  local name="$1" prefix="$2" tag="$3" mode="$4" version="$5" pattern which previous dir sha
   _release_dirs "$name" || return $?
   if [[ "$version" == *-* ]]; then
     pattern="^${prefix}v"
+    which="any"
   else
     pattern="^${prefix}v[0-9]+\\.[0-9]+\\.[0-9]+\$"
+    which="stable"
   fi
-  _RELEASE_CLIFF=(git-cliff --tag-pattern "$pattern")
+  _RELEASE_CLIFF=()
   if [[ "$mode" == "new" ]]; then
-    _RELEASE_CLIFF+=(--unreleased --tag "$tag")
+    previous="$(version_latest_tag "$name" "$which")" || return $?
+    if [[ -n "$previous" ]]; then
+      _RELEASE_CLIFF+=("${previous}..HEAD")
+    fi
+    _RELEASE_CLIFF+=(--tag-pattern "$pattern" --tag "$tag")
   else
-    local sha
     sha="$(tool_run git rev-parse "refs/tags/${tag}^{commit}" </dev/null)" || die "release: the tag ${tag} does not exist"
-    _RELEASE_CLIFF+=(--latest --skip-commit "$sha")
+    previous="$(version_latest_tag "$name" "$which" "${sha}^")" || return $?
+    if [[ -n "$previous" ]]; then
+      _RELEASE_CLIFF+=("${previous}..${tag}")
+    else
+      _RELEASE_CLIFF+=("$tag")
+    fi
+    _RELEASE_CLIFF+=(--tag-pattern "$pattern" --skip-commit "$sha")
   fi
   for dir in "${_RELEASE_DIRS[@]}"; do
     _RELEASE_CLIFF+=(--include-path "${dir}/**")
@@ -111,7 +124,7 @@ _release_cliff_args() {
 # Args: the arguments of _release_cliff_args
 _release_notes() {
   _release_cliff_args "$@" || return $?
-  _RELEASE_NOTES="$(tool_run "${_RELEASE_CLIFF[@]}" --strip header </dev/null 2>/dev/null)" \
+  _RELEASE_NOTES="$(version_cliff "${_RELEASE_CLIFF[@]}" --strip header 2>/dev/null)" \
     || die "release: git-cliff gave no notes for ${3}"
   return 0
 }
@@ -306,7 +319,7 @@ _release_commit() {
   if [[ ! -f "$changelog" ]]; then
     write_file_atomic "$changelog" printf '' || die "release: cannot create ${changelog}"
   fi
-  tool_run "${_RELEASE_CLIFF[@]}" --prepend "$changelog" </dev/null >/dev/null 2>&1 \
+  version_cliff "${_RELEASE_CLIFF[@]}" --prepend "$changelog" >/dev/null 2>&1 \
     || die "release: git-cliff could not write ${changelog}"
   staged+=("$changelog")
 

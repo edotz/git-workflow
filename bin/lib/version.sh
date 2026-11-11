@@ -1,10 +1,11 @@
 #!/bin/bash
 # Component Version Library
 # Requires: core.sh, strings.sh, json.sh, files.sh, tool.sh, component.sh, docker
-# Provides: version_next, version_tag, version_write: the next version of a component, its tag and the version
-#           files of its release commit. No LLM step (D28): git-cliff decides the bump, the CLI composes the
+# Provides: version_next, version_tag, version_write, version_cliff, version_latest_tag: the next version of a
+#           component, its tag, the version files of its release commit, git-cliff with the plugin configuration and
+#           the latest tag of a component. No LLM step (D28): git-cliff decides the bump, the CLI composes the
 #           pre-release. A component is loaded (component_load) before any call; the calls run from the repository root.
-# State: sets _VERSION_BUMPED, _VERSION_READ, _VERSION_PHP_OUT as private results of its helpers.
+# State: sets _VERSION_BUMPED, _VERSION_COUNTED, _VERSION_READ, _VERSION_PHP_OUT as private results of its helpers.
 
 # Guard against multiple sourcing
 if [[ -n "${BU_STATE_VERSION:-}" ]]; then return 0; fi
@@ -19,6 +20,7 @@ source "${BASH_SOURCE[0]%/*}/tool.sh"
 source "${BASH_SOURCE[0]%/*}/component.sh"
 
 _VERSION_BUMPED=""
+_VERSION_COUNTED=0
 _VERSION_READ=""
 _VERSION_PHP_OUT=""
 
@@ -26,23 +28,87 @@ _VERSION_PHP_OUT=""
 # Private Helpers
 # ============================================
 
-# Ask git-cliff for the bumped version of a component: one --include-path per resolved directory, so shared code
-# counts for the component. The printed version carries the tag prefix, which is removed.
+# Run git-cliff in the tool image with the configuration of the plugin, bin/config/cliff.toml: only feat, fix, perf and
+# breaking commits count (D86). The image mounts the repository only, so the file travels over stdin and is written to
+# the HOME of the container, which is a tmpfs.
+# Args: $@ - the arguments of git-cliff
+# Returns: the status of git-cliff; its stdout and stderr pass through
+# Example: version_cliff 'web/v1.0.0..HEAD' --bumped-version --include-path 'packages/web/**'
+version_cliff() {
+  local config="${PLUGIN_ROOT}/bin/config/cliff.toml"
+  require_file "$config" "git-cliff configuration of the plugin"
+  tool_run sh -c 'cat > "$HOME/cliff.toml" && exec git-cliff --config "$HOME/cliff.toml" "$@"' sh "$@" < "$config"
+}
+
+# Print the latest tag of a component that is reachable from a commit; nothing when it has none.
+# Args:
+#   $1 - component name
+#   $2 - which tags: stable (X.Y.Z only, the default) or any (pre-releases too)
+#   $3 - commit, optional (default HEAD)
+# Returns: the tag on stdout, empty without a tag; always status 0
+# Example: version_latest_tag web stable
+version_latest_tag() {
+  local name="${1:-}" which="${2:-stable}" rev="${3:-HEAD}" prefix tag=""
+  [[ -n "$name" ]] || die_with "$BU_EXIT_USAGE" "version_latest_tag: component required"
+  prefix="$(component_tag_prefix "$name")" || return $?
+  if [[ "$which" == "stable" ]]; then
+    tag=$(tool_run git describe --tags --abbrev=0 --match "${prefix}v[0-9]*.[0-9]*.[0-9]*" --exclude "${prefix}v*-*" "$rev" </dev/null 2>/dev/null) || tag=""
+  else
+    tag=$(tool_run git describe --tags --abbrev=0 --match "${prefix}v*" "$rev" </dev/null 2>/dev/null) || tag=""
+  fi
+  printf '%s\n' "$tag"  # out:return
+  return 0
+}
+
+# Print the git-cliff arguments that limit a run to the component: the range first, because --include-path takes
+# several values and would swallow it, then one --include-path per resolved directory, so shared code counts for the
+# component.
+# Args:
+#   $1 - component name
+#   $2 - range, empty for the whole history
+# Sets: _VERSION_ARGS
+_version_scope() {
+  local name="$1" range="$2" paths dir
+  local -a dirs
+  _VERSION_ARGS=()
+  if [[ -n "$range" ]]; then
+    _VERSION_ARGS+=("$range")
+  fi
+  paths=$(component_paths "$name") || return $?
+  mapfile -t dirs <<<"$paths"
+  for dir in "${dirs[@]}"; do
+    _VERSION_ARGS+=(--include-path "${dir}/**")
+  done
+  return 0
+}
+
+# Count the commits of a component in a range that make a release: git-cliff prints an empty range as the version
+# 0.1.0, so "no change" has to be read from the commits, not from the version.
+# Args:
+#   $1 - component name
+#   $2 - range, empty for the whole history
+# Sets: _VERSION_COUNTED
+_version_counted() {
+  local name="$1" range="$2" out
+  _version_scope "$name" "$range" || return $?
+  out=$(version_cliff "${_VERSION_ARGS[@]}" --context 2>/dev/null) || die_with "$BU_EXIT_CONFIG" "version: git-cliff failed for the component ${name}"
+  _VERSION_COUNTED=$(json_query "$out" '[.[].commits[]] | length' -r) || die_with "$BU_EXIT_CONFIG" "version: git-cliff gave no commits list for the component ${name}"
+  return 0
+}
+
+# Ask git-cliff for the bumped version of a component over a range. The printed version carries the tag prefix, which
+# is removed.
 # Args:
 #   $1 - component name
 #   $2 - tag pattern (regular expression)
 #   $3 - tag prefix of the component, possibly empty
+#   $4 - range, empty for the whole history
 # Sets: _VERSION_BUMPED
 _version_bump() {
-  local name="$1" pattern="$2" prefix="$3" paths dir out
-  local -a dirs
-  local -a args=(git-cliff --bumped-version --tag-pattern "$pattern")
-  paths=$(component_paths "$name") || return $?
-  mapfile -t dirs <<<"$paths"
-  for dir in "${dirs[@]}"; do
-    args+=(--include-path "${dir}/**")
-  done
-  out=$(tool_run "${args[@]}" </dev/null) || die_with "$BU_EXIT_CONFIG" "version: git-cliff failed for the component ${name}"
+  local name="$1" pattern="$2" prefix="$3" range="$4" out
+  _version_scope "$name" "$range" || return $?
+  out=$(version_cliff "${_VERSION_ARGS[@]}" --bumped-version --tag-pattern "$pattern" 2>/dev/null) \
+    || die_with "$BU_EXIT_CONFIG" "version: git-cliff failed for the component ${name}"
   out="${out#"${prefix}"v}"
   if ! version_valid "$out"; then
     die_with "$BU_EXIT_CONFIG" "version: git-cliff gave no version for the component ${name}: '${out}'"
@@ -104,14 +170,16 @@ _version_php_render() {
 # ============================================
 
 # Print the next version of a component, X.Y.Z or X.Y.Z-<channel>.N.
-# The base version is what git-cliff returns for the stable tags of the component and one --include-path per
-# directory of component_paths. Without a channel it is the version. With a channel: when the latest tag of the
+# The base version is what git-cliff returns for the commits after the latest stable tag of the component, one
+# --include-path per directory of component_paths; where the tag sits does not matter, and only feat, fix, perf and
+# breaking commits count (D86). Without a channel it is the version. With a channel: when the latest tag of the
 # component is <base>-<channel>.N, git-cliff counts the line (all tags of the component match); otherwise the line
 # starts at <base>-<channel>.1. The counted result must have the shape X.Y.Z-<channel>.N.
 # Args:
 #   $1 - component name
 #   $2 - channel, optional: lower case letters (alpha, beta, rc)
-# Returns: the version on stdout; status 1 and no output when no commit of the component is newer than its latest tag
+# Returns: the version on stdout; status 1 and no output when no commit of the component that counts is newer than its
+#          latest tag
 # Exits: 2 on a missing or invalid argument, 3 for a component without versions, a failing git-cliff, a git-cliff
 #        result without a version and a pre-release of the wrong shape; never 1, so a caller tells an error from
 #        the status 1 of no change
@@ -128,15 +196,19 @@ version_next() {
     die_with "$BU_EXIT_CONFIG" "version_next: the component ${name} has version: none"
   fi
   prefix="$(component_tag_prefix "$name")" || return $?
-  _version_bump "$name" "^${prefix}v[0-9]+\.[0-9]+\.[0-9]+\$" "$prefix" || return $?
-  local base="$_VERSION_BUMPED"
 
-  local stable=""
-  stable=$(tool_run git describe --tags --abbrev=0 --match "${prefix}v[0-9]*.[0-9]*.[0-9]*" --exclude "${prefix}v*-*" </dev/null 2>/dev/null) || stable=""
-  if [[ "${stable#"${prefix}"v}" == "$base" ]]; then
-    logger_info "version_next: no change of the component ${name} since ${stable}"
+  local stable range=""
+  stable="$(version_latest_tag "$name" stable)" || return $?
+  if [[ -n "$stable" ]]; then
+    range="${stable}..HEAD"
+  fi
+  _version_counted "$name" "$range" || return $?
+  if [[ "$_VERSION_COUNTED" -eq 0 ]]; then
+    logger_info "version_next: no feat, fix, perf or breaking commit of the component ${name} since ${stable:-the start}"
     return 1
   fi
+  _version_bump "$name" "^${prefix}v[0-9]+\\.[0-9]+\\.[0-9]+\$" "$prefix" "$range" || return $?
+  local base="$_VERSION_BUMPED"
 
   if [[ -z "$channel" ]]; then
     printf '%s\n' "$base"  # out:return
@@ -144,18 +216,20 @@ version_next() {
   fi
 
   local latest="" line_re="^${prefix}v${base//./\\.}-${channel}\\.[0-9]+\$"
-  latest=$(tool_run git describe --tags --abbrev=0 --match "${prefix}v*" </dev/null 2>/dev/null) || latest=""
+  latest="$(version_latest_tag "$name" any)" || return $?
   if [[ ! "$latest" =~ $line_re ]]; then
     printf '%s\n' "${base}-${channel}.1"  # out:return
     return 0
   fi
 
-  _version_bump "$name" "^${prefix}v" "$prefix" || return $?
-  local counted="$_VERSION_BUMPED"
-  if [[ "$counted" == "${latest#"${prefix}"v}" ]]; then
-    logger_info "version_next: no change of the component ${name} since ${latest}"
+  range="${latest}..HEAD"
+  _version_counted "$name" "$range" || return $?
+  if [[ "$_VERSION_COUNTED" -eq 0 ]]; then
+    logger_info "version_next: no feat, fix, perf or breaking commit of the component ${name} since ${latest}"
     return 1
   fi
+  _version_bump "$name" "^${prefix}v" "$prefix" "$range" || return $?
+  local counted="$_VERSION_BUMPED"
   local shape_re="^[0-9]+\\.[0-9]+\\.[0-9]+-${channel}\\.[0-9]+\$"
   if [[ ! "$counted" =~ $shape_re ]]; then
     die_with "$BU_EXIT_CONFIG" "version_next: expected X.Y.Z-${channel}.N from git-cliff, got '${counted}' (base ${base}, latest tag ${latest})"
