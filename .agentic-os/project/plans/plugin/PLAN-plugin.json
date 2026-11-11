@@ -4133,11 +4133,15 @@
             "from": "environment fact: edotz.typo3-cms has the rulesets release (branch release), legacy (1.x and 2.x) and master, the classic protection on 1.x and 2.x, and old workflows on both",
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md; grep -q '^## Branch roles' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'legacy' 'freeze' 'GIT_WORKFLOW_RELEASE_BRANCH' 'GIT_WORKFLOW_LEGACY_BRANCHES' 'classic' 'baseline'; do grep -qiF -- \"$k\" $f || exit 1; done && s=edotz/typo3-cms && chk() { id=$(env -u GH_TOKEN gh api repos/$s/rulesets --jq \".[] | select(.name==\\\"$1\\\") | .id\") && [ -n \"$id\" ] && env -u GH_TOKEN gh api repos/$s/rulesets/$id --jq '.conditions.ref_name.include | join(\",\")' | grep -qx \"refs/heads/$2\"; } && chk release 2.x && chk legacy 1.x && env -u GH_TOKEN gh api repos/$s/git/ref/tags/legacy/1.x-freeze --jq .object.sha | grep -q '^9240db9c' && for b in 1.x 2.x; do env -u GH_TOKEN gh api repos/$s/branches/$b/protection 2>&1 | grep -q 'Branch not protected' || exit 1; done && ! env -u GH_TOKEN gh api \"repos/$s/git/trees/1.x?recursive=1\" --jq '.tree[].path' | grep -qE 'release-please|workflows/(commit-lint|php-cs-fixer|backport)|branch-protection'"
           },
-          "status": "pending",
+          "status": "done",
           "why": "typo3-cms has the ruleset release for a branch that does not exist and the legacy ruleset on both old lines, while 2.x is the release branch and 1.x the legacy line.",
           "result": "GIT_WORKFLOW_RELEASE_BRANCH=2.x and GIT_WORKFLOW_LEGACY_BRANCHES=1.x are set in the .env, rules-sync --apply moved the rulesets, the freeze tag of 1.x is on GitHub, a last pull request removed the old files from 1.x, and the classic protection of 1.x and 2.x is gone; the one-time move of 2.x waits for the first real release.",
           "done": "The note migrate-typo3-cms.md has the section Branch roles, which names legacy, freeze, GIT_WORKFLOW_RELEASE_BRANCH, GIT_WORKFLOW_LEGACY_BRANCHES, the classic protection and the baseline of 2.x at the first release, each with what you saw; the verify checks the rulesets, the tag, the protection and the tree of 1.x.",
-          "fails": "The classic protection removed before the rulesets name the branches, 1.x left with a pipeline that can run, or 2.x moved before a release commit exists."
+          "fails": "The classic protection removed before the rulesets name the branches, 1.x left with a pipeline that can run, or 2.x moved before a release commit exists.",
+          "last_verify": {
+            "at": "2026-11-11T12:01:42Z",
+            "exit": 0
+          }
         },
         {
           "id": "T6.13",
