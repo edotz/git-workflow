@@ -3696,7 +3696,9 @@
             "T5.5",
             "T6.1",
             "T6.2",
-            "T6.3"
+            "T6.3",
+            "T6.9",
+            "T6.12"
           ],
           "owner": "developer",
           "inputs": [
@@ -3727,12 +3729,12 @@
           ],
           "verify": {
             "from": "environment fact: edotz.php-project releases its components itself and splits them to the children",
-            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'merge-split-repo' 'split' 'baseline' 'legacy/pre-split' 'latest=false' 'rules-sync' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.php-project && test -f $d/components.yaml && test ! -f $d/.github/workflows/merge-split-repo.yml && test -d $d/.github/workflows && ! ls $d/.github/workflows | grep -qE 'sync-to-monorepo|post-release|release-please|backport|commit-lint|php-cs-fixer' && test -f $d/.github/workflows/status-checks.yml && [ \"$(yq '.components | length' $d/components.yaml)\" -ge 8 ] && grep -q 'split: yes' $d/components.yaml && grep -q 'php-cs-fixer' $d/components.yaml && s=edotz/php-project && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'merge-split-repo' 'split' 'baseline' 'legacy/pre-split' 'latest=false' 'rules-sync' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.php-project && test -f $d/components.yaml && test ! -f $d/.github/workflows/merge-split-repo.yml && test -d $d/.github/workflows && ! ls $d/.github/workflows | grep -qE 'sync-to-monorepo|post-release|release-please|backport|commit-lint|php-cs-fixer' && test -f $d/.github/workflows/status-checks.yml && [ \"$(yq '.components | length' $d/components.yaml)\" -ge 8 ] && grep -q 'split: yes' $d/components.yaml && grep -q 'php-cs-fixer' $d/components.yaml && s=edotz/php-project && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1 && s=edotz/php-project && chk() { id=$(env -u GH_TOKEN gh api repos/$s/rulesets --jq \".[] | select(.name==\\\"$1\\\") | .id\") && [ -n \"$id\" ] && env -u GH_TOKEN gh api repos/$s/rulesets/$id --jq '.conditions.ref_name.include | join(\",\")' | grep -qx \"refs/heads/$2\"; } && chk release 2.x && chk legacy 1.x && env -u GH_TOKEN gh api repos/$s/git/ref/tags/legacy/1.x-freeze >/dev/null && for b in 1.x 2.x; do env -u GH_TOKEN gh api repos/$s/branches/$b/protection 2>&1 | grep -q 'Branch not protected' || exit 1; done && ! env -u GH_TOKEN gh api \"repos/$s/git/trees/1.x?recursive=1\" --jq '.tree[].path' | grep -qE 'merge-split-repo|workflows/(commit-lint|php-cs-fixer)' && grep -qiF -- 'freeze' $f && grep -qiF -- 'GIT_WORKFLOW_RELEASE_BRANCH' $f"
           },
           "status": "pending",
-          "why": "php-project is the pilot monorepo: its children release and sync back today, and in the new design the monorepo releases and the children are split targets (D61, D64).",
+          "why": "php-project is the pilot monorepo: its children release and sync back today, and in the new design the monorepo releases and the children are split targets (D61, D64). The old 1.x and 2.x lines of php-project need their roles settled too: 1.x is legacy, 2.x the release branch (D79, D80).",
           "result": "edotz.php-project has components.yaml with one component per package, every package that has a child repository declared split yes with its owner and repo, the children baselined one by one, the old child workflows replaced, and the first component releases made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml (D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
-          "done": "The note migrate-php-project.md has the sections Repository and Result and names components.yaml, merge-split-repo, split, the baseline, legacy/pre-split, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone. status-checks.yml is present, the old commit-lint and php-cs-fixer workflows are gone, components.yaml declares at least 8 components and at least one with split: yes. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
+          "done": "The note migrate-php-project.md has the sections Repository and Result and names components.yaml, merge-split-repo, split, the baseline, legacy/pre-split, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone. status-checks.yml is present, the old commit-lint and php-cs-fixer workflows are gone, components.yaml declares at least 8 components and at least one with split: yes. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master. The note also names freeze, GIT_WORKFLOW_RELEASE_BRANCH and the baseline of 2.x; the rulesets release and legacy name 2.x and 1.x, the classic protection of 1.x and 2.x is gone, legacy/1.x-freeze is on GitHub and 1.x holds no old workflow.",
           "fails": "A child repository would be force pushed before its dry run was confirmed, or the old child workflow would keep syncing releases back into the monorepo. Master would be unprotected between the removal of the classic protection and the creation of the ruleset, or the old required checks would keep blocking the pull requests.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D19",
@@ -3740,7 +3742,7 @@
             "CONCEPT-git-workflow-plugin:D56"
           ],
           "brief": {
-            "arguments": "In edotz.php-project on a branch: write components.yaml for the eight packages (paths packages/<name>, version_files composer.json where it keeps a version key), mark the packages with a child repository split yes, run split --dry-run per child and confirm each, baseline the children with --apply --confirm, remove merge-split-repo.yml and the old callers, apply rules-sync, shims and the pre-push guard, merge by pull request, then release and promote the changed components. Switch off the old release workflow in each child repository. Write what you ran and saw. Copy status-checks.yml from the plugin and delete the old commit-lint.yml and php-cs-fixer.yml, declaring their commands under checks in components.yaml. Read the classic protection of master first (gh api repos/edotz/php-project/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72).",
+            "arguments": "In edotz.php-project on a branch: write components.yaml for the eight packages (paths packages/<name>, version_files composer.json where it keeps a version key), mark the packages with a child repository split yes, run split --dry-run per child and confirm each, baseline the children with --apply --confirm, remove merge-split-repo.yml and the old callers, apply rules-sync, shims and the pre-push guard, merge by pull request, then release and promote the changed components. Switch off the old release workflow in each child repository. Write what you ran and saw. Copy status-checks.yml from the plugin and delete the old commit-lint.yml and php-cs-fixer.yml, declaring their commands under checks in components.yaml. Read the classic protection of master first (gh api repos/edotz/php-project/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72). Also: set GIT_WORKFLOW_RELEASE_BRANCH=2.x and GIT_WORKFLOW_LEGACY_BRANCHES=1.x in the .env, push a freeze tag legacy/1.x-freeze at the 1.x head, remove the old files from 1.x by a last pull request, remove the classic protection of 1.x and 2.x after the rulesets exist; the move of 2.x waits for the first release commit (promote baseline, D81).",
             "output": "A note with the sections Repository and Result, and the repository on the new workflow.",
             "pattern": "migrate-typo3-cms.md: the form of a migration note",
             "target": "new"
@@ -3755,7 +3757,9 @@
             "T6.1",
             "T6.2",
             "T6.4",
-            "T6.5"
+            "T6.5",
+            "T6.9",
+            "T6.12"
           ],
           "owner": "developer",
           "inputs": [
@@ -3786,12 +3790,12 @@
           ],
           "verify": {
             "from": "environment fact: edotz.nodejs-project releases its components itself and splits them to the children",
-            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-nodejs-project.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'workspace' 'merge-split-repo' 'split' 'baseline' 'latest=false' 'rules-sync' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.nodejs-project && test -f $d/components.yaml && test ! -f $d/.github/workflows/merge-split-repo.yml && test -d $d/.github/workflows && ! ls $d/.github/workflows | grep -qE 'sync-to-monorepo|post-release|release-please|backport|commit-lint|php-cs-fixer' && test -f $d/.github/workflows/status-checks.yml && [ \"$(yq '.components | length' $d/components.yaml)\" -ge 10 ] && grep -q 'split: yes' $d/components.yaml && grep -q 'workspace:' $d/components.yaml && s=edotz/nodejs-project && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-nodejs-project.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'workspace' 'merge-split-repo' 'split' 'baseline' 'latest=false' 'rules-sync' 'pre-push'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.nodejs-project && test -f $d/components.yaml && test ! -f $d/.github/workflows/merge-split-repo.yml && test -d $d/.github/workflows && ! ls $d/.github/workflows | grep -qE 'sync-to-monorepo|post-release|release-please|backport|commit-lint|php-cs-fixer' && test -f $d/.github/workflows/status-checks.yml && [ \"$(yq '.components | length' $d/components.yaml)\" -ge 10 ] && grep -q 'split: yes' $d/components.yaml && grep -q 'workspace:' $d/components.yaml && s=edotz/nodejs-project && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1 && s=edotz/nodejs-project && chk() { id=$(env -u GH_TOKEN gh api repos/$s/rulesets --jq \".[] | select(.name==\\\"$1\\\") | .id\") && [ -n \"$id\" ] && env -u GH_TOKEN gh api repos/$s/rulesets/$id --jq '.conditions.ref_name.include | join(\",\")' | grep -qx \"refs/heads/$2\"; } && chk release 1.x && env -u GH_TOKEN gh api repos/$s/branches/1.x/protection 2>&1 | grep -q 'Branch not protected' && grep -qiF -- 'GIT_WORKFLOW_RELEASE_BRANCH' $f && grep -qiF -- 'baseline' $f"
           },
           "status": "pending",
-          "why": "nodejs-project is the second monorepo, on pnpm after T6.4: it repeats the cutover of php-project with the workspace field and the node publish that belongs to the consumer (D39).",
+          "why": "nodejs-project is the second monorepo, on pnpm after T6.4: it repeats the cutover of php-project with the workspace field and the node publish that belongs to the consumer (D39). nodejs-project has no legacy line: its 1.x is the release branch (D79).",
           "result": "edotz.nodejs-project has components.yaml with a workspace component per package, the split children baselined one by one, the old workflows gone, the rulesets, shims and the pre-push guard in place, and the first component releases made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml (D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
-          "done": "The note migrate-nodejs-project.md has the sections Repository and Result and names components.yaml, workspace, merge-split-repo, split, the baseline, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone. status-checks.yml is present, the old commit-lint and php-cs-fixer workflows are gone, components.yaml declares at least 10 components and at least one with split: yes. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
+          "done": "The note migrate-nodejs-project.md has the sections Repository and Result and names components.yaml, workspace, merge-split-repo, split, the baseline, --latest=false, rules-sync and the pre-push guard, each with what you saw; merge-split-repo.yml and the old callers are gone. status-checks.yml is present, the old commit-lint and php-cs-fixer workflows are gone, components.yaml declares at least 10 components and at least one with split: yes. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master. The note also names GIT_WORKFLOW_RELEASE_BRANCH and the baseline of 1.x; the ruleset release names 1.x and the classic protection of 1.x is gone.",
           "fails": "The components would take their paths from a hand written list that drifts from the workspace graph, or a split child would be released twice, by the old workflow and by the new one. Master would be unprotected between the removal of the classic protection and the creation of the ruleset, or the old required checks would keep blocking the pull requests.",
           "carries": [
             "CONCEPT-git-workflow-plugin:D19",
@@ -3799,7 +3803,7 @@
             "CONCEPT-git-workflow-plugin:D39"
           ],
           "brief": {
-            "arguments": "In edotz.nodejs-project on a branch: write components.yaml with workspace set to the pnpm package name of each component and version_files package.json, mark the packages with a child repository split yes, run split --dry-run per child and confirm each, baseline with --apply --confirm, remove merge-split-repo.yml and the old callers, apply rules-sync, shims and the pre-push guard, merge by pull request, then release and promote the changed components. Switch off the old release workflow in each child. Write what you ran and saw. Copy status-checks.yml from the plugin and delete the old commit-lint.yml and php-cs-fixer.yml, declaring their commands under checks in components.yaml. Read the classic protection of master first (gh api repos/edotz/nodejs-project/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72).",
+            "arguments": "In edotz.nodejs-project on a branch: write components.yaml with workspace set to the pnpm package name of each component and version_files package.json, mark the packages with a child repository split yes, run split --dry-run per child and confirm each, baseline with --apply --confirm, remove merge-split-repo.yml and the old callers, apply rules-sync, shims and the pre-push guard, merge by pull request, then release and promote the changed components. Switch off the old release workflow in each child. Write what you ran and saw. Copy status-checks.yml from the plugin and delete the old commit-lint.yml and php-cs-fixer.yml, declaring their commands under checks in components.yaml. Read the classic protection of master first (gh api repos/edotz/nodejs-project/branches/master/protection) and note its required checks, then remove it with gh api -X DELETE on the same path using the developer login, an organisation owner, but only after rules-sync --apply has created the master ruleset and never before, so that master is never unprotected; the aggregate check named check replaces the old required checks (D72). Also: set GIT_WORKFLOW_RELEASE_BRANCH=1.x in the .env, leave GIT_WORKFLOW_LEGACY_BRANCHES unset (rules-sync skips the legacy ruleset, D58), remove the classic protection of 1.x after the ruleset release exists; the move of 1.x waits for the first release commit (promote baseline, D81).",
             "output": "A note with the sections Repository and Result, and the repository on the new workflow.",
             "pattern": "migrate-php-project.md: the form of a migration note",
             "target": "new"
@@ -3939,6 +3943,219 @@
             "target": "change"
           },
           "consumes": []
+        },
+        {
+          "id": "T6.9",
+          "title": "Add the baseline mode to git promote for a diverged release branch",
+          "depends": [
+            "T3.7",
+            "T3.10"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/promote.sh",
+              "why": "the command that gets the baseline mode"
+            },
+            {
+              "ref": "bin/modules/git/split.sh",
+              "why": "the baseline apply with --confirm and legacy/pre-split that the mode copies"
+            },
+            {
+              "ref": "tests/git-promote/ff.sh",
+              "why": "the fixture of the existing promote test"
+            },
+            {
+              "ref": "D81",
+              "why": "the shape of the mode"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "bin/modules/git/promote.sh",
+                "bin/modules/git/module.yaml",
+                "tests/git-promote/baseline.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: a bare repository stands in the remote with a release branch that is not an ancestor of the release commit",
+            "run": "bash -n bin/modules/git/promote.sh && out=$(bash tests/git-promote/baseline.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 8 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-promote/ff.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && grep -q 'legacy/pre-promote' bin/modules/git/promote.sh && grep -q -- '--confirm' bin/modules/git/promote.sh && bash ${BU_ROOT}/app lint modules"
+          },
+          "status": "pending",
+          "why": "The release branches of typo3-cms, php-project and nodejs-project are diverged from master, and promote only fast-forwards, so none of them can be promoted.",
+          "result": "git promote has the baseline mode of D81 and a test that runs it against a bare remote.",
+          "done": "tests/git-promote/baseline.sh shows ok lines for: the dry run naming the divergence, the apply without --confirm refused, the apply with --confirm tagging legacy/pre-promote and force-pushing with a lease, a second apply doing nothing, a tag that is not a release commit refused, and the fast-forward case unchanged; ff.sh stays green.",
+          "fails": "A branch force-pushed without --confirm or without the freeze tag, or a fast-forwardable branch forced instead of fast-forwarded."
+        },
+        {
+          "id": "T6.10",
+          "title": "Lint the pull request title in pr.sh and in the status-checks job",
+          "depends": [
+            "T4.4",
+            "T4.8"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/pr.sh",
+              "why": "builds the title from the branch name for several commits, which gives feature: x for a branch feature/x"
+            },
+            {
+              "ref": ".github/workflows/status-checks.yml",
+              "why": "lints commits but not the title that a squash merge puts on master"
+            },
+            {
+              "ref": "bin/modules/git/lint-commit.sh",
+              "why": "the rule that the title must pass"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "bin/modules/git/pr.sh",
+                "tests/git-pr/title.sh"
+              ]
+            },
+            {
+              "scope": ".github/workflows",
+              "paths": [
+                ".github/workflows/status-checks.yml"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: pull request #74 of typo3-cms was squash-merged with the title chore/agentic os migration (#74) and the release lint stopped on it",
+            "run": "bash -n bin/modules/git/pr.sh && out=$(bash tests/git-pr/title.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 4 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-pr/dry-run.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && grep -q 'pull_request.title' .github/workflows/status-checks.yml && yq -e '.jobs.check.steps | length > 1' .github/workflows/status-checks.yml >/dev/null"
+          },
+          "status": "pending",
+          "why": "Nothing lints a pull request title before the merge, and the title becomes the commit subject on master that the release lint checks for ever.",
+          "result": "pr.sh refuses a title that the conventional commit rule rejects, and the status-checks job fails a pull request whose title does.",
+          "done": "tests/git-pr/title.sh shows ok lines for a valid single-commit title, a valid several-commit title from a branch prefix that is a type, a branch prefix that is no type (feature/x) refused with the reason, and the title step of the workflow reading the title through an environment variable; the dry-run test stays green.",
+          "fails": "A title passed to a shell through string interpolation in the workflow, or pr.sh opening the pull request before the title is linted."
+        },
+        {
+          "id": "T6.11",
+          "title": "Test a clone with a pre-push shim that pushes in the tool image",
+          "depends": [
+            "T4.9",
+            "T5.5"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "tests/git-shims/run.sh",
+              "why": "the existing shim test"
+            },
+            {
+              "ref": "notes/pilot-monorepo.md",
+              "why": "the pilot found that the pre-push shim of a clone broke every push in the tool image"
+            },
+            {
+              "ref": "bin/lib/tool.sh",
+              "why": "tool_run, which runs the pushes"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "tests/git-shims/push.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: a clone with the pre-push shim and a bare remote",
+            "run": "bash -n tests/git-shims/push.sh && out=$(bash tests/git-shims/push.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 4 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-shims/run.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL'"
+          },
+          "status": "pending",
+          "why": "The fix a8f108f (core.hooksPath=/dev/null for pushes in the tool image) has no test; the pilot found the defect on real GitHub.",
+          "result": "A test builds a clone with the pre-push shim and pushes through the code path of release, pr, promote and split.",
+          "done": "tests/git-shims/push.sh shows ok lines for a push in the tool image succeeding although the clone has the shim, and the hook still running for a push on the host.",
+          "fails": "The test passing with the shim absent, or the push stub not going through tool_run."
+        },
+        {
+          "id": "T6.12",
+          "title": "Settle the branch roles of edotz.typo3-cms: release branch 2.x and legacy branch 1.x",
+          "depends": [
+            "T6.2",
+            "T6.3",
+            "T6.9"
+          ],
+          "owner": "developer",
+          "inputs": [
+            {
+              "ref": "D79",
+              "why": "the release branch keeps its name"
+            },
+            {
+              "ref": "D80",
+              "why": "the legacy branch is frozen in place"
+            },
+            {
+              "ref": "bin/config/rulesets.yaml",
+              "why": "the rulesets release and legacy and their settings"
+            },
+            {
+              "ref": "/home/ohoeft/workspace/edotz.typo3-cms",
+              "why": "the repository with the .env, the branches and the rulesets"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: edotz.typo3-cms has the rulesets release (branch release), legacy (1.x and 2.x) and master, the classic protection on 1.x and 2.x, and old workflows on both",
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md; grep -q '^## Branch roles' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'legacy' 'freeze' 'GIT_WORKFLOW_RELEASE_BRANCH' 'GIT_WORKFLOW_LEGACY_BRANCHES' 'classic' 'baseline'; do grep -qiF -- \"$k\" $f || exit 1; done && s=edotz/typo3-cms && chk() { id=$(env -u GH_TOKEN gh api repos/$s/rulesets --jq \".[] | select(.name==\\\"$1\\\") | .id\") && [ -n \"$id\" ] && env -u GH_TOKEN gh api repos/$s/rulesets/$id --jq '.conditions.ref_name.include | join(\",\")' | grep -qx \"refs/heads/$2\"; } && chk release 2.x && chk legacy 1.x && env -u GH_TOKEN gh api repos/$s/git/ref/tags/v1.x-legacy-freeze --jq .object.sha | grep -q '^9240db9c' && for b in 1.x 2.x; do env -u GH_TOKEN gh api repos/$s/branches/$b/protection 2>&1 | grep -q 'Branch not protected' || exit 1; done && ! env -u GH_TOKEN gh api \"repos/$s/git/trees/1.x?recursive=1\" --jq '.tree[].path' | grep -qE 'release-please|workflows/(commit-lint|php-cs-fixer|backport)|branch-protection'"
+          },
+          "status": "pending",
+          "why": "typo3-cms has the ruleset release for a branch that does not exist and the legacy ruleset on both old lines, while 2.x is the release branch and 1.x the legacy line.",
+          "result": "GIT_WORKFLOW_RELEASE_BRANCH=2.x and GIT_WORKFLOW_LEGACY_BRANCHES=1.x are set in the .env, rules-sync --apply moved the rulesets, the freeze tag of 1.x is on GitHub, a last pull request removed the old files from 1.x, and the classic protection of 1.x and 2.x is gone; the one-time move of 2.x waits for the first real release.",
+          "done": "The note migrate-typo3-cms.md has the section Branch roles, which names legacy, freeze, GIT_WORKFLOW_RELEASE_BRANCH, GIT_WORKFLOW_LEGACY_BRANCHES, the classic protection and the baseline of 2.x at the first release, each with what you saw; the verify checks the rulesets, the tag, the protection and the tree of 1.x.",
+          "fails": "The classic protection removed before the rulesets name the branches, 1.x left with a pipeline that can run, or 2.x moved before a release commit exists."
+        },
+        {
+          "id": "T6.13",
+          "title": "Replace the classic protection on master of edotz.git-workflow with the ruleset",
+          "depends": [
+            "T6.2"
+          ],
+          "owner": "developer",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/rules-sync.sh",
+              "why": "applies the ruleset master as the production App"
+            },
+            {
+              "ref": "notes/app-production.md",
+              "why": "the note that records the production App and what it may do"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                ".agentic-os/project/concepts/git-workflow-plugin/notes/app-production.md"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: edotz/git-workflow carries classic branch protection on master",
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/app-production.md; grep -q '^## Protection of git-workflow' $f && ! grep -qiE 'TBD|TODO' $f && s=edotz/git-workflow && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
+          },
+          "status": "pending",
+          "why": "The plugin repository protects master with the classic rules that the new approach replaces, while every migrated repository uses the ruleset.",
+          "result": "rules-sync --apply created the ruleset master on edotz/git-workflow and the classic protection of master is removed.",
+          "done": "The note app-production.md has the section Protection of git-workflow with what you saw, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
+          "fails": "Master unprotected between the removal of the classic protection and the creation of the ruleset."
         }
       ],
       "gate": {
@@ -4740,6 +4957,36 @@
       "date": "2026-11-10",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D79",
+      "question": "What happens to the existing release branches typo3-cms 2.x, php-project 2.x and nodejs-project 1.x when the new workflow starts",
+      "chosen": "Each keeps its name and becomes the release branch of the new workflow (GIT_WORKFLOW_RELEASE_BRANCH in the .env of the repository, the ruleset release names it): the old head gets a freeze tag, the branch is moved once by force with a lease to the first release commit of master, and afterwards only git promote fast-forwards it; until the first real release the branch keeps its old content",
+      "reason": "consumers that require dev-2.x or dev-1.x keep working, and no new branch name is introduced; the pilot already did the same one-time move for the split baseline (D64)",
+      "by": "developer",
+      "date": "2026-11-11",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D80",
+      "question": "What happens to the legacy branches typo3-cms 1.x and php-project 1.x",
+      "chosen": "They are frozen in place under the legacy ruleset (GIT_WORKFLOW_LEGACY_BRANCHES: pull request required, no deletion, no force push); one last pull request per branch removes the old workflows, the release-please files and branch-protection.yaml, so that no old pipeline can run or write to a child repository; the head gets a freeze tag pushed to GitHub first, then an owner removes the classic protection",
+      "reason": "the old merge-split-repo workflow of php-project still writes to the child repositories that the new split owns; the freeze tags v1.x-legacy-freeze of typo3-cms exists only in the local clone and legacy/1.x-cutoff of php-project points at neither head",
+      "by": "developer",
+      "date": "2026-11-11",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D81",
+      "question": "How git promote moves a release branch that is not an ancestor of the release commit",
+      "chosen": "A baseline mode modelled on D64: the dry run names the divergence; git promote <tag> --apply --confirm <owner/repo> tags the old head legacy/pre-promote, then force-pushes the branch to the release commit with a lease, only when the tag is a release commit and the branch exists but is not an ancestor; a second apply finds nothing to do; without --confirm the apply refuses",
+      "reason": "promote is fast-forward only and never forces, and all three release branches are diverged from master, so none can be promoted without one explicit move",
+      "by": "developer",
+      "date": "2026-11-11",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -5341,6 +5588,25 @@
         "P5"
       ],
       "reason": "the developer allows model invocation on all git custom slash commands; commit 37f9d26 had already set the four values to false, so the guard of D60 and its verifies no longer held; the developer chose all repositories and approved the amendment on 2026-11-10",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-11",
+      "change": "Record D79 to D81 (release branch keeps its name, legacy branches frozen in place, promote baseline mode); add T6.9 to T6.13 (promote baseline mode, PR title lint, pre-push shim push test, typo3-cms branch roles, classic protection of master of this repository); T6.5 and T6.6 take the branch-role steps and depend on T6.9 and T6.12",
+      "affects": [
+        "P6",
+        "T6.5",
+        "T6.6",
+        "T6.9",
+        "T6.10",
+        "T6.11",
+        "T6.12",
+        "T6.13",
+        "D79",
+        "D80",
+        "D81"
+      ],
+      "reason": "the developer settled the roles of the old 1.x and 2.x lines of typo3-cms, php-project and nodejs-project on 2026-11-11 and approved the amendment: promote cannot fast-forward the diverged release branches, and the old merge-split-repo workflow of php-project would keep writing to the child repositories; PR #74 of typo3-cms showed that no check lints a pull request title",
       "by": "claude"
     }
   ],
