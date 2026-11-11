@@ -492,7 +492,7 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 | Replace the classic protection on master of edotz.git-workflow with the ruleset | T6.13 | developer | T6.2 | pending |
 | Make the split skip with a warning a child tag at another commit | T6.14 | inline | T5.3 | done |
 | Fix the open findings of T6.10, T6.11 and T6.14 | T6.15 | inline | T6.10, T6.11, T6.14 | done |
-| Give the split apply a token set with the workflows permission | T6.16 | inline | T6.14 | pending |
+| Give the split apply a token set with the workflows permission | T6.16 | inline | T6.14 | done |
 
 **Provide the production GitHub App and its token service key** (T6.1)
 - Why: Every migrated repository releases and rules-syncs as the App, and the sandbox App with its test key is no production key; nothing in the plan creates the production App.

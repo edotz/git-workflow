@@ -4434,7 +4434,7 @@
             "from": "environment fact: the stubbed token service of the split test names the set it was asked for",
             "run": "bash -n bin/modules/git/split.sh && jq -e '.sets.split.contents==\"write\" and .sets.split.workflows==\"write\" and .sets.contents.contents==\"write\" and (.sets.contents|has(\"workflows\")|not)' bin/config/token-service.json >/dev/null && grep -q 'token_fetch \"$slug\" split' bin/modules/git/split.sh && ! grep -q 'token_fetch \"$slug\" contents' bin/modules/git/split.sh && out=$(bash tests/git-split/apply.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 17 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-split/dry-run.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && bash ${BU_ROOT}/app lint modules"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The baseline push of nodejs-project to its children is refused because the split head carries workflow files and the token of the set contents has no workflows permission.",
           "result": "The split apply asks for the set split and the other commands keep their narrower sets.",
           "done": "token-service.json has the set split with contents and workflows write and the set contents without workflows; split.sh calls token_fetch with split; tests/git-split/apply.sh has a case that the apply asks for the set split and the cases of T5.3 and T6.14 stay green.",
@@ -4444,6 +4444,20 @@
             "output": "the three files named in the writes",
             "pattern": "bin/modules/git/promote.sh",
             "target": "change"
+          },
+          "findings": [
+            {
+              "file": ".docker/Dockerfile",
+              "line": 47,
+              "severity": "convention",
+              "summary": "the token service image copies its config at build time, so a container from an older image does not know the set split",
+              "state": "accepted"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T6.16.md",
+          "last_verify": {
+            "at": "2026-11-11T13:53:40Z",
+            "exit": 0
           }
         }
       ],
