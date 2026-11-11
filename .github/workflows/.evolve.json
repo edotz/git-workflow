@@ -1,7 +1,7 @@
 {
   "claude": {
-    "context_file": ".agentic-os/adapters/claude/templates/rules/github-workflows.md",
-    "purpose": "GitHub Actions workflows; after the concept only the status checks of a pull request remain, M4 and M6 rewrite them",
+    "context_file": ".agentic-os/adapters/claude/templates/rules/ci.md",
+    "purpose": "GitHub Actions workflows: status-checks.yml, the one pull-request check with the job check (commit lint, pull request title lint and the checks of components.yaml); release, promote and split run on the developer machine, not here.",
     "scope_trigger": ".github/workflows/**"
   }
 }
