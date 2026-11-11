@@ -20,7 +20,7 @@ Five notes in the concept's notes directory, one of them recording the sandbox: 
 - P3 Release core: 11 tasks
 - P4 Daily loop and guards: 18 tasks
 - P5 Monorepo: 5 tasks
-- P6 Retire the old approach: 14 tasks
+- P6 Retire the old approach: 15 tasks
 
 ### Cost
 
@@ -491,6 +491,7 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 | Settle the branch roles of edotz.typo3-cms: release branch 2.x and legacy branch 1.x | T6.12 | developer | T6.2, T6.3, T6.9 | done |
 | Replace the classic protection on master of edotz.git-workflow with the ruleset | T6.13 | developer | T6.2 | pending |
 | Make the split skip with a warning a child tag at another commit | T6.14 | inline | T5.3 | done |
+| Fix the open findings of T6.10, T6.11 and T6.14 | T6.15 | inline | T6.10, T6.11, T6.14 | pending |
 
 **Provide the production GitHub App and its token service key** (T6.1)
 - Why: Every migrated repository releases and rules-syncs as the App, and the sandbox App with its test key is no production key; nothing in the plan creates the production App.
@@ -583,6 +584,12 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 - Result: The split apply skips a child tag at another commit with a warning and goes on with the branch and the missing tags.
 - Done: tests/git-split/apply.sh shows ok lines for: a child tag at another commit is skipped with a warning that names the tag, the other tags and the branch still reach the child, the existing tag stays at its old commit, and the cases of T5.3 stay green.
 - Fails: A child tag moved or overwritten, a skipped tag passing without a warning, or the apply stopping before the branch is pushed.
+
+**Fix the open findings of T6.10, T6.11 and T6.14** (T6.15)
+- Why: Five findings of the reviews of T6.10, T6.11 and T6.14 are valid and open, and the tasks they belong to are done and never reopened.
+- Result: The lint of a commit message and of a pull request title behaves like CI, pr.sh cleans its temporary file on a signal, the push test proves that the shim causes the failure of its negative control, and the split names a skipped tag in its closing line.
+- Done: tests/git-commit/lint.sh shows ok lines for a valid message, Merge branch x into y, Revert of a conventional subject, a bare Merge x refused and a missing commitlint reported as its own error; pr.sh registers its cleanup; push.sh checks the agentic-os not found message of the shim in its negative control; the closing line of the split no longer says has every tag after a skip; the cases of T6.10, T6.11 and T6.14 stay green.
+- Fails: A merge commit of git itself refused by the commit-msg hook, the temporary file left behind on SIGINT, or the closing line of the split contradicting the warning above it.
 
 Gate: (for r in edotz.typo3-cms edotz.php-project edotz.nodejs-project; do d=$HOME/workspace/$r; test -f $d/components.yaml || exit 1; test -f $d/.github/workflows/status-checks.yml || exit 1; test -d $d/.github/workflows || exit 1; test ! -f $d/release-please-config.json || exit 1; if ls $d/.github/workflows | grep -qE 'release-please|backport|merge-split-repo|sync-to-monorepo|post-release|commit-lint|php-cs-fixer'; then exit 1; fi; done) && test -f $HOME/workspace/edotz.nodejs-project/pnpm-workspace.yaml && test -s .agentic-os/project/concepts/git-workflow-plugin/notes/app-production.md && (test ! -e bin/modules/git/branch-protection.sh && test ! -e bin/modules/git/run-status.sh && ! grep -qE 'branch-protection|run-status' bin/modules/git/module.yaml && bash ${BU_ROOT}/app lint modules && bash tests/git-rules/sync.sh && out=$(bash tests/git-rules/foreign.sh) && [ "$(printf '%s\n' "$out" | grep -c '^ok')" -ge 4 ] && ! printf '%s\n' "$out" | grep -q '^FAIL' && bash tests/git-status/runs.sh) && (! grep -qiE 'gh-wf|release-please|merge commits only|stage-guard|run-status|branch-protection' .agentic-os/project/identity.md .agentic-os/project/architecture.md .agentic-os/project/product.md && for f in .agentic-os/project/identity.md .agentic-os/project/architecture.md; do grep -qi 'squash' $f && grep -qi 'ruleset' $f || exit 1; done)
 
@@ -737,3 +744,4 @@ Gate: (for r in edotz.typo3-cms edotz.php-project edotz.nodejs-project; do d=$HO
 - 2026-11-11 Record D79 to D81 (release branch keeps its name, legacy branches frozen in place, promote baseline mode); add T6.9 to T6.13 (promote baseline mode, PR title lint, pre-push shim push test, typo3-cms branch roles, classic protection of master of this repository); T6.5 and T6.6 take the branch-role steps and depend on T6.9 and T6.12 (affects P6, T6.5, T6.6, T6.9, T6.10, T6.11, T6.12, T6.13, D79, D80, D81) -- the developer settled the roles of the old 1.x and 2.x lines of typo3-cms, php-project and nodejs-project on 2026-11-11 and approved the amendment: promote cannot fast-forward the diverged release branches, and the old merge-split-repo workflow of php-project would keep writing to the child repositories; PR #74 of typo3-cms showed that no check lints a pull request title (claude)
 - 2026-11-11 D82 supersedes D80: the freeze tag of a legacy line is a new legacy/<line>-freeze tag at the head and the classic protection goes before the cleanup pull request merges; T6.10 and T6.11 get a brief with arguments, output, pattern and target; the T6.12 verify checks the tag legacy/1.x-freeze (affects D80, D82, T6.10, T6.11, T6.12) -- the authors of T6.10 and T6.11 refused without a pattern; v1.x-legacy-freeze of typo3-cms pointed at 5e7404b, 85 commits behind the head of 1.x, so D80 rested on a wrong fact, and the cleanup pull request #75 had to follow the removal of the classic protection; the developer chose the new tag and approved the amendment on 2026-11-11 (claude)
 - 2026-11-11 Record D83 (the split skips a child tag at another commit with a warning and never moves it); add T6.14 to change split.sh and its test accordingly; T6.5 depends on T6.14 (affects D83, T6.14, T6.5) -- the eight children of php-project hold v2.0.x tags at their old commits and the baseline tags of the monorepo map to the same names; split.sh dies with it is not moved on such a tag, so no baseline apply can run; the developer chose skip with a warning and approved the amendment on 2026-11-11 (claude)
+- 2026-11-11 Add T6.15 to fix the five valid open findings of T6.10, T6.11 and T6.14: remove the Merge and Revert bypass of lint-commit.sh, register_cleanup in pr.sh, a stronger negative control in the push test, and the closing line of the split (affects T6.15) -- the tasks are done and never reopened; the developer asked on 2026-11-11 to fix and settle the open findings and approved the amendment; the rule file already says to remove the bypass (claude)

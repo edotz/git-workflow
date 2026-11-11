@@ -4058,14 +4058,14 @@
               "line": 3,
               "severity": "wrong result",
               "summary": "the workflow runs only on opened, synchronize and reopened, so a renamed title is never checked again",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/pr.sh",
               "line": 92,
               "severity": "wrong result",
               "summary": "any non-zero exit of lint-commit.sh is reported as a refused title, also when commitlint is not installed",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/pr.sh",
@@ -4146,7 +4146,7 @@
               "line": 81,
               "severity": "wrong result",
               "summary": "case 5 no hook ran during the pushes in the tool image can never fail",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "tests/git-shims/push.sh",
@@ -4304,6 +4304,66 @@
           "last_verify": {
             "at": "2026-11-11T12:42:44Z",
             "exit": 0
+          }
+        },
+        {
+          "id": "T6.15",
+          "title": "Fix the open findings of T6.10, T6.11 and T6.14",
+          "depends": [
+            "T6.10",
+            "T6.11",
+            "T6.14"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/lint-commit.sh",
+              "why": "the Merge and Revert bypass at line 14 that the rule file says to remove, so that the lint behaves like CI (T6.10 findings 4 and 5)"
+            },
+            {
+              "ref": "bin/modules/git/pr.sh",
+              "why": "mktemp and rm -f by hand instead of register_cleanup (T6.10 finding 3)"
+            },
+            {
+              "ref": "tests/git-shims/push.sh",
+              "why": "the negative control checks only the exit status and an empty remote (T6.11 finding 2)"
+            },
+            {
+              "ref": "bin/modules/git/split.sh",
+              "why": "the nothing-to-apply line says has every tag after a skipped tag (T6.14 finding 1)"
+            },
+            {
+              "ref": "tests/git-split/apply.sh",
+              "why": "may assert the old wording of that line"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "bin/modules/git/lint-commit.sh",
+                "bin/modules/git/pr.sh",
+                "bin/modules/git/split.sh",
+                "tests/git-shims/push.sh",
+                "tests/git-split/apply.sh",
+                "tests/git-commit/lint.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: throwaway repositories and message files stand in for the commits and titles",
+            "run": "bash -n bin/modules/git/lint-commit.sh && bash -n bin/modules/git/pr.sh && bash -n bin/modules/git/split.sh && out=$(bash tests/git-commit/lint.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 5 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && ! grep -q 'Merge|Revert' bin/modules/git/lint-commit.sh && grep -q 'register_cleanup' bin/modules/git/pr.sh && out=$(bash tests/git-shims/push.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 5 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-split/apply.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-pr/title.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && bash ${BU_ROOT}/app lint modules"
+          },
+          "status": "pending",
+          "why": "Five findings of the reviews of T6.10, T6.11 and T6.14 are valid and open, and the tasks they belong to are done and never reopened.",
+          "result": "The lint of a commit message and of a pull request title behaves like CI, pr.sh cleans its temporary file on a signal, the push test proves that the shim causes the failure of its negative control, and the split names a skipped tag in its closing line.",
+          "done": "tests/git-commit/lint.sh shows ok lines for a valid message, Merge branch x into y, Revert of a conventional subject, a bare Merge x refused and a missing commitlint reported as its own error; pr.sh registers its cleanup; push.sh checks the agentic-os not found message of the shim in its negative control; the closing line of the split no longer says has every tag after a skip; the cases of T6.10, T6.11 and T6.14 stay green.",
+          "fails": "A merge commit of git itself refused by the commit-msg hook, the temporary file left behind on SIGINT, or the closing line of the split contradicting the warning above it.",
+          "brief": {
+            "arguments": "Remove the Merge and Revert bypass of lint-commit.sh and let commitlint decide (its default ignores keep Merge branch, Merge pull request and Revert subjects passing); in pr.sh create the temporary file with mktemp and remove it through register_cleanup as commit.sh does; in tests/git-shims/push.sh capture stderr of the push without the override and require the agentic-os not found message of the shim; in split.sh reword the closing nothing-to-apply line so that it does not claim every tag is there when a tag was skipped, and adjust the assertion in tests/git-split/apply.sh if it names the old text; add tests/git-commit/lint.sh with the cases of the done text",
+            "output": "the six files named in the writes, with ok and FAIL lines in the new test",
+            "pattern": "bin/modules/git/commit.sh",
+            "target": "change"
           }
         }
       ],
@@ -5801,6 +5861,15 @@
         "T6.5"
       ],
       "reason": "the eight children of php-project hold v2.0.x tags at their old commits and the baseline tags of the monorepo map to the same names; split.sh dies with it is not moved on such a tag, so no baseline apply can run; the developer chose skip with a warning and approved the amendment on 2026-11-11",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-11",
+      "change": "Add T6.15 to fix the five valid open findings of T6.10, T6.11 and T6.14: remove the Merge and Revert bypass of lint-commit.sh, register_cleanup in pr.sh, a stronger negative control in the push test, and the closing line of the split",
+      "affects": [
+        "T6.15"
+      ],
+      "reason": "the tasks are done and never reopened; the developer asked on 2026-11-11 to fix and settle the open findings and approved the amendment; the rule file already says to remove the bypass",
       "by": "claude"
     }
   ],
