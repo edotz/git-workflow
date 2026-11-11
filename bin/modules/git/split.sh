@@ -117,6 +117,7 @@ _split_child_default() {
 # from the split (unrelated or diverged) is baselined: its old head is tagged legacy/pre-split and the branch is
 # replaced with a lease on that head, only with --confirm <owner/repo> (D64). Called without an if, so set -e holds.
 # A child tag is compared at its commit: an annotated tag is peeled, the line ending in ^{} wins over the tag object.
+# A child tag at another commit is skipped with a warning that names both commits, never moved, and the rest is pushed (D83).
 # Args: $1 - component name  $2 - branch  $3 - value of --confirm, empty when not given
 _split_apply() {
   local name="$1" branch="$2" confirm="$3"
@@ -192,7 +193,7 @@ _split_apply() {
     target="$SPLIT_HEAD"
     if [[ -n "${child_tags[$cname]:-}" ]]; then
       if [[ "${child_tags[$cname]}" != "$target" ]]; then
-        die "split: the tag ${cname} of ${slug} points at ${child_tags[$cname]}, the split of ${tag} is ${target}: it is not moved"
+        print_item warning "tag ${cname}" "skipped: ${slug} has it at ${child_tags[$cname]}, the split of ${tag} is ${target}: it is not moved"
       fi
       continue
     fi

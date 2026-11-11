@@ -289,6 +289,31 @@ if [[ "$rc" -eq 0 && "$(git -C "$(child an)" rev-parse "refs/tags/v1.1.0^{commit
   && "$(git -C "$(child an)" cat-file -t refs/tags/v1.0.0)" == "tag" ]]; then ok=yes; fi
 case_result "an annotated child tag at the right commit does not block the apply" "$ok"
 
+# 15 to 17: a child tag at another commit is skipped with a warning (D83): the apply ends 0, names the tag and both
+# commits, leaves that tag where it is, and still pushes the branch and the tags the child lacks
+an_split_old="$(git -C "$(child an)" rev-parse refs/heads/master)"
+git -C "$(child an)" tag -f v1.1.0 "$an_commit" > /dev/null
+echo n3 > "${repo}/apps/an/n.txt"
+git -C "$repo" add .
+git -C "$repo" commit -q -m "feat: an changes again"
+git -C "$repo" tag an/v1.2.0
+requests_before="$(requests)"
+rc=0
+out="$(run_split an --apply)" || rc=$?
+ok=no
+if [[ "$rc" -eq 0 && "$out" == *"skipped"* && "$out" == *"v1.1.0"* && "$out" == *"$an_commit"* && "$out" == *"$an_split_old"* ]]; then ok=yes; fi
+case_result "a child tag at another commit is skipped with a warning that names the tag and both commits" "$ok"
+
+ok=no
+if [[ "$(git -C "$(child an)" rev-parse refs/tags/v1.1.0)" == "$an_commit" ]]; then ok=yes; fi
+case_result "the skipped child tag stays at its old commit" "$ok"
+
+an_master="$(git -C "$(child an)" rev-parse refs/heads/master)"
+ok=no
+if [[ "$an_master" != "$an_split_old" && "$(git -C "$(child an)" rev-parse "refs/tags/v1.2.0^{commit}" 2>/dev/null || true)" == "$an_master" \
+  && "$out" != *"tag v1.0.0"* && "$(requests)" == "$((requests_before + 1))" ]]; then ok=yes; fi
+case_result "the branch and the tags the child lacks are still pushed, a tag at the right commit is skipped silently" "$ok"
+
 if [[ "$failed" -ne 0 ]]; then
   exit 1
 fi
