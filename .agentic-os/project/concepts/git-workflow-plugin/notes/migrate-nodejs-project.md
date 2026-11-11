@@ -13,7 +13,12 @@
 
 The first split push to `data-handler` was rejected: the split head carries workflow files and the token had no `workflows` permission. Granting the permission to the App was not enough, because the token service narrows every token to the set of the command; T6.16 (D84) added the set `split` (contents and workflows write) to `bin/config/token-service.json`, and the image had to be rebuilt because it holds the config. Only the split apply asks for that set.
 
-## Children
+## Result
+
+- Rulesets: `app git rules-sync --dry-run` on the clone lists `master` and `release` as `✓ update` and `legacy` as skipped, because there is no legacy line (`GIT_WORKFLOW_LEGACY_BRANCHES` stays unset).
+- Guards: `app git shims --check` reports `pre-commit`, `commit-msg` and `pre-push` as current, so the pre-push guard runs the minimum check before every push.
+- Release: `app git release --dry-run` lists every component as pending with "tag is HEAD": an apply would make sure the tag is pushed and the GitHub Release exists, with `--latest=false` as the release command makes it. No release was applied, no component changed since its baseline tag.
+- Split of the children, one child per run:
 
 - `data-handler`: dry run said the child is unrelated to the split (8 files differ: the old workflows, `commitlint.config.mjs`, `package.json`). Apply with `--confirm edotz/data-handler`: the old head `a24c4c7` is kept as `legacy/pre-split`, `master` was replaced by the split head `efc22e3` with a lease ("forced update"), and the tag `v1.0.3`, which exists on the old commit `759f138`, was skipped with a warning and not moved (D83). Checked through the API afterwards.
 - The other nine children were baselined the same way, one per run with `--confirm edotz/<name>`: the old head of each is tagged `legacy/pre-split`, `master` is replaced by the split head with a lease, and the child tag `vX.Y.Z` of the old approach is skipped with the D83 warning because it sits on the old commit. Old head (`legacy/pre-split`) and new `master`: `dotenv-dotprop` `b09f856` to `1e4e6e8`, `error-handler` `998a3e5` to `c579f9d`, `express-app` `6e84282` to `ff05902`, `json-validate` `dc59b3a` to `cd44e4e`, `logger` `6ca01f9` to `0eecb58`, `react-app` `47936dd` to `dcece54`, `runtime` `2d534ce` to `0163629`, `transpiler` `ceaeebc` to `6e36a93`, `utilities` `be8156f` to `b917a36`; `data-handler` `a24c4c7` to `efc22e3`. A final dry run over all ten answers "the child is at the split head already: nothing to apply"; `1.x` of the children that have it and the old tags are unchanged.
