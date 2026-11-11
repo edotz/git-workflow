@@ -2,7 +2,8 @@
 # Git Workflow Status Data Collector
 # Collects structured data for the squash-merge workflow: the sync of the release branch with the main branch, and per
 # component of components.yaml the latest release tag, the commits since it and the position of the release branch
-# against that tag (on, behind, absent). Git runs through tool_run.
+# against that tag (on, behind, absent), and the recent workflow runs (runs, empty without gh, a credential or a
+# network). Git runs through tool_run.
 # Settings: GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH (default: master)
 # Output: JSON for Claude synthesis
 
@@ -17,6 +18,8 @@ source "${BU_LIB}/json.sh"
 source "${BU_LIB}/cli.sh"
 source "${PLUGIN_LIB}/tool.sh"
 source "${PLUGIN_LIB}/component.sh"
+source "${PLUGIN_LIB}/github.sh"
+source "${PLUGIN_LIB}/remote.sh"
 
 # ============================================
 # Configuration
@@ -25,6 +28,7 @@ readonly MAIN_BRANCH="${GIT_WORKFLOW_MAIN_BRANCH:-master}"
 readonly RELEASE_BRANCH="${GIT_WORKFLOW_RELEASE_BRANCH:-master}"
 readonly PACKAGE_FILE="${PACKAGE_FILE:-package.json}"
 readonly DESCRIBE_RE='^(.+)-([0-9]+)-g[0-9a-f]+$'
+readonly RUNS_LIMIT=5
 
 # The ref the commits are counted from: the main branch, HEAD when the main branch does not exist.
 _BASE_REF=""
@@ -102,6 +106,25 @@ add_component_status() {
   return 0
 }
 
+# Get the recent workflow runs of the repository of origin through the gh of the host. Without gh, a credential, a
+# remote or a network the runs are not a failure of the status: the array is empty.
+# Returns: JSON array of runs, empty when they cannot be read
+get_recent_runs() {
+  local slug runs
+  if ! command_exists "gh"; then
+    echo "[]"  # out:return
+    return 0
+  fi
+  slug="$(remote_slug 2>/dev/null)" || slug=""
+  if [[ -z "$slug" ]]; then
+    echo "[]"  # out:return
+    return 0
+  fi
+  runs="$(github_get_runs "$slug" "" "$RUNS_LIMIT" 2>/dev/null </dev/null)" || runs="[]"
+  echo "${runs:-[]}"  # out:return
+  return 0
+}
+
 # Assemble complete workflow status
 # Returns: JSON object with complete status
 get_workflow_status() {
@@ -153,7 +176,8 @@ get_workflow_status() {
         breaking: ($stats.breaking // 0),
         details: $commits
       },
-      components: $components
+      components: $components,
+      runs: $runs
     }' \
     --arg branch "$current_branch" \
     --arg version "$current_version" \
@@ -161,7 +185,8 @@ get_workflow_status() {
     --argjson working_tree "$working_tree" \
     --argjson stats "$stats" \
     --argjson commits "$commits_json" \
-    --argjson components "$components_json"  # out:return
+    --argjson components "$components_json" \
+    --argjson runs "$(get_recent_runs)"  # out:return
 }
 
 # ============================================

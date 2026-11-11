@@ -5,9 +5,6 @@ requires: [git]
 commands:
   - name: "branch-cleanup"
     description: "Identify merged, stale and safe-to-delete branches."
-  - name: "branch-protection"
-    requires: [git, gh]
-    description: "Manage GitHub branch protection rules from declarative YAML."
   - name: "check"
     description: "Run the minimum check of one component or of every component: commit lint since the latest tag plus the checks the component declares."
     when: "Before a pull request or a push, and to see which component is red"
@@ -94,9 +91,6 @@ commands:
         description: "Create or update the rulesets with the administration token of the App; needs GIT_WORKFLOW_APP_ID"
       - name: "--stage"
         description: "Project phase of the master ruleset: development or production; default GIT_WORKFLOW_STAGE, else development"
-  - name: "run-status"
-    requires: [gh]
-    description: "Fetch recent GitHub Actions workflow runs as JSON."
   - name: "shims"
     requires: [git]
     description: "Put the git hook shims of the plugin into the directory git runs hooks from (core.hooksPath, else the common git dir), leaving files that are not ours."
@@ -151,7 +145,7 @@ commands:
   - name: "workflow-setup"
     description: "Validate the branch settings GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH and print them."
   - name: "workflow-status"
-    requires: [git, docker]
-    description: "Report as JSON the commits not yet released, and per component the latest release tag, the commits since it and the release branch position."
+    requires: [git, docker, gh]
+    description: "Report as JSON the commits not yet released, per component the latest release tag, the commits since it and the release branch position, and the recent workflow runs, empty without a gh credential or a network."
   - name: "worktree"
     description: "Manage git worktrees for isolated feature development."
