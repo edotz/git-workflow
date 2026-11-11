@@ -4036,7 +4036,7 @@
             "from": "environment fact: pull request #74 of typo3-cms was squash-merged with the title chore/agentic os migration (#74) and the release lint stopped on it",
             "run": "bash -n bin/modules/git/pr.sh && out=$(bash tests/git-pr/title.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 4 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-pr/dry-run.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && grep -q 'pull_request.title' .github/workflows/status-checks.yml && yq -e '.jobs.check.steps | length > 1' .github/workflows/status-checks.yml >/dev/null"
           },
-          "status": "pending",
+          "status": "done",
           "why": "Nothing lints a pull request title before the merge, and the title becomes the commit subject on master that the release lint checks for ever.",
           "result": "pr.sh refuses a title that the conventional commit rule rejects, and the status-checks job fails a pull request whose title does.",
           "done": "tests/git-pr/title.sh shows ok lines for a valid single-commit title, a valid several-commit title from a branch prefix that is a type, a branch prefix that is no type (feature/x) refused with the reason, and the title step of the workflow reading the title through an environment variable; the dry-run test stays green.",
@@ -4046,6 +4046,48 @@
             "output": "bin/modules/git/pr.sh, tests/git-pr/title.sh (ok lines, FAIL lines on a failure) and the new step in .github/workflows/status-checks.yml",
             "pattern": "bin/modules/git/commit.sh",
             "target": "change"
+          },
+          "findings": [
+            {
+              "file": ".github/workflows/status-checks.yml",
+              "line": 3,
+              "severity": "wrong result",
+              "summary": "the workflow runs only on opened, synchronize and reopened, so a renamed title is never checked again",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/pr.sh",
+              "line": 92,
+              "severity": "wrong result",
+              "summary": "any non-zero exit of lint-commit.sh is reported as a refused title, also when commitlint is not installed",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/pr.sh",
+              "line": 90,
+              "severity": "convention",
+              "summary": "mktemp and rm -f by hand instead of register_cleanup",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/lint-commit.sh",
+              "line": 14,
+              "severity": "convention",
+              "summary": "the Merge and Revert bypass of lint-commit.sh also skips the title lint in pr.sh, a pre-existing file outside the task",
+              "state": "open"
+            },
+            {
+              "file": "bin/modules/git/pr.sh",
+              "line": 92,
+              "severity": "wrong result",
+              "summary": "a one-commit branch with the subject Merge x passes the title lint of pr.sh and fails the status-checks title step",
+              "state": "open"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T6.10.md",
+          "last_verify": {
+            "at": "2026-11-11T12:10:11Z",
+            "exit": 0
           }
         },
         {
