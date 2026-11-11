@@ -1,0 +1,47 @@
+x-logging: &default-logging
+  options:
+    max-file: "5"
+    max-size: "5m"
+  driver: json-file
+
+services:
+  tools:
+    image: edotz-git-workflow-tools:${GIT_CLIFF_VERSION:?}-${GH_VERSION:?}
+    platform: ${IMAGE_PLATFORM:?}
+    logging: *default-logging
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      target: tool
+      platforms:
+        - ${IMAGE_PLATFORM:?}
+      args:
+        IMAGE_BASE: ${IMAGE_BASE:?}
+        GIT_CLIFF_VERSION: ${GIT_CLIFF_VERSION:?}
+        GIT_CLIFF_SHA512: ${GIT_CLIFF_SHA512:?}
+        SPLITSH_VERSION: ${SPLITSH_VERSION:?}
+        SPLITSH_SHA256: ${SPLITSH_SHA256:?}
+        GH_VERSION: ${GH_VERSION:?}
+        GH_SHA256: ${GH_SHA256:?}
+        GIT_APT_VERSION: ${GIT_APT_VERSION:?}
+  token-service:
+    image: edotz-git-workflow-token-service:local
+    user: "${TOKEN_SERVICE_UID:-1000}:${TOKEN_SERVICE_GID:-1000}"
+    logging: *default-logging
+    build:
+      context: .
+      dockerfile: .docker/Dockerfile
+      target: token-service
+      args:
+        IMAGE_BASE: ${IMAGE_BASE:?}
+    environment:
+      TOKEN_SERVICE_APP_ID: ${TOKEN_SERVICE_APP_ID:-}
+      TOKEN_SERVICE_KEY_PATH: /run/secrets/app-key.pem
+    volumes:
+      - ${TOKEN_SERVICE_KEY_FILE:-/dev/null}:/run/secrets/app-key.pem:ro
+    ports:
+      - "127.0.0.1:${TOKEN_SERVICE_PORT:-8790}:8790"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"

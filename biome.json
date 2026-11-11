@@ -1,0 +1,17 @@
+{
+	"files": {
+		"includes": ["**", "!**/node_modules"]
+	},
+	"formatter": {
+		"enabled": false
+	},
+	"assist": {
+		"enabled": false
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended"
+		}
+	}
+}

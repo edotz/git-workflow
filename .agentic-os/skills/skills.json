@@ -38,12 +38,6 @@
       "origin": "framework"
     },
     {
-      "name": "fan-out-aggregate",
-      "enabled": true,
-      "description": "Use when acting as a dynamic-<pillar> orchestrator agent that decomposes a request into subtasks and spawns child subagents via the Agent tool. Covers workflow_id registration per child and aggregating from Agent() return payloads, including synthesizing an error-status object for a failed or malformed child result.",
-      "origin": "framework"
-    },
-    {
       "name": "context-evaluation-framework",
       "enabled": true,
       "description": "Use when classifying context inputs, performing gap analysis on agent/skill/command definitions, or evaluating artifact distribution across Push, Genuine Agent Context, Shared Infrastructure, and Task Payloads.",
@@ -70,7 +64,7 @@
     {
       "name": "blueprint-authoring",
       "enabled": true,
-      "description": "Use when deciding where a blueprint belongs: the tier (framework, adapter or project), the placeholder contract of a template type, the variable whitelist, the resolver chain, and blueprint lookup.",
+      "description": "Use when deciding where a blueprint belongs: the tier (framework, adapter, project or plugin), the placeholder contract of a template type, the variable whitelist, the resolver chain, and blueprint lookup.",
       "origin": "framework"
     },
     {
@@ -119,6 +113,30 @@
       "name": "blueprint-writing",
       "enabled": true,
       "description": "Use when writing or editing the body of a blueprint file, once its tier and placeholder are settled.",
+      "origin": "framework"
+    },
+    {
+      "name": "scope-exploration",
+      "enabled": true,
+      "description": "Use when an orchestrator session must explore a scope too wide to read in one pass by fanning read-only helpers out over its sources, or when it merges the reports those helpers return.",
+      "origin": "framework"
+    },
+    {
+      "name": "planning-chain",
+      "enabled": true,
+      "description": "Use when working in a project that has a roadmap, backlog, concept, plan or specification and the dependencies between them are unclear, or when a planning command stops on a missing prerequisite.",
+      "origin": "framework"
+    },
+    {
+      "name": "grilling",
+      "enabled": true,
+      "description": "Use when findings against a plan must be settled with the developer in rounds of at most four questions, or when one finding depends on the answer to another.",
+      "origin": "framework"
+    },
+    {
+      "name": "working-mode-choice",
+      "enabled": true,
+      "description": "Use when a plan task, an agent process or a command step must state how it is carried out (parallel perspectives, a delegated agent or manual work), or when a change of the choice table is proposed.",
       "origin": "framework"
     }
   ],

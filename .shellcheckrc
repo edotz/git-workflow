@@ -1,0 +1,121 @@
+# ShellCheck Configuration for Claude Bash Utility Framework
+# See: https://github.com/koalaman/shellcheck/wiki/Directive
+
+# Set shell dialect
+shell=bash
+
+# Enable all optional checks
+enable=all
+
+# ============================================
+# Disabled Checks (with justification)
+# ============================================
+
+# SC1090: Can't follow non-constant source
+# Justification: We use dynamic library loading via ${LIB_DIR}/core.sh
+# This is by design for our two-tier architecture
+disable=SC1090
+
+# SC1091: Not following source
+# Justification: Same as SC1090 - bootstrap.sh sets LIB_DIR dynamically
+disable=SC1091
+
+# SC2034: Variable appears unused
+# Justification: We export many variables for child processes and sourced scripts
+# Examples: CLAUDE_ROOT, LIB_DIR, LOG_LEVEL, etc.
+# These are part of our public API
+disable=SC2034
+
+# SC2155: Declare and assign separately to avoid masking return values
+# Justification: We intentionally use this pattern in some cases for conciseness
+# We validate return values where critical
+# Example: local result=$(some_func) - we check $? when needed
+# disable=SC2155  # KEEP ENABLED - good practice to catch
+
+# SC2181: Check exit code directly with e.g. if mycmd;, not indirectly with $?
+# Justification: We sometimes use $? for clarity in complex conditionals
+# disable=SC2181  # KEEP ENABLED - good practice
+
+# SC2154: Variable referenced but not assigned
+# Justification: BU_LIB, BU_ROOT, BU_MODS, PROJECT_ROOT, etc. are framework bootstrap
+# variables set dynamically by core.sh at runtime. Shellcheck cannot follow the
+# dynamic source chain, so these appear unassigned. This is by design.
+disable=SC2154
+
+# SC2250: Prefer putting braces around variable references
+# Justification: We use both $var and ${var} styles depending on context
+# Our codebase is consistent within each context, braces are used when needed
+disable=SC2250
+
+# SC2312: Consider invoking command separately to avoid masking return value
+# Justification: We intentionally use command substitution in log messages and non-critical contexts
+# Return values are checked when critical
+disable=SC2312
+
+# SC2059: Don't use variables in printf format string
+# Justification: Our progress indicators use color variables in format strings safely
+disable=SC2059
+
+# SC2249: Consider adding default case
+# Justification: Our case statements handle all possible values explicitly
+# Adding default cases would mask logic errors
+disable=SC2249
+
+# SC2317/SC2329: command appears unreachable / function never invoked
+# Justification: command scripts register their functions by name (cli_register_subcommand) and traps call
+# functions by name, so shellcheck cannot see the call. Both are info level.
+disable=SC2317
+disable=SC2329
+
+# SC2310: function invoked in || or if condition disables set -e
+# Justification: Intentional in error-capture patterns (func || rc=$?, func || true)
+# The informational is noise — callers are aware of set -e semantics
+disable=SC2310
+
+# SC2030/SC2031: variable modification/reference in subshell
+# Justification: Intentional in pipeline-based discovery loops (while read loops)
+# The subshell scope is by design for isolation
+disable=SC2030
+disable=SC2031
+
+# SC2181: check exit code via $? instead of directly
+# Justification: Intentional where capturing $? provides clarity in multi-step flows
+disable=SC2181
+
+# SC2016: expressions don't expand in single quotes
+# Justification: Intentional for literal strings and envsubst variable templates
+# (e.g. export schema='$schema', envsubst '$VAR1 $VAR2')
+disable=SC2016
+
+# SC2153: possible misspelling of variable
+# Justification: BU_ROOT, BU_LIB, BU_MODS, PROJECT_ROOT are framework bootstrap
+# variables set dynamically by core.sh — not typos
+disable=SC2153
+
+# ============================================
+# Optional: Severity Overrides
+# ============================================
+
+# Set minimum severity level (error, warning, info, style)
+# severity=warning
+
+# ============================================
+# Optional: External Sources
+# ============================================
+
+# Add source paths that shellcheck should be aware of
+# source-path=SCRIPTDIR
+
+# ============================================
+# Notes
+# ============================================
+
+# To ignore a check for a specific line, use:
+# # shellcheck disable=SC2086
+# command $variable
+
+# To ignore for a whole file, add at the top:
+# # shellcheck disable=SC2086
+
+# To see what a check means:
+# https://www.shellcheck.net/wiki/SC####

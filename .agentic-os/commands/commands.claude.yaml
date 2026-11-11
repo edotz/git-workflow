@@ -1,0 +1,13 @@
+version: "1.0"
+# Project-tier provider config for claude commands: the model may invoke every git slash command (D78).
+commands:
+  - name: pr
+    disable-model-invocation: false
+  - name: release
+    disable-model-invocation: false
+  - name: promote
+    disable-model-invocation: false
+  - name: rules-sync
+    disable-model-invocation: false
+  - name: split
+    disable-model-invocation: false

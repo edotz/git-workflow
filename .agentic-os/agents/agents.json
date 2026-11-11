@@ -114,6 +114,24 @@
       "enabled": true,
       "description": "Use when bash code must be written against a spec the caller already resolved (tier, files to write, behavior). Several may run in parallel on disjoint write lists. Never spawns agents, never decides tier or scope, does not review.",
       "origin": "framework"
+    },
+    {
+      "name": "plan-reviewer",
+      "enabled": true,
+      "description": "Use when one lens of a plan review must be applied to a plan, with the plan id and the lens in the task payload. Read-only; never writes, registers, compiles, dispatches or spawns agents; reports its findings.",
+      "origin": "framework"
+    },
+    {
+      "name": "hook-reviewer",
+      "enabled": true,
+      "description": "Use when a written hook script needs review before it lands, with the files written, the intent and the author report in the task payload. Read-only; never writes, never runs a script that mutates the tree, never spawns agents.",
+      "origin": "framework"
+    },
+    {
+      "name": "hook-author",
+      "enabled": true,
+      "description": "Use when one hook script must be written against a spec the caller already resolved (tier, event key, writable paths, behavior). Never spawns agents, never decides tier or scope, does not review.",
+      "origin": "framework"
     }
   ],
   "claude": []

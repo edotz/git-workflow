@@ -1,0 +1,62 @@
+version: "1.0"
+
+# Plugin registration of commands. Schema per command:
+#   name:           required — slash command suffix (e.g. "start" → /git:start)
+#   namespace:      required — groups commands into a directory
+#   type:           required — selects body template: tool
+#   description:    required — CSO trigger-conditions only
+#   argument-hint:  usage hint shown in command picker
+#
+# Provider-specific fields live in the provider config YAML of the project, never here.
+
+# ─── git namespace ────────────────────────────────────────────────────────────
+
+commands:
+
+  - name: start
+    namespace: git
+    type: tool
+    description: "Use when work on a new change starts and it needs its own branch and worktree."
+    argument-hint: "<type> <name>"
+
+  - name: commit
+    namespace: git
+    type: tool
+    description: "Use when changes on a feature branch are ready to be committed with a conventional message."
+    argument-hint: "<paths> [--message <text>] [--yes]"
+
+  - name: pr
+    namespace: git
+    type: tool
+    description: "Use when a feature branch is committed and ready for review as a pull request."
+    argument-hint: "[--dry-run] [--draft]"
+
+  - name: check
+    namespace: git
+    type: tool
+    description: "Use before a pull request or a push, and to see which component is red."
+    argument-hint: "[component]"
+
+  - name: release
+    namespace: git
+    type: tool
+    description: "Use when master holds changes of a component that are ready to be released."
+    argument-hint: "[--dry-run|--apply] [--draft] [--pre <channel>]"
+
+  - name: promote
+    namespace: git
+    type: tool
+    description: "Use when a release is made and the release branch has to follow its tag."
+    argument-hint: "<tag> [--dry-run|--apply]"
+
+  - name: rules-sync
+    namespace: git
+    type: tool
+    description: "Use when the branch rules of the repository must follow bin/config/rulesets.yaml or the stage changes."
+    argument-hint: "[--dry-run|--apply] [--stage <development|production>]"
+
+  - name: split
+    namespace: git
+    type: tool
+    description: "Use when a component with its own child repository has changes or releases that the child has to receive."
+    argument-hint: "[component] --dry-run | <component> --apply [--confirm <owner/repo>]"

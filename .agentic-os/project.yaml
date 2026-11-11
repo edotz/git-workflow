@@ -9,14 +9,25 @@ technology: []
 #    label: "Human-readable description"
 #    root: "src/example"
 
-# Toolchain — commands that verify work; the planner reads them from this file.
-# Empty string = step is skipped.
+# Toolchain — the linters of the project; a field left out comes from the preset of the linter name.
+# node has no preset: Biome runs through the biome.json at the project root (config_flag ends in = so the path is joined to it).
 toolchain:
-  lint:  ""  
+  linters:
+    - name: node
+      binary: biome
+      args: [lint]
+      extensions: [js, mjs, cjs]
+      config: .
+      config_flag: --config-path=
+      install_hint: "npm ci"
+    - name: shell
+      install_hint: "npm ci"
 
 # Plugins the project uses, in precedence order (a later entry wins over an earlier one).
 # Each plugin needs a plugin.yaml at its root. `bash bin/app plugins list` shows the registry.
-plugins: []
+plugins:
+  - name: edotz.git-workflow
+    path: "."
 #  - name: example-plugin
 #    path: "../example-plugin"   # relative to the project root, or absolute
 

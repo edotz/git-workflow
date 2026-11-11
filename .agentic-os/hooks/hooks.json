@@ -42,10 +42,6 @@
       "enabled": true
     },
     {
-      "name": "session-start/inject-roadmap",
-      "enabled": true
-    },
-    {
       "name": "session-start/scope-state",
       "enabled": true
     },
@@ -63,6 +59,34 @@
     },
     {
       "name": "task-completed/write-back",
+      "enabled": true
+    },
+    {
+      "name": "pre-commit/planning-gate",
+      "enabled": true
+    },
+    {
+      "name": "session-start/inject-planning",
+      "enabled": true
+    },
+    {
+      "name": "commit-msg/conventional",
+      "enabled": true
+    },
+    {
+      "name": "pre-commit/linter",
+      "enabled": false
+    },
+    {
+      "name": "pre-commit/scope-checks",
+      "enabled": false
+    },
+    {
+      "name": "pre-push/minimum-check",
+      "enabled": true
+    },
+    {
+      "name": "session-start/git-shims",
       "enabled": true
     }
   ],

@@ -5,19 +5,147 @@ requires: [git]
 commands:
   - name: "branch-cleanup"
     description: "Identify merged, stale and safe-to-delete branches."
-  - name: "branch-protection"
-    requires: [git, gh]
-    description: "Manage GitHub branch protection rules from declarative YAML."
+  - name: "check"
+    description: "Run the minimum check of one component or of every component: commit lint since the latest tag plus the checks the component declares."
+    when: "Before a pull request or a push, and to see which component is red"
+    examples:
+      - "bash $BU_ROOT/app git check"
+      - "bash $BU_ROOT/app git check web"
+    arguments:
+      - name: "component"
+        description: "Name of the component to check; every component of components.yaml when omitted"
+  - name: "commit"
+    requires: [git, docker]
+    description: "Stage the paths named and commit them with a conventional message, drafted by the provider unless one is given."
+    when: "Changes on a feature branch are ready to be committed"
+    examples:
+      - "bash $BU_ROOT/app git commit src/login.js"
+      - "bash $BU_ROOT/app git commit --message 'fix(login): keep the session' --yes src/login.js"
+    arguments:
+      - name: "paths"
+        description: "Files or directories to stage and commit; other staged files stay staged"
+        required: true
+      - name: "--message"
+        description: "Commit message; without it the provider drafts one from the staged diff"
+      - name: "--yes"
+        description: "Skip the confirmation; only with --message"
   - name: "lint-commit"
     description: "Validate a commit message file against the conventional commit config of the plugin."
-  - name: "run-status"
-    requires: [gh]
-    description: "Fetch recent GitHub Actions workflow runs as JSON."
+  - name: "pr"
+    requires: [git, docker, gh]
+    description: "Push the current branch and open the pull request as the developer, after the minimum check of every component."
+    when: "A feature branch is committed and ready for review"
+    examples:
+      - "bash $BU_ROOT/app git pr --dry-run"
+      - "bash $BU_ROOT/app git pr --draft"
+    arguments:
+      - name: "--dry-run"
+        description: "Print the branch, the title and the body and change nothing"
+      - name: "--draft"
+        description: "Open the pull request as a draft"
+  - name: "promote"
+    requires: [git, docker]
+    description: "Move the release branch to the commit of a release tag, never to the head of master: a fast-forward, or with --confirm a baseline of a diverged branch that keeps its old head as legacy/pre-promote."
+    when: "A release is made and the release branch has to follow it, also when the release branch diverged from the release commit"
+    examples:
+      - "bash $BU_ROOT/app git promote v1.2.0 --dry-run"
+      - "bash $BU_ROOT/app git promote v1.2.0 --apply"
+      - "bash $BU_ROOT/app git promote v1.2.0 --apply --confirm owner/repo"
+    arguments:
+      - name: "tag"
+        description: "Release tag whose commit is the release commit of that tag"
+        required: true
+      - name: "--confirm"
+        description: "owner/repo of the repository: needed to replace a release branch that is not an ancestor of the tag"
+      - name: "--dry-run"
+        description: "Print the commit the release branch would move to and change nothing"
+      - name: "--apply"
+        description: "Push the commit of the tag to the release branch as the App"
+  - name: "release"
+    requires: [git, docker]
+    description: "Release the components that changed since their latest tag: release commit, tag and GitHub Release as the App."
+    when: "Master holds changes of a component that are ready to be released"
+    examples:
+      - "bash $BU_ROOT/app git release --dry-run"
+      - "bash $BU_ROOT/app git release --apply --pre rc"
+    arguments:
+      - name: "--dry-run"
+        description: "Print per component the next version, the tag, the files and the notes and change nothing"
+      - name: "--apply"
+        description: "Make the release commit, the tag, the push and the GitHub Release"
+      - name: "--draft"
+        description: "Leave the GitHub Release unpublished"
+      - name: "--pre"
+        description: "Make a pre-release of this channel: lower case letters, for example alpha, beta or rc"
+  - name: "rules-sync"
+    requires: [git, docker, gh, curl]
+    description: "Create or update the branch rulesets of the repository as the App; a ruleset whose branch setting is unset is skipped."
+    when: "The branch rules of the repository must follow bin/config/rulesets.yaml or the stage changes"
+    examples:
+      - "bash $BU_ROOT/app git rules-sync --dry-run"
+      - "bash $BU_ROOT/app git rules-sync --apply --stage production"
+    arguments:
+      - name: "--dry-run"
+        description: "Print per ruleset create, update, unchanged or skipped and change nothing; the default"
+      - name: "--apply"
+        description: "Create or update the rulesets with the administration token of the App; needs GIT_WORKFLOW_APP_ID"
+      - name: "--stage"
+        description: "Project phase of the master ruleset: development or production; default GIT_WORKFLOW_STAGE, else development"
+  - name: "shims"
+    requires: [git]
+    description: "Put the git hook shims of the plugin into the directory git runs hooks from (core.hooksPath, else the common git dir), leaving files that are not ours."
+    when: "A repository has no shims, has stale ones, or its hooks directory changed"
+    examples:
+      - "bash $BU_ROOT/app git shims"
+      - "bash $BU_ROOT/app git shims --check"
+    arguments:
+      - name: "--check"
+        description: "Report what is missing or stale and change nothing; exit 1 when something is"
+  - name: "split"
+    requires: [git, docker, gh, curl]
+    description: "Split a component into its child repository: the dry run shows the split head, the ancestry and the tree difference; the apply pushes the split head and the component tags to the branch of the monorepo, one child per run."
+    when: "A component with split yes has changes or releases that its child repository has to receive"
+    examples:
+      - "bash $BU_ROOT/app git split web --dry-run"
+      - "bash $BU_ROOT/app git split web --apply"
+      - "bash $BU_ROOT/app git split lib --apply --confirm own/lib"
+    arguments:
+      - name: "component"
+        description: "Component to split; the dry run takes every split component without it, the apply needs exactly one"
+      - name: "--dry-run"
+        description: "Print the split head, the ancestry to the child head and the tree difference and change nothing"
+      - name: "--apply"
+        description: "Push the split head to GIT_WORKFLOW_MAIN_BRANCH of the child and the component tags as vX.Y.Z, with the installation token of the App"
+      - name: "--confirm"
+        description: "owner/repo of the child, needed to replace a child that does not descend from the split; its old head is kept as legacy/pre-split"
+  - name: "start"
+    requires: [git, docker]
+    description: "Create the branch <type>/<name> and its worktree from the main branch and print the worktree path."
+    when: "Work on a new change starts"
+    examples:
+      - "bash $BU_ROOT/app git start feat add-login"
+    arguments:
+      - name: "type"
+        description: "Conventional commit type of the branch, one of the types of commitlint.config.mjs"
+        required: true
+      - name: "name"
+        description: "Name after the type: lower case words joined by hyphens"
+        required: true
+  - name: "token-service"
+    script: "token-service.mjs"
+    requires: [node]
+    description: "Run the token service that issues narrowed one-hour installation tokens of the GitHub App to organisation members; needs TOKEN_SERVICE_APP_ID and TOKEN_SERVICE_KEY_PATH, listens on TOKEN_SERVICE_PORT (default 8790)."
+    arguments:
+      - name: "TOKEN_SERVICE_APP_ID"
+        description: "ID of the GitHub App (environment variable)"
+        required: true
+      - name: "TOKEN_SERVICE_KEY_PATH"
+        description: "Path of the private key file of the App (environment variable); the key is never copied into an image"
+        required: true
   - name: "workflow-setup"
-    requires: [git, gh, envsubst]
-    description: "Validate .github/workflow.env and resolve the workflow configuration."
+    description: "Validate the branch settings GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH and print them."
   - name: "workflow-status"
-    requires: [git, gh]
-    description: "Collect structured status data for the trunk-based workflow."
+    requires: [git, docker, gh]
+    description: "Report as JSON the commits not yet released, per component the latest release tag, the commits since it and the release branch position, and the recent workflow runs, empty without a gh credential or a network."
   - name: "worktree"
     description: "Manage git worktrees for isolated feature development."

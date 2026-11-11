@@ -1,14 +1,14 @@
-# GENERATED — do not edit manually. Source: .github/workflow.env
 name: Status Checks
 
 on:
   pull_request:
+    types: [opened, edited, synchronize, reopened]
     branches:
       - '**'
 
 jobs:
-  commit-lint:
-    name: Validate Conventional Commits
+  check:
+    name: check
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -17,16 +17,27 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-      - uses: wagoid/commitlint-github-action@v6
+      - name: Validate conventional commits
+        uses: wagoid/commitlint-github-action@v6
         with:
           configFile: commitlint.config.mjs
-          commitDepth: 1
-  stage-guard:
-    name: Stage Guard
-    runs-on: ubuntu-latest
-    steps:
-      - name: Block direct PRs targeting release branch
-        if: github.base_ref == '1.x' && !startsWith(github.head_ref, 'release-please--')
+      - name: Validate the pull request title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          echo "::error::Direct PRs to 1.x are blocked. Use /git:promote."
-          exit 1
+          npm install --silent --prefix "$RUNNER_TEMP/commitlint" @commitlint/cli@21 @commitlint/config-conventional@21
+          printf '%s\n' "$PR_TITLE" | NODE_PATH="$RUNNER_TEMP/commitlint/node_modules" "$RUNNER_TEMP/commitlint/node_modules/.bin/commitlint" --config commitlint.config.mjs
+      - name: Run the checks declared in components.yaml
+        run: |
+          if [ ! -f components.yaml ]; then
+            echo "components.yaml not found: no declared checks to run"
+            exit 0
+          fi
+          failed=0
+          while IFS= read -r cmd; do
+            [ -n "$cmd" ] || continue
+            echo "::group::${cmd}"
+            bash -c "$cmd" || { echo "::error::check failed: ${cmd}"; failed=1; }
+            echo "::endgroup::"
+          done < <(yq -r '.components[].checks[]?' components.yaml)
+          exit "$failed"

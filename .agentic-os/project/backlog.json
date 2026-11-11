@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "items": [
+    {
+      "id": "B-1",
+      "title": "Git workflow plugin",
+      "goal": "Settle the conceptual approach of the agentic-os git-workflow plugin that replaces the old single-repo and monorepo workflows.",
+      "milestone": "m1-foundations",
+      "state": "ready"
+    },
+    {
+      "id": "B-2",
+      "title": "Move the duplicated remote slug helper of release.sh and promote.sh into one plugin library",
+      "goal": "release.sh and promote.sh each parse the remote origin into an owner/name slug and an https URL with the same code; one library function serves both, so a change of the rule cannot make the two commands disagree. The review finding 5 of T3.6 recorded the duplication.",
+      "milestone": "m4-daily-loop",
+      "state": "idea"
+    }
+  ]
+}

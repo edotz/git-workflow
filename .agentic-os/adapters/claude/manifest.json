@@ -30,6 +30,18 @@
         "SESSION_NAME",
         "SESSION_ID"
       ]
+    },
+    {
+      "name": "project-rules",
+      "trigger": "startup",
+      "enabled": true,
+      "source": "${AOS_ROOT}/adapters/claude/templates/rules",
+      "target": "${PROJECT_ROOT}/.claude/rules",
+      "mode": "copy",
+      "description": "Path-scoped rules of the project and of its scopes: every file of the source directory is copied verbatim, so a rule the init command writes needs no manifest entry",
+      "required_vars": [
+        "PROJECT_ROOT"
+      ]
     }
   ]
 }

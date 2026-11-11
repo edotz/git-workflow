@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# aos-hook: output=none advisory=true
+set -euo pipefail
+source "${BU_ROOT}/lib/core.sh"
+source "${BU_LIB}/git.sh"
+if ! git_is_repo; then
+  exit 0
+fi
+status=0
+bash "${BU_ROOT}/app" git shims || status=$?
+if [[ "$status" -eq 3 ]]; then
+  exit 0
+fi
+exit "$status"

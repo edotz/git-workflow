@@ -1,0 +1,68 @@
+# Rulesets of the branches of a repository, as data for bin/lib/rules.sh.
+# Each entry under rulesets: is the body of a GitHub ruleset; rules_json adds the name.
+# rules: is a list of GitHub rules, or a map from stage to such a list when the rules depend on the stage.
+# actor_id APP_ID_PLACEHOLDER is replaced by rules-sync with GIT_WORKFLOW_APP_ID before a ruleset is sent.
+# extends: takes the entry named there as the base; the fields of this entry win.
+# include_from: names an environment setting that holds the comma separated branch patterns of the ruleset.
+stages:
+  - development
+  - production
+
+rulesets:
+  master:
+    target: branch
+    enforcement: active
+    conditions:
+      ref_name:
+        include:
+          - refs/heads/master
+        exclude: []
+    bypass_actors:
+      - actor_id: APP_ID_PLACEHOLDER
+        actor_type: Integration
+        bypass_mode: always
+    rules:
+      development: []
+      production:
+        - type: pull_request
+          parameters:
+            required_approving_review_count: 0
+            dismiss_stale_reviews_on_push: false
+            require_code_owner_review: false
+            require_last_push_approval: false
+            required_review_thread_resolution: false
+            allowed_merge_methods:
+              - squash
+        - type: required_status_checks
+          parameters:
+            strict_required_status_checks_policy: false
+            required_status_checks:
+              - context: check
+        - type: required_linear_history
+
+  release:
+    target: branch
+    enforcement: active
+    include_from: GIT_WORKFLOW_RELEASE_BRANCH
+    conditions:
+      ref_name:
+        exclude: []
+    bypass_actors:
+      - actor_id: APP_ID_PLACEHOLDER
+        actor_type: Integration
+        bypass_mode: always
+    rules:
+      - type: pull_request
+        parameters:
+          required_approving_review_count: 0
+          dismiss_stale_reviews_on_push: false
+          require_code_owner_review: false
+          require_last_push_approval: false
+          required_review_thread_resolution: false
+      - type: required_linear_history
+      - type: deletion
+      - type: non_fast_forward
+
+  legacy:
+    extends: release
+    include_from: GIT_WORKFLOW_LEGACY_BRANCHES

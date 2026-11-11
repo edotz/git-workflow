@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # VS Code worktree setup
 # Writes .vscode/settings.json (title bar color), adds a Project Manager entry,
 # and opens VS Code with the configured profile's --extensions-dir.

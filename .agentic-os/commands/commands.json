@@ -52,8 +52,92 @@
     {
       "name": "bash-authoring",
       "enabled": true,
-      "description": "Use when tasks of a plan must be written and reviewed as bash code, one or a group of related ones, be it a library function, module command, hook script or adapter; takes plan task ids.",
+      "description": "Use when tasks of a plan must be written and reviewed as bash code, one or a group of related ones, be it a library function, module command or adapter; takes plan task ids.",
       "origin": "framework"
+    },
+    {
+      "name": "spec",
+      "enabled": true,
+      "description": "Use when the tasks of one plan must be turned into a specification of requirements, or an existing specification must be continued; takes an optional plan id and an optional specification name.",
+      "origin": "framework"
+    },
+    {
+      "name": "roadmap",
+      "enabled": true,
+      "description": "Use when the project needs its first roadmap, a new area, milestone or release, or a change to one; takes the mode init, add or edit.",
+      "origin": "framework"
+    },
+    {
+      "name": "planning",
+      "enabled": true,
+      "description": "Use when a project has no roadmap or backlog yet, or when it is unclear where the planning stands: creates the first planning files and shows the status, or points at the listing of one planning artifact.",
+      "origin": "framework"
+    },
+    {
+      "name": "plan-review",
+      "enabled": true,
+      "description": "Use when a written plan must be reviewed against the code before its tasks are authored, or after an amend; takes an optional plan id and an optional lens.",
+      "origin": "framework"
+    },
+    {
+      "name": "backlog",
+      "enabled": true,
+      "description": "Use when an item must be added to the backlog, or the title, goal or milestone of an item changed; takes the mode add or edit.",
+      "origin": "framework"
+    },
+    {
+      "name": "hook-authoring",
+      "enabled": true,
+      "description": "Use when tasks of a plan must be written and reviewed as hook scripts, one hook per task; takes plan task ids.",
+      "origin": "framework"
+    },
+    {
+      "name": "start",
+      "enabled": true,
+      "description": "Use when work on a new change starts and it needs its own branch and worktree.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "rules-sync",
+      "enabled": true,
+      "description": "Use when the branch rules of the repository must follow bin/config/rulesets.yaml or the stage changes.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "release",
+      "enabled": true,
+      "description": "Use when master holds changes of a component that are ready to be released.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "promote",
+      "enabled": true,
+      "description": "Use when a release is made and the release branch has to follow its tag.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "pr",
+      "enabled": true,
+      "description": "Use when a feature branch is committed and ready for review as a pull request.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "commit",
+      "enabled": true,
+      "description": "Use when changes on a feature branch are ready to be committed with a conventional message.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "check",
+      "enabled": true,
+      "description": "Use before a pull request or a push, and to see which component is red.",
+      "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "split",
+      "enabled": true,
+      "description": "Use when a component with its own child repository has changes or releases that the child has to receive.",
+      "origin": "plugin:edotz.git-workflow"
     }
   ],
   "claude": []

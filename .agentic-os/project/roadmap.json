@@ -1,0 +1,192 @@
+{
+  "version": "2.0",
+  "areas": [
+    {
+      "id": "git-workflow",
+      "name": "Git workflow plugin",
+      "goal": "A local, deterministic git and GitHub workflow behind app git <command> that replaces the old cascade of GitHub Actions.",
+      "status": "planned",
+      "milestones": [
+        {
+          "id": "m1-foundations",
+          "name": "Foundations",
+          "gate": "Every verify claim of the white paper is checked, and the token service and the component declaration are settled.",
+          "status": "done"
+        },
+        {
+          "id": "m2-tool-image",
+          "name": "Tool image",
+          "gate": "git-cliff, splitsh-lite and gh run through docker on a clean machine at the pinned versions.",
+          "status": "done"
+        },
+        {
+          "id": "m3-release-core",
+          "name": "Release core",
+          "gate": "A pilot single repo releases locally with commit, tag and GitHub Release by the App, and promote fast-forwards the release branch to the tag.",
+          "status": "done"
+        },
+        {
+          "id": "m4-daily-loop",
+          "name": "Daily loop and guards",
+          "gate": "The PR gate with the aggregate check is required, and the rulesets are applied with the App as bypass actor.",
+          "status": "active"
+        },
+        {
+          "id": "m5-monorepo",
+          "name": "Monorepo",
+          "gate": "Each component releases on its own in a pilot monorepo, and a confirmed split dry run exists per child repository.",
+          "status": "planned"
+        },
+        {
+          "id": "m6-retire-old",
+          "name": "Retire the old approach",
+          "gate": "No old workflow remains in a consuming project, and the project context carries the new wording.",
+          "status": "planned"
+        }
+      ]
+    }
+  ],
+  "releases": [
+    {
+      "id": "r-0-1-0",
+      "name": "0.1.0 single-repo pilot",
+      "status": "active",
+      "milestones": [
+        "m1-foundations",
+        "m2-tool-image",
+        "m3-release-core",
+        "m4-daily-loop"
+      ]
+    },
+    {
+      "id": "r-0-2-0",
+      "name": "0.2.0 monorepo",
+      "status": "planned",
+      "milestones": [
+        "m5-monorepo"
+      ]
+    },
+    {
+      "id": "r-1-0-0",
+      "name": "1.0.0 old approach retired",
+      "status": "planned",
+      "milestones": [
+        "m6-retire-old"
+      ]
+    }
+  ],
+  "revisions": [
+    {
+      "date": "2026-11-02",
+      "change": "Added area git-workflow: Git workflow plugin",
+      "affects": [
+        "git-workflow"
+      ],
+      "reason": "Starts the roadmap from the decided concept git-workflow-plugin."
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Added milestone m1-foundations: Foundations",
+      "affects": [
+        "m1-foundations"
+      ],
+      "reason": "The release core depends on the checked GitHub behaviours and on the App and token service."
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Added milestone m2-tool-image: Tool image",
+      "affects": [
+        "m2-tool-image"
+      ],
+      "reason": "Every release and split step runs its tools from the pinned image."
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Added milestone m3-release-core: Release core",
+      "affects": [
+        "m3-release-core"
+      ],
+      "reason": "The release is the heart of the new workflow and the first proof against release-please."
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Added milestone m4-daily-loop: Daily loop and guards",
+      "affects": [
+        "m4-daily-loop"
+      ],
+      "reason": "Start, commit and PR, the guards and the rulesets make the daily loop work without the old workflows."
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Added milestone m5-monorepo: Monorepo",
+      "affects": [
+        "m5-monorepo"
+      ],
+      "reason": "Components, the split and the baseline of existing child repos build on the release core and the daily loop."
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Added milestone m6-retire-old: Retire the old approach",
+      "affects": [
+        "m6-retire-old"
+      ],
+      "reason": "The old CI, the classic protection code and the stale project context go once every project runs on the new workflow."
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Added release r-0-1-0: 0.1.0 single-repo pilot",
+      "affects": [
+        "r-0-1-0"
+      ],
+      "reason": "Groups the foundations, the tool image, the release core and the daily loop into the first usable plugin release."
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Added release r-0-2-0: 0.2.0 monorepo",
+      "affects": [
+        "r-0-2-0"
+      ],
+      "reason": "Adds components, the split and the baseline of existing child repositories on top of the single-repo pilot."
+    },
+    {
+      "date": "2026-11-02",
+      "change": "Added release r-1-0-0: 1.0.0 old approach retired",
+      "affects": [
+        "r-1-0-0"
+      ],
+      "reason": "Closes the redesign once every project runs on the new workflow and the old CI and protection code are gone."
+    },
+    {
+      "date": "2026-11-03",
+      "change": "Set milestone m1-foundations to done",
+      "affects": [
+        "m1-foundations"
+      ],
+      "reason": "P1 of PLAN-plugin is done: the white-paper claims are checked against GitHub and the tools, the token service contract and its hosting (a container on this machine, reachable from here only) and the component declaration are settled"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "Set milestone m2-tool-image to done",
+      "affects": [
+        "m2-tool-image"
+      ],
+      "reason": "P2 of PLAN-plugin is done: the pins in .env.defaults, the Dockerfile and compose file, bin/lib/tool.sh and the clean-machine check note"
+    },
+    {
+      "date": "2026-11-03",
+      "change": "Set milestone m3-release-core to active",
+      "affects": [
+        "m3-release-core"
+      ],
+      "reason": "P3 of PLAN-plugin, the release core, is detailed and its first tasks are under way: the token service, the component library and the token, version and check libraries"
+    },
+    {
+      "date": "2026-11-04",
+      "change": "Changed milestone m3-release-core: status",
+      "affects": [
+        "m3-release-core"
+      ],
+      "reason": "The pilot of T3.8 in the sandbox met the gate on 2026-11-04: release commit, tag and the GitHub Release by the App, a repeated apply that creates nothing, and promote moving the release branch to the tag (release v0.1.0 and v0.2.0); all 11 tasks of P3 are done"
+    }
+  ]
+}

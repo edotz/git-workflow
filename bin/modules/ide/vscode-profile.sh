@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Compose and decompose VS Code .code-profile files.
 # Decomposes a .code-profile into human-editable settings.json + extensions.json.
 # Composes those files back into an importable .code-profile.

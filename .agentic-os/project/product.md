@@ -6,32 +6,37 @@
 The agentic-os framework carries none of it: a project declares the plugin under `plugins:` in its
 `.agentic-os/project.yaml` and gets the capabilities below.
 
-What the plugin provides today (`plugin.yaml`: `provides: [modules, hooks]`), moved as-is from the framework:
+What the plugin provides today (`plugin.yaml`: `provides: [modules, hooks, commands]`):
 
-- The `git` command domain (`bin/modules/git/`): `branch-cleanup`, `branch-protection`, `run-status`,
-  `workflow-setup`, `workflow-status`, `worktree`, and `lint-commit`.
+- The `git` command domain (`bin/modules/git/`): the daily loop `start`, `commit`, `pr` and `check`; `rules-sync`,
+  `release`, `promote` and `split`; `worktree`, `branch-cleanup`, `lint-commit`, `shims`, `token-service`,
+  `workflow-setup` and `workflow-status` (which also reports the recent workflow runs).
 - The git hook host: the registry of the keys `pre-commit`, `commit-msg` and `pre-push` (`bin/hooks/hooks.yaml`) and
   how git fires them (`adapters/git/hooks/hooks.yaml`), plus the hook `commit-msg/conventional`.
 - Conventional commit validation: `git lint-commit` runs commitlint with the config `commitlint.config.mjs`. The
   plugin owns the config and the `@commitlint/*` packages (`package.json`); a consuming project keeps neither.
-- The workflow material: `.github/` workflow blueprints, `workflow.env.{single,package,monorepo}.example`, and the
-  libraries `bin/lib/github.sh` and `bin/lib/worktree.sh`.
+- The libraries of the workflow in `bin/lib/` (`github.sh`, `worktree.sh` and the release-flow libraries `check`,
+  `component`, `remote`, `rules`, `split`, `token`, `tool` and `version`) and the static pull-request check
+  `.github/workflows/status-checks.yml`.
 
 Why it exists: the git ecosystem is a separate concern with its own release cycle, and the framework stays provider-
-and workflow-agnostic. Parts of the moved ecosystem are stale; they stay unchanged until the redesign replaces them.
+and workflow-agnostic.
 
-Direction (concept document `260903-git-workflow.md`, not built yet): a local CLI (working title `gh-wf`) replaces the
-cascading GitHub Actions. Split of a monorepo with `splitsh-lite` and push to the child repositories from the
-developer machine, changelog with `git-cliff`, commit message and changelog summary from a headless LLM call
-(`claude -p`, `gemini -p`), rulesets synced through the GitHub API, release as one atomic commit with tag, promotion
-between `master`, the release branch and legacy branches. The toolchain ships in a Docker image with a host wrapper
-(`git-wf`), so every developer runs the same binaries. GitHub Actions keep only the status checks of a pull request.
+How it works (concept `git-workflow-plugin`, built by PLAN-plugin): a local workflow behind `app git <command>` replaces
+the cascading GitHub Actions. A release is made on `master` as one commit with its tag, previewed by a dry run and
+pushed by a GitHub App, the only actor that releases; the release branch follows by a separate fast-forward `promote`,
+and legacy branches change by PR. Changelog with `git-cliff`, rulesets synced through the GitHub API. A monorepo is a set
+of components that are released on their own, and a component marked `split` is split with `splitsh-lite` and pushed to
+its repository from the developer machine. The commit message and the changelog summary come from `provider_run_prompt`
+on the host session, so the plugin bundles no LLM CLI. The tools run from a pinned image through docker, so every
+developer uses the same binaries. GitHub Actions keep only the status checks of a pull request.
 
 ## Stack
 
 - Bash on the agentic-os framework: modules, hooks and plugin-local libraries; `git`, `gh`, `jq`, `yq`, `envsubst`.
 - Node packages for commit validation: `@commitlint/cli` and `@commitlint/config-conventional` (20.x).
-- Planned by the concept document: `splitsh-lite`, `git-cliff`, Node 22 LTS, `claude` and `gemini` CLI, Docker.
+- In the tool image: `splitsh-lite`, `git-cliff` and `gh` in a pinned image built with docker compose; no LLM CLI and
+  no Node in the image.
 
 ## Conventions
 
@@ -47,10 +52,10 @@ between `master`, the release branch and legacy branches. The toolchain ships in
 
 ## Definition of Done
 
-- The touched script passes `lint shell` and `lint modules` of the framework, run under `env -i HOME="$HOME"
+- The touched script passes `lint domain` and `lint modules` of the framework, run under `env -i HOME="$HOME"
   PATH="$PATH"` because the tool shell exports functions that mask missing sources.
 - The command runs once for real, and a changed hook registry or mapping passes `hooks sync` without a diff.
-- A change to a moved file stays a move unless the task says redesign: no fix of stale behaviour on the way.
+- A command has a test under `tests/git-<name>/` that builds a throwaway repository and leaves the machine untouched.
 
 ## Architectural Invariants
 
@@ -59,11 +64,11 @@ between `master`, the release branch and legacy branches. The toolchain ships in
 - Git is a hook host like a provider. The registry (`bin/hooks/hooks.yaml`) and the mapping
   (`adapters/git/hooks/hooks.yaml`) are both here; a plugin hook with the same event and name as a hook of a lower
   tier fails with exit 3.
-- Every project that uses the plugin defines `MAIN_BRANCH` and `RELEASE_BRANCH`. The fallbacks are the keys
-  `PLUGIN_EDOTZ_GIT_WORKFLOW_MAIN_BRANCH` and `..._RELEASE_BRANCH` in `bin/config/env.defaults`, together with
-  `..._STALE_DAYS`. There is no release strategy yet: every change goes to the main branch (`master`), so the release
-  branch defaults to the main branch too.
+- Every project that uses the plugin defines `GIT_WORKFLOW_MAIN_BRANCH` and `GIT_WORKFLOW_RELEASE_BRANCH` in its
+  project-root `.env`; the fallback in code is `master` for both, so a project without a separate release branch
+  releases from the main branch. The keys of `bin/config/env.defaults` are `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` and
+  `..._VSCODE_PROFILES_DIR`.
 - One source of commit validation: `commitlint.config.mjs` of this plugin. No second copy in a consuming project.
 - No hardcoded framework layout: a path comes from `PLUGIN_ROOT`, `BU_ROOT` or a framework function.
-- Direction, once the redesign lands: the workflow runs on the developer machine, an async cloud job never decides a
+- The workflow runs on the developer machine, an async cloud job never decides a
   release, and a release is one atomic commit with its tag.

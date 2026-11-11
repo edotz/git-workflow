@@ -1,0 +1,7 @@
+{
+  "claude": {
+    "context_file": ".agentic-os/adapters/claude/templates/rules/ci.md",
+    "purpose": "GitHub Actions workflows: status-checks.yml, the one pull-request check with the job check (commit lint, pull request title lint and the checks of components.yaml); release, promote and split run on the developer machine, not here.",
+    "scope_trigger": ".github/workflows/**"
+  }
+}
