@@ -493,7 +493,7 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 | Make the split skip with a warning a child tag at another commit | T6.14 | inline | T5.3 | done |
 | Fix the open findings of T6.10, T6.11 and T6.14 | T6.15 | inline | T6.10, T6.11, T6.14 | done |
 | Give the split apply a token set with the workflows permission | T6.16 | inline | T6.14 | done |
-| Count a release from the commits after the latest tag and only for feat, fix, perf and breaking changes | T6.17 | inline | - | pending |
+| Count a release from the commits after the latest tag and only for feat, fix, perf and breaking changes | T6.17 | inline | - | done |
 | Declare the plugin repository itself as a component so that the pull request and push commands work in it | T6.18 | inline | - | done |
 | First release of typo3-cms and the one-time move of its release branch with promote baseline | T6.19 | developer | T6.17, T6.9, T6.3 | pending |
 | First release of php-project and the one-time move of its release branch with promote baseline | T6.20 | developer | T6.17, T6.9, T6.5 | pending |
