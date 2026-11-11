@@ -28,3 +28,11 @@
 - A tag of the child at another commit stopped the apply with "it is not moved"; D83 turned that into a warning and T6.14 changed `split.sh`.
 - The tool image runs no git inside a linked worktree (its git directory lies outside the mount): `app git split` fails there with "splitsh-lite failed"; the dry run worked from a real clone and from the main copy.
 - The local baseline tags were set back to the wrong commit once by a fetch outside the session, after the first correction; the remote tags were corrected with a forced update and the local ones set again.
+
+## Cleanup of the old release train in the packages
+
+Found after the baselines, on the question of obsolete files: master of php-project still carried 49 files of the old child release train, `release-pipeline.yml` (release-please), `sync-to-monorepo.yml` (the backport), `release-please-config.json`, `.release-please-manifest.json`, `.github/branch-protection.yaml` of every package, the `.github/CLAUDE.md` that documents it, and `.github/README.md` and `.github/branch-protection.yaml` of the root. My first version of this note and the verify of T6.5 looked only at the root workflows, so the baseline had already copied those files into the `master` of the eight children; the child workflows trigger on `2.x` and the split never pushes there, so they stayed dormant.
+
+- Pull request #72 (squash merge `6f6acc4`, title `ci: remove the old release train of the packages`) removed the 49 files; `status-checks.yml` is the only file left under `.github`.
+- Because a `ci:` commit that touches a package directory after its baseline tag makes git-cliff propose a patch release (checked: `logger/v1.0.1` plus the cleanup commits gave `logger/v1.0.2` in the sister repository), the eight baseline tags were moved once more with a forced update, to the squash commit `6f6acc4`, and the release dry run lists every component as "tag is HEAD" with no bump.
+- Split apply per child after the cleanup: a fast-forward of `master` (no force, no `legacy/pre-split` change), `master` of the children is now at `3a7501f`, `3fd8304`, `7fbfa7b`, `7584d3f`, `8f2940d`, `f2ce627`, `d9a39f5` and `2a1a80d`; none of them holds a release-please, branch-protection, release-pipeline or sync-to-monorepo file; `legacy/pre-split` and `2.x` of the children are unchanged.
