@@ -28,10 +28,20 @@ cli_add_flag "draft"   "d" "Open the pull request as a draft"
 _PR_AUTH=(-c "core.hooksPath=/dev/null" -c "credential.helper=" -c "credential.helper=!gh auth git-credential")
 _PR_TITLE=""
 _PR_BODY=""
+_PR_TITLEFILE=""
 
 # ============================================
 # Private Helpers
 # ============================================
+
+# Remove the file the title is linted from.
+_pr_cleanup() {
+  if [[ -n "$_PR_TITLEFILE" ]]; then
+    rm -f "$_PR_TITLEFILE"
+    _PR_TITLEFILE=""
+  fi
+  return 0
+}
 
 # Run the minimum check of every component and refuse on a red one.
 _pr_check() {
@@ -86,15 +96,14 @@ _pr_text() {
 # Refuse a title that commitlint refuses; the title is never rewritten, a squash merge puts it on the main branch.
 # Reads: _PR_TITLE
 _pr_lint_title() {
-  local file reason
-  file="$(mktemp)"
-  printf '%s\n' "$_PR_TITLE" > "$file"
-  if ! reason="$(bash "${PLUGIN_ROOT}/bin/modules/git/lint-commit.sh" "$file" 2>&1)"; then
-    rm -f "$file"
+  local reason
+  register_cleanup _pr_cleanup
+  _PR_TITLEFILE="$(mktemp)"
+  printf '%s\n' "$_PR_TITLE" > "$_PR_TITLEFILE"
+  if ! reason="$(bash "${PLUGIN_ROOT}/bin/modules/git/lint-commit.sh" "$_PR_TITLEFILE" 2>&1)"; then
     logger_error "$reason"
     die_with "$BU_EXIT_CONFIG" "pr: the title '${_PR_TITLE}' did not pass commitlint, see the reason above, nothing was pushed"
   fi
-  rm -f "$file"
   return 0
 }
 

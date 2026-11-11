@@ -201,7 +201,7 @@ _split_apply() {
   done
 
   if [[ "$mode" == "same" && "${#refspecs[@]}" -eq 0 ]]; then
-    print_item ok "split" "${slug} is at the split head and has every tag: nothing to apply"
+    print_item ok "split" "${slug} is at the split head and lacks no tag that can be pushed: nothing to apply"
     return 0
   fi
 

@@ -66,8 +66,8 @@ local_head() { git -C "$repo" rev-parse HEAD; }
 
 commit_file one
 rc=0
-(cd "$repo" && tool_run git push -q origin master >/dev/null 2>&1 </dev/null) || rc=$?
-case_result "a push in the tool image without the override fails on the shim and sends nothing" "$([[ "$rc" -ne 0 && "$(remote_head)" == none ]] && echo yes || echo no)"
+err="$(cd "$repo" && tool_run git push -q origin master 2>&1 >/dev/null </dev/null)" || rc=$?
+case_result "a push in the tool image without the override fails on the shim and sends nothing" "$([[ "$rc" -ne 0 && "$(remote_head)" == none && "$err" == *"agentic-os"*"not found"* ]] && echo yes || echo no)"
 
 rc=0
 (cd "$repo" && tool_run git -c core.hooksPath=/dev/null push -q origin master >/dev/null 2>&1 </dev/null) || rc=$?
