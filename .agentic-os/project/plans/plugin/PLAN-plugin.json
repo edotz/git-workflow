@@ -4035,7 +4035,13 @@
           "why": "Nothing lints a pull request title before the merge, and the title becomes the commit subject on master that the release lint checks for ever.",
           "result": "pr.sh refuses a title that the conventional commit rule rejects, and the status-checks job fails a pull request whose title does.",
           "done": "tests/git-pr/title.sh shows ok lines for a valid single-commit title, a valid several-commit title from a branch prefix that is a type, a branch prefix that is no type (feature/x) refused with the reason, and the title step of the workflow reading the title through an environment variable; the dry-run test stays green.",
-          "fails": "A title passed to a shell through string interpolation in the workflow, or pr.sh opening the pull request before the title is linted."
+          "fails": "A title passed to a shell through string interpolation in the workflow, or pr.sh opening the pull request before the title is linted.",
+          "brief": {
+            "arguments": "Extend pr.sh: before gh pr create, run the title through lint-commit.sh and refuse with the commitlint reason when it fails (dry run too); in status-checks.yml add a step that lints github.event.pull_request.title, read through an environment variable and never interpolated into the script, with commitlint.config.mjs; a branch prefix that is no commitlint type (feature/x) must be refused, not rewritten",
+            "output": "bin/modules/git/pr.sh, tests/git-pr/title.sh (ok lines, FAIL lines on a failure) and the new step in .github/workflows/status-checks.yml",
+            "pattern": "bin/modules/git/commit.sh",
+            "target": "change"
+          }
         },
         {
           "id": "T6.11",
@@ -4075,7 +4081,13 @@
           "why": "The fix a8f108f (core.hooksPath=/dev/null for pushes in the tool image) has no test; the pilot found the defect on real GitHub.",
           "result": "A test builds a clone with the pre-push shim and pushes through the code path of release, pr, promote and split.",
           "done": "tests/git-shims/push.sh shows ok lines for a push in the tool image succeeding although the clone has the shim, and the hook still running for a push on the host.",
-          "fails": "The test passing with the shim absent, or the push stub not going through tool_run."
+          "fails": "The test passing with the shim absent, or the push stub not going through tool_run.",
+          "brief": {
+            "arguments": "A throwaway repository with a bare remote and the pre-push shim installed through app git shims; push once through tool_run as release, pr, promote and split do, and once on the host",
+            "output": "tests/git-shims/push.sh with ok and FAIL lines: the push in the tool image succeeds although the clone has the shim, the hook still runs for a push on the host",
+            "pattern": "tests/git-shims/run.sh",
+            "target": "new"
+          }
         },
         {
           "id": "T6.12",
@@ -4114,7 +4126,7 @@
           ],
           "verify": {
             "from": "environment fact: edotz.typo3-cms has the rulesets release (branch release), legacy (1.x and 2.x) and master, the classic protection on 1.x and 2.x, and old workflows on both",
-            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md; grep -q '^## Branch roles' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'legacy' 'freeze' 'GIT_WORKFLOW_RELEASE_BRANCH' 'GIT_WORKFLOW_LEGACY_BRANCHES' 'classic' 'baseline'; do grep -qiF -- \"$k\" $f || exit 1; done && s=edotz/typo3-cms && chk() { id=$(env -u GH_TOKEN gh api repos/$s/rulesets --jq \".[] | select(.name==\\\"$1\\\") | .id\") && [ -n \"$id\" ] && env -u GH_TOKEN gh api repos/$s/rulesets/$id --jq '.conditions.ref_name.include | join(\",\")' | grep -qx \"refs/heads/$2\"; } && chk release 2.x && chk legacy 1.x && env -u GH_TOKEN gh api repos/$s/git/ref/tags/v1.x-legacy-freeze --jq .object.sha | grep -q '^9240db9c' && for b in 1.x 2.x; do env -u GH_TOKEN gh api repos/$s/branches/$b/protection 2>&1 | grep -q 'Branch not protected' || exit 1; done && ! env -u GH_TOKEN gh api \"repos/$s/git/trees/1.x?recursive=1\" --jq '.tree[].path' | grep -qE 'release-please|workflows/(commit-lint|php-cs-fixer|backport)|branch-protection'"
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md; grep -q '^## Branch roles' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'legacy' 'freeze' 'GIT_WORKFLOW_RELEASE_BRANCH' 'GIT_WORKFLOW_LEGACY_BRANCHES' 'classic' 'baseline'; do grep -qiF -- \"$k\" $f || exit 1; done && s=edotz/typo3-cms && chk() { id=$(env -u GH_TOKEN gh api repos/$s/rulesets --jq \".[] | select(.name==\\\"$1\\\") | .id\") && [ -n \"$id\" ] && env -u GH_TOKEN gh api repos/$s/rulesets/$id --jq '.conditions.ref_name.include | join(\",\")' | grep -qx \"refs/heads/$2\"; } && chk release 2.x && chk legacy 1.x && env -u GH_TOKEN gh api repos/$s/git/ref/tags/legacy/1.x-freeze --jq .object.sha | grep -q '^9240db9c' && for b in 1.x 2.x; do env -u GH_TOKEN gh api repos/$s/branches/$b/protection 2>&1 | grep -q 'Branch not protected' || exit 1; done && ! env -u GH_TOKEN gh api \"repos/$s/git/trees/1.x?recursive=1\" --jq '.tree[].path' | grep -qE 'release-please|workflows/(commit-lint|php-cs-fixer|backport)|branch-protection'"
           },
           "status": "pending",
           "why": "typo3-cms has the ruleset release for a branch that does not exist and the legacy ruleset on both old lines, while 2.x is the release branch and 1.x the legacy line.",
@@ -4976,13 +4988,24 @@
       "by": "developer",
       "date": "2026-11-11",
       "scope": "durable",
-      "status": "decided"
+      "status": "superseded",
+      "superseded_by": "D82"
     },
     {
       "id": "D81",
       "question": "How git promote moves a release branch that is not an ancestor of the release commit",
       "chosen": "A baseline mode modelled on D64: the dry run names the divergence; git promote <tag> --apply --confirm <owner/repo> tags the old head legacy/pre-promote, then force-pushes the branch to the release commit with a lease, only when the tag is a release commit and the branch exists but is not an ancestor; a second apply finds nothing to do; without --confirm the apply refuses",
       "reason": "promote is fast-forward only and never forces, and all three release branches are diverged from master, so none can be promoted without one explicit move",
+      "by": "developer",
+      "date": "2026-11-11",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D82",
+      "question": "Which tag freezes the head of the legacy lines and in which order the cleanup of a legacy line runs, correcting D80",
+      "chosen": "The head of a legacy line gets the new freeze tag legacy/<line>-freeze (legacy/1.x-freeze at 9240db9 for typo3-cms, legacy/1.x-freeze at the head of 1.x for php-project), pushed to GitHub before the cleanup; an existing local tag of another commit is not a freeze tag and stays as it is. The classic protection of the legacy line is removed before the cleanup pull request merges, because that pull request deletes the workflows that produce the classic required checks; the legacy ruleset already covers the line, so it is never unprotected. Otherwise D80 holds: the line stays frozen under the legacy ruleset and one last pull request removes the old workflows, the release-please files and branch-protection.yaml",
+      "reason": "v1.x-legacy-freeze of typo3-cms pointed at 5e7404b of 2025-11-18, 85 commits behind the head, so D80 was written on the wrong fact; the pull request #75 could only merge after the classic protection was removed",
       "by": "developer",
       "date": "2026-11-11",
       "scope": "durable",
@@ -5607,6 +5630,19 @@
         "D81"
       ],
       "reason": "the developer settled the roles of the old 1.x and 2.x lines of typo3-cms, php-project and nodejs-project on 2026-11-11 and approved the amendment: promote cannot fast-forward the diverged release branches, and the old merge-split-repo workflow of php-project would keep writing to the child repositories; PR #74 of typo3-cms showed that no check lints a pull request title",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-11",
+      "change": "D82 supersedes D80: the freeze tag of a legacy line is a new legacy/<line>-freeze tag at the head and the classic protection goes before the cleanup pull request merges; T6.10 and T6.11 get a brief with arguments, output, pattern and target; the T6.12 verify checks the tag legacy/1.x-freeze",
+      "affects": [
+        "D80",
+        "D82",
+        "T6.10",
+        "T6.11",
+        "T6.12"
+      ],
+      "reason": "the authors of T6.10 and T6.11 refused without a pattern; v1.x-legacy-freeze of typo3-cms pointed at 5e7404b, 85 commits behind the head of 1.x, so D80 rested on a wrong fact, and the cleanup pull request #75 had to follow the removal of the classic protection; the developer chose the new tag and approved the amendment on 2026-11-11",
       "by": "claude"
     }
   ],
