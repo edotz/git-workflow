@@ -4072,21 +4072,21 @@
               "line": 90,
               "severity": "convention",
               "summary": "mktemp and rm -f by hand instead of register_cleanup",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/lint-commit.sh",
               "line": 14,
               "severity": "convention",
               "summary": "the Merge and Revert bypass of lint-commit.sh also skips the title lint in pr.sh, a pre-existing file outside the task",
-              "state": "open"
+              "state": "accepted"
             },
             {
               "file": "bin/modules/git/pr.sh",
               "line": 92,
               "severity": "wrong result",
               "summary": "a one-commit branch with the subject Merge x passes the title lint of pr.sh and fails the status-checks title step",
-              "state": "open"
+              "state": "accepted"
             }
           ],
           "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T6.10.md",
@@ -4153,7 +4153,7 @@
               "line": 69,
               "severity": "style",
               "summary": "the negative control checks only rc != 0 and an empty remote, not that the shim caused the failure",
-              "state": "open"
+              "state": "accepted"
             }
           ],
           "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T6.11.md",
@@ -4297,7 +4297,7 @@
               "line": 204,
               "severity": "style",
               "summary": "the nothing-to-apply message says has every tag although a skipped tag may sit at another commit",
-              "state": "open"
+              "state": "accepted"
             }
           ],
           "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T6.14.md",
@@ -4354,7 +4354,7 @@
             "from": "environment fact: throwaway repositories and message files stand in for the commits and titles",
             "run": "bash -n bin/modules/git/lint-commit.sh && bash -n bin/modules/git/pr.sh && bash -n bin/modules/git/split.sh && out=$(bash tests/git-commit/lint.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 5 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && ! grep -q 'Merge|Revert' bin/modules/git/lint-commit.sh && grep -q 'register_cleanup' bin/modules/git/pr.sh && out=$(bash tests/git-shims/push.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 5 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-split/apply.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-pr/title.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && bash ${BU_ROOT}/app lint modules"
           },
-          "status": "pending",
+          "status": "done",
           "why": "Five findings of the reviews of T6.10, T6.11 and T6.14 are valid and open, and the tasks they belong to are done and never reopened.",
           "result": "The lint of a commit message and of a pull request title behaves like CI, pr.sh cleans its temporary file on a signal, the push test proves that the shim causes the failure of its negative control, and the split names a skipped tag in its closing line.",
           "done": "tests/git-commit/lint.sh shows ok lines for a valid message, Merge branch x into y, Revert of a conventional subject, a bare Merge x refused and a missing commitlint reported as its own error; pr.sh registers its cleanup; push.sh checks the agentic-os not found message of the shim in its negative control; the closing line of the split no longer says has every tag after a skip; the cases of T6.10, T6.11 and T6.14 stay green.",
@@ -4364,6 +4364,34 @@
             "output": "the six files named in the writes, with ok and FAIL lines in the new test",
             "pattern": "bin/modules/git/commit.sh",
             "target": "change"
+          },
+          "findings": [
+            {
+              "file": "bin/modules/git/lint-commit.sh",
+              "line": 12,
+              "severity": "wrong result",
+              "summary": "git merge of a sha writes the subject Merge commit '<sha>', which the commitlint defaults do not ignore, so the commit-msg hook and the minimum check refuse such a merge commit",
+              "state": "dismissed"
+            },
+            {
+              "file": "bin/modules/git/pr.sh",
+              "line": 100,
+              "severity": "style",
+              "summary": "the cleanup is the shared trap of core.sh as in commit.sh, an observation without a defect",
+              "state": "dismissed"
+            },
+            {
+              "file": "bin/modules/git/split.sh",
+              "line": 204,
+              "severity": "style",
+              "summary": "the closing line is a double negative but consistent with the warning above it",
+              "state": "dismissed"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T6.15.md",
+          "last_verify": {
+            "at": "2026-11-11T13:03:24Z",
+            "exit": 0
           }
         }
       ],
