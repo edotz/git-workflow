@@ -29,19 +29,19 @@
           "id": "m4-daily-loop",
           "name": "Daily loop and guards",
           "gate": "The PR gate with the aggregate check is required, and the rulesets are applied with the App as bypass actor.",
-          "status": "active"
+          "status": "done"
         },
         {
           "id": "m5-monorepo",
           "name": "Monorepo",
           "gate": "Each component releases on its own in a pilot monorepo, and a confirmed split dry run exists per child repository.",
-          "status": "planned"
+          "status": "done"
         },
         {
           "id": "m6-retire-old",
           "name": "Retire the old approach",
           "gate": "No old workflow remains in a consuming project, and the project context carries the new wording.",
-          "status": "planned"
+          "status": "active"
         }
       ]
     }
