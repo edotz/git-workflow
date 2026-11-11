@@ -1,8 +1,10 @@
 ## Now
-- m6-retire-old: the status-checks.yml header went with T4.8; left are the classic templates and the classic protection code (P6)
-- m4-daily-loop: P4 done but T4.17 (plugin.yaml provides, compile, command guard D60) and the developer's pilot T4.12; decide the generated hooks.yaml and .git-templates first
+- m6-retire-old: typo3-cms, php-project migrated; nodejs-project merged, next its ten child baselines with the split token set (T6.16), then T6.4 and T6.6 notes, T6.13, T6.7, T6.8
 
 ## Log
+- 2026-11-11 plugin (a24bcf21): migrated typo3-cms (branch roles, 2.x/1.x) and php-project (children baselined, old release train removed), nodejs-project to pnpm and components, added promote baseline, PR title lint, split skip and the split token set (D79 to D84)
+- 2026-11-10 plugin (a24bcf21): registered /git:split (T5.4, D77, D78), piloted the monorepo in the sandbox (T5.5) and fixed the push hooks in the tool image, migrated typo3-cms up to its rulesets and merged PRs, cleaned up its branches and protection
+- 2026-11-10 plugin (a24bcf21): piloted the daily loop in the sandbox (T4.12), registered the commands, detailed P5 and P6 with a plan review (D61 to D76), built the production App, the rules-sync foreign report and the split dry run and apply (T5.1 to T5.3), cleaned up temp work and memory
 - 2026-11-09 plugin (a24bcf21): authored P4 in two rounds with parallel authors and one review each, registered the commands and the pre-push guard, amended the plan (D58 to D60), pushed up to 81f10f2
 - 2026-11-09 plugin (a24bcf21): closed the session with the handoff; branch pushed up to c3f182f; the authoring of group 1 is next
 - 2026-11-09 plugin (a24bcf21): aligned T4.1, T4.2, T4.5 (D51, D52, T4.15), split T4.13 (D53, T4.16, T4.17), reviewed the plan with five lenses and settled the findings (D54 to D57, T4.18, T4.19), rotated the leaked token and stored a gh login, ignored .envrc, committed and pushed up to the review round
