@@ -4563,7 +4563,7 @@
           ],
           "verify": {
             "from": "environment fact: edotz/git-workflow has no components.yaml, so app git pr refuses",
-            "run": "test -f components.yaml && [ \"$(yq '.components | length' components.yaml)\" -ge 1 ] && ! grep -q node_modules components.yaml && bash ${BU_ROOT}/app git check"
+            "run": "test -f components.yaml && [ \"$(yq '.components | length' components.yaml)\" -ge 1 ] && ! grep -qE \"npm (ci|install)\" components.yaml && bash ${BU_ROOT}/app git check"
           },
           "why": "The plugin repository is the one repository that cannot use its own pull request command, and its pre-push guard has nothing to run.",
           "result": "components.yaml declares the plugin as one component with checks that run on the GitHub runner as they run on the machine of a developer.",
@@ -4575,7 +4575,11 @@
             "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md: its components.yaml as the example of a declaration",
             "target": "new"
           },
-          "status": "pending"
+          "status": "done",
+          "last_verify": {
+            "at": "2026-11-11T16:32:35Z",
+            "exit": 0
+          }
         },
         {
           "id": "T6.19",
@@ -6279,6 +6283,15 @@
         "D86"
       ],
       "reason": "The migrations of the three repositories left a tag placement constraint, a patch release for ci commits and the one-time baseline move of the release branches open; the plugin repository cannot use its own pull request command",
+      "by": "owner"
+    },
+    {
+      "date": "2026-11-11",
+      "change": "Reword the verify of T6.18: no npm ci or npm install in components.yaml instead of no mention of node_modules, because the check prefers the local shellcheck through the PATH and needs no install on the runner",
+      "affects": [
+        "T6.18"
+      ],
+      "reason": "The verify as written rejected a check that works on the runner and on the machine of a developer; approved by the developer",
       "by": "owner"
     }
   ],
