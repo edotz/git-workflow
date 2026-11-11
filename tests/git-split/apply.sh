@@ -37,8 +37,10 @@ trap finish EXIT
 
 stubs="${work}/stubs"
 calls="${work}/calls.log"
+bodies="${work}/bodies.log"
 mkdir "$stubs"
 : > "$calls"
+: > "$bodies"
 cat > "${stubs}/gh" <<'STUB'
 #!/usr/bin/env bash
 if [[ "${1:-}" == "auth" ]]; then
@@ -49,7 +51,7 @@ exit 1
 STUB
 cat > "${stubs}/curl" <<STUB
 #!/usr/bin/env bash
-cat >/dev/null
+cat >> "${bodies}"; echo >> "${bodies}"
 echo "token-request" >> "${calls}"
 printf '{"token":"stub-installation-token"}\n200'
 STUB
@@ -313,6 +315,20 @@ ok=no
 if [[ "$an_master" != "$an_split_old" && "$(git -C "$(child an)" rev-parse "refs/tags/v1.2.0^{commit}" 2>/dev/null || true)" == "$an_master" \
   && "$out" != *"tag v1.0.0"* && "$(requests)" == "$((requests_before + 1))" ]]; then ok=yes; fi
 case_result "the branch and the tags the child lacks are still pushed, a tag at the right commit is skipped silently" "$ok"
+
+# 18: every token request of the apply names the set split, which holds the workflows permission (D84), never contents
+split_requests=0
+other_requests=0
+while IFS= read -r line; do
+  if [[ "$line" == *'\"set\":\"split\"'* ]]; then
+    split_requests=$((split_requests + 1))
+  elif [[ "$line" == *'\"set\":'* ]]; then
+    other_requests=$((other_requests + 1))
+  fi
+done < "$bodies"
+ok=no
+if [[ "$split_requests" -gt 0 && "$other_requests" -eq 0 && "$split_requests" == "$(requests)" ]]; then ok=yes; fi
+case_result "every token request of the split apply asks for the set split" "$ok"
 
 if [[ "$failed" -ne 0 ]]; then
   exit 1

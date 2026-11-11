@@ -205,7 +205,7 @@ _split_apply() {
     return 0
   fi
 
-  token_fetch "$slug" contents
+  token_fetch "$slug" split
   if [[ "$mode" == "baseline" ]]; then
     if ! tool_run git "${_SPLIT_AUTH[@]}" push "$url" "${child}:refs/tags/legacy/pre-split" </dev/null; then
       die "split: the tag legacy/pre-split of ${slug} could not be pushed, it may exist at another commit: delete or rename it on the child, then run again"

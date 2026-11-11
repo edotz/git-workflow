@@ -2,6 +2,7 @@
   "org": "edotz",
   "sets": {
     "contents": { "contents": "write" },
+    "split": { "contents": "write", "workflows": "write" },
     "pull-requests": { "pull_requests": "write" },
     "administration": { "administration": "write" }
   }
