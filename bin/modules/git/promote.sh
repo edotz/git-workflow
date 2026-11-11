@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
-# Git Promote - fast-forward the release branch to the commit of a release tag
-# Usage: app git promote <tag> (--dry-run | --apply)
+# Git Promote - move the release branch to the commit of a release tag
+# Usage: app git promote <tag> --dry-run
+#        app git promote <tag> --apply [--confirm <owner/repo>]
 # Settings: GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH (default: master), TOKEN_SERVICE_URL,
 #           TOKEN_SERVICE_PORT
-# Decisions: D16, D27, D52 of the concept: the release branch moves to the release commit of a tag, fast-forward only,
-#            and never to the head of master
+# Decisions: D16, D27, D52 of the concept: the release branch moves to the release commit of a tag and never to the
+#            head of master, by fast-forward; D81 (modelled on D64): a release branch that exists but is not an ancestor
+#            of that commit is baselined, its old head is tagged legacy/pre-promote and the branch is replaced with a
+#            lease on that head, only with --confirm <owner/repo>
 set -euo pipefail
 
 source "${BU_ROOT}/lib/core.sh"
@@ -20,11 +23,13 @@ cli_set_spec \
 
 cli_add_flag "dry-run" "n" "Print the commit the release branch would move to; change nothing"
 cli_add_flag "apply"   "a" "Push the commit of the tag to the release branch as the App"
+cli_add_option "confirm" "c" "owner/repo of the repository: needed to replace a release branch that is not an ancestor of the tag" ""
 
 readonly PROMOTE_SUBJECT_RE='^chore\(([a-z][a-z0-9-]*)\): release (.+)$'
 
 _PROMOTE_TARGET=""
 _PROMOTE_CURRENT=""
+_PROMOTE_MODE=""
 _PROMOTE_SLUG=""
 _PROMOTE_URL=""
 # No repository hooks: the shims of a clone call agentic-os, which the tool image lacks.
@@ -59,16 +64,52 @@ _promote_current() {
   return 0
 }
 
-# Refuse a move that is not a fast-forward: the commit of the release branch must be an ancestor of the target.
-# Args: $1 - release branch  $2 - tag
-_promote_require_fast_forward() {
-  local branch="$1" tag="$2"
+# Set _PROMOTE_MODE from the commit of the release branch and the target: create (the branch does not exist), same (it
+# is at the target), ff (its commit is an ancestor of the target) or baseline (it is not an ancestor, D81).
+# Args: none
+_promote_classify() {
+  local rc=0
   if [[ -z "$_PROMOTE_CURRENT" ]]; then
+    _PROMOTE_MODE="create"
     return 0
   fi
-  if ! tool_run git merge-base --is-ancestor "$_PROMOTE_CURRENT" "$_PROMOTE_TARGET" </dev/null; then
-    die "promote: moving ${branch} to ${tag} is not a fast-forward, ${branch} is at ${_PROMOTE_CURRENT}"
+  if [[ "$_PROMOTE_CURRENT" == "$_PROMOTE_TARGET" ]]; then
+    _PROMOTE_MODE="same"
+    return 0
   fi
+  tool_run git merge-base --is-ancestor "$_PROMOTE_CURRENT" "$_PROMOTE_TARGET" </dev/null || rc=$?
+  case "$rc" in
+    0) _PROMOTE_MODE="ff" ;;
+    1) _PROMOTE_MODE="baseline" ;;
+    *) die "promote: git merge-base answered with ${rc} for the commit ${_PROMOTE_CURRENT}" ;;
+  esac
+  return 0
+}
+
+# Refuse an apply that would replace the release branch without --confirm.
+# Args: $1 - release branch  $2 - tag  $3 - value of --confirm, empty when not given
+_promote_require_confirm() {
+  local branch="$1" tag="$2" confirm="$3"
+  if [[ -z "$confirm" ]]; then
+    die_with "$BU_EXIT_USAGE" "promote: moving ${branch} to ${tag} is not a fast-forward, ${branch} is at ${_PROMOTE_CURRENT}: its old head would be kept as legacy/pre-promote and ${branch} replaced; run the dry run, then again with --apply --confirm <owner/repo>"
+  fi
+  return 0
+}
+
+# Push the commit of the tag to the release branch. A branch that is not an ancestor is baselined: its old head is
+# tagged legacy/pre-promote, then the branch is replaced with a lease on that head.
+# Args: $1 - release branch
+_promote_push() {
+  local branch="$1"
+  local -a lease=()
+  if [[ "$_PROMOTE_MODE" == "baseline" ]]; then
+    if ! tool_run git "${_PROMOTE_AUTH[@]}" push "$_PROMOTE_URL" "${_PROMOTE_CURRENT}:refs/tags/legacy/pre-promote" </dev/null; then
+      die "promote: the tag legacy/pre-promote of ${_PROMOTE_SLUG} could not be pushed, it may exist at another commit: delete or rename it on the remote, then run again"
+    fi
+    print_item ok "legacy/pre-promote" "the old head ${_PROMOTE_CURRENT} of ${branch} is kept"
+    lease=("--force-with-lease=refs/heads/${branch}:${_PROMOTE_CURRENT}")
+  fi
+  tool_run git "${_PROMOTE_AUTH[@]}" push "${lease[@]}" "$_PROMOTE_URL" "${_PROMOTE_TARGET}:refs/heads/${branch}" </dev/null
   return 0
 }
 
@@ -116,8 +157,9 @@ _promote_remote() {
 main() {
   cli_parse "$@"
 
-  local tag dry="no" apply="no" main_branch release_branch
+  local tag dry="no" apply="no" main_branch release_branch confirm
   tag="$(cli_get_arg 0)"
+  confirm="$(cli_get_option "confirm")"
   if cli_flag_is_set "dry-run"; then dry="yes"; fi
   if cli_flag_is_set "apply"; then apply="yes"; fi
   if [[ -z "$tag" ]]; then
@@ -140,9 +182,9 @@ main() {
   tool_image_ensure
   _promote_target "$tag"
   _promote_current "$release_branch"
-  _promote_require_fast_forward "$release_branch" "$tag"
+  _promote_classify
 
-  if [[ "$_PROMOTE_CURRENT" == "$_PROMOTE_TARGET" ]]; then
+  if [[ "$_PROMOTE_MODE" == "same" ]]; then
     print_line "${release_branch} is at ${tag} already: nothing to promote"
     return 0
   fi
@@ -151,14 +193,32 @@ main() {
     print_header "promote ${tag}"
     print_item info "commit" "$_PROMOTE_TARGET"
     print_item info "release branch" "${release_branch}, now ${_PROMOTE_CURRENT:-absent}, based on the last fetch"
+    if [[ "$_PROMOTE_MODE" == "baseline" ]]; then
+      print_item warning "divergence" "${release_branch} is not an ancestor of ${tag}: the apply keeps its old head as legacy/pre-promote and replaces ${release_branch}"
+      die "promote: moving ${release_branch} to ${tag} is not a fast-forward, ${release_branch} is at ${_PROMOTE_CURRENT}: run again with --apply --confirm <owner/repo> to baseline it"
+    fi
     return 0
   fi
 
+  if [[ "$_PROMOTE_MODE" == "baseline" ]]; then
+    _promote_require_confirm "$release_branch" "$tag" "$confirm"
+  fi
   _promote_remote
+  if [[ -n "$confirm" && "$confirm" != "$_PROMOTE_SLUG" ]]; then
+    die_with "$BU_EXIT_USAGE" "promote: --confirm names ${confirm}, the repository is ${_PROMOTE_SLUG}"
+  fi
   token_fetch "$_PROMOTE_SLUG" contents
   _promote_refresh "$release_branch"
-  _promote_require_fast_forward "$release_branch" "$tag"
-  tool_run git "${_PROMOTE_AUTH[@]}" push "$_PROMOTE_URL" "${_PROMOTE_TARGET}:refs/heads/${release_branch}" </dev/null
+  _promote_classify
+  if [[ "$_PROMOTE_MODE" == "same" ]]; then
+    print_line "${release_branch} is at ${tag} already: nothing to promote"
+    token_drop
+    return 0
+  fi
+  if [[ "$_PROMOTE_MODE" == "baseline" ]]; then
+    _promote_require_confirm "$release_branch" "$tag" "$confirm"
+  fi
+  _promote_push "$release_branch"
   tool_run git update-ref "refs/remotes/origin/${release_branch}" "$_PROMOTE_TARGET" </dev/null
   print_item ok "promote" "${release_branch} moved to ${tag} (${_PROMOTE_TARGET})"
   token_drop

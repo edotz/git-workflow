@@ -48,15 +48,18 @@ commands:
         description: "Open the pull request as a draft"
   - name: "promote"
     requires: [git, docker]
-    description: "Fast-forward the release branch to the commit of a release tag; never to the head of master, never a force."
-    when: "A release is made and the release branch has to follow it"
+    description: "Move the release branch to the commit of a release tag, never to the head of master: a fast-forward, or with --confirm a baseline of a diverged branch that keeps its old head as legacy/pre-promote."
+    when: "A release is made and the release branch has to follow it, also when the release branch diverged from the release commit"
     examples:
       - "bash $BU_ROOT/app git promote v1.2.0 --dry-run"
       - "bash $BU_ROOT/app git promote v1.2.0 --apply"
+      - "bash $BU_ROOT/app git promote v1.2.0 --apply --confirm owner/repo"
     arguments:
       - name: "tag"
         description: "Release tag whose commit is the release commit of that tag"
         required: true
+      - name: "--confirm"
+        description: "owner/repo of the repository: needed to replace a release branch that is not an ancestor of the tag"
       - name: "--dry-run"
         description: "Print the commit the release branch would move to and change nothing"
       - name: "--apply"
