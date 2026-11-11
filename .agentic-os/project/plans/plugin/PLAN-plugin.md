@@ -20,7 +20,7 @@ Five notes in the concept's notes directory, one of them recording the sandbox: 
 - P3 Release core: 11 tasks
 - P4 Daily loop and guards: 18 tasks
 - P5 Monorepo: 5 tasks
-- P6 Retire the old approach: 16 tasks
+- P6 Retire the old approach: 21 tasks
 
 ### Cost
 
@@ -493,6 +493,11 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 | Make the split skip with a warning a child tag at another commit | T6.14 | inline | T5.3 | done |
 | Fix the open findings of T6.10, T6.11 and T6.14 | T6.15 | inline | T6.10, T6.11, T6.14 | done |
 | Give the split apply a token set with the workflows permission | T6.16 | inline | T6.14 | done |
+| Count a release from the commits after the latest tag and only for feat, fix, perf and breaking changes | T6.17 | inline | - | pending |
+| Declare the plugin repository itself as a component so that the pull request and push commands work in it | T6.18 | inline | - | pending |
+| First release of typo3-cms and the one-time move of its release branch with promote baseline | T6.19 | developer | T6.17, T6.9, T6.3 | pending |
+| First release of php-project and the one-time move of its release branch with promote baseline | T6.20 | developer | T6.17, T6.9, T6.5 | pending |
+| First release of nodejs-project and the one-time move of its release branch with promote baseline | T6.21 | developer | T6.17, T6.9, T6.6 | pending |
 
 **Provide the production GitHub App and its token service key** (T6.1)
 - Why: Every migrated repository releases and rules-syncs as the App, and the sandbox App with its test key is no production key; nothing in the plan creates the production App.
@@ -597,6 +602,36 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 - Result: The split apply asks for the set split and the other commands keep their narrower sets.
 - Done: token-service.json has the set split with contents and workflows write and the set contents without workflows; split.sh calls token_fetch with split; tests/git-split/apply.sh has a case that the apply asks for the set split and the cases of T5.3 and T6.14 stay green.
 - Fails: A release or promote token that may change workflow files, or a split that still asks for the set contents and is refused again.
+
+**Count a release from the commits after the latest tag and only for feat, fix, perf and breaking changes** (T6.17)
+- Why: The migrations needed baseline tags on the last commit that touches each package, and a ci commit in a package after its baseline proposed a patch release; both come from how git-cliff is asked for the bump.
+- Result: version_next reads the commits after the latest stable tag of a component as a range, so the place of the baseline tag no longer matters, and a release is proposed only when a feat, fix, perf or breaking commit of the component is in that range.
+- Done: The new test shows no release for a baseline tag outside the component path, no release for a ci commit in the path, a patch for a fix, a minor for a feat, a major for a breaking commit and status 1 without a commit after the tag; the release tests still pass and shellcheck is clean.
+- Fails: A baseline tag placed on the wrong commit proposes a release that no change justifies, or a docs or ci commit in a package triggers a release and a publish.
+
+**Declare the plugin repository itself as a component so that the pull request and push commands work in it** (T6.18)
+- Why: The plugin repository is the one repository that cannot use its own pull request command, and its pre-push guard has nothing to run.
+- Result: components.yaml declares the plugin as one component with checks that run on the GitHub runner as they run on the machine of a developer.
+- Done: components.yaml exists with at least one component, its checks do not need node_modules, and app git check exits 0.
+- Fails: A check that needs the local node_modules turns the job check red on every pull request, or no check runs and a broken script reaches master.
+
+**First release of typo3-cms and the one-time move of its release branch with promote baseline** (T6.19)
+- Why: The release branch still holds the content and the workflows of the old approach; it is moved once to a release commit, after a first real release of a component, so that promote follows by fast forward from then on.
+- Result: A component of typo3-cms is released by app git release with a pull request free release commit and tag, the release branch 2.x is at that release commit, and its old head is kept as the tag legacy/pre-promote.
+- Done: The note has the section First release and baseline of the release branch, the tag legacy/pre-promote exists in edotz/typo3-cms, and the head of 2.x is the commit of a tag.
+- Fails: The release branch keeps the old workflows and the old content, or it is replaced without the tag of its old head.
+
+**First release of php-project and the one-time move of its release branch with promote baseline** (T6.20)
+- Why: The release branch still holds the content and the workflows of the old approach; it is moved once to a release commit, after a first real release of a component, so that promote follows by fast forward from then on.
+- Result: A component of php-project is released by app git release with a pull request free release commit and tag, the release branch 2.x is at that release commit, and its old head is kept as the tag legacy/pre-promote.
+- Done: The note has the section First release and baseline of the release branch, the tag legacy/pre-promote exists in edotz/php-project, and the head of 2.x is the commit of a tag.
+- Fails: The release branch keeps the old workflows and the old content, or it is replaced without the tag of its old head.
+
+**First release of nodejs-project and the one-time move of its release branch with promote baseline** (T6.21)
+- Why: The release branch still holds the content and the workflows of the old approach; it is moved once to a release commit, after a first real release of a component, so that promote follows by fast forward from then on.
+- Result: A component of nodejs-project is released by app git release with a pull request free release commit and tag, the release branch 1.x is at that release commit, and its old head is kept as the tag legacy/pre-promote.
+- Done: The note has the section First release and baseline of the release branch, the tag legacy/pre-promote exists in edotz/nodejs-project, and the head of 1.x is the commit of a tag.
+- Fails: The release branch keeps the old workflows and the old content, or it is replaced without the tag of its old head.
 
 Gate: (for r in edotz.typo3-cms edotz.php-project edotz.nodejs-project; do d=$HOME/workspace/$r; test -f $d/components.yaml || exit 1; test -f $d/.github/workflows/status-checks.yml || exit 1; test -d $d/.github/workflows || exit 1; test ! -f $d/release-please-config.json || exit 1; if ls $d/.github/workflows | grep -qE 'release-please|backport|merge-split-repo|sync-to-monorepo|post-release|commit-lint|php-cs-fixer'; then exit 1; fi; done) && test -f $HOME/workspace/edotz.nodejs-project/pnpm-workspace.yaml && test -s .agentic-os/project/concepts/git-workflow-plugin/notes/app-production.md && (test ! -e bin/modules/git/branch-protection.sh && test ! -e bin/modules/git/run-status.sh && ! grep -qE 'branch-protection|run-status' bin/modules/git/module.yaml && bash ${BU_ROOT}/app lint modules && bash tests/git-rules/sync.sh && out=$(bash tests/git-rules/foreign.sh) && [ "$(printf '%s\n' "$out" | grep -c '^ok')" -ge 4 ] && ! printf '%s\n' "$out" | grep -q '^FAIL' && bash tests/git-status/runs.sh) && (! grep -qiE 'gh-wf|release-please|merge commits only|stage-guard|run-status|branch-protection' .agentic-os/project/identity.md .agentic-os/project/architecture.md .agentic-os/project/product.md && for f in .agentic-os/project/identity.md .agentic-os/project/architecture.md; do grep -qi 'squash' $f && grep -qi 'ruleset' $f || exit 1; done)
 
@@ -705,6 +740,8 @@ Gate: (for r in edotz.typo3-cms edotz.php-project edotz.nodejs-project; do d=$HO
 - D82 [decided] Which tag freezes the head of the legacy lines and in which order the cleanup of a legacy line runs, correcting D80 -> The head of a legacy line gets the new freeze tag legacy/<line>-freeze (legacy/1.x-freeze at 9240db9 for typo3-cms, legacy/1.x-freeze at the head of 1.x for php-project), pushed to GitHub before the cleanup; an existing local tag of another commit is not a freeze tag and stays as it is. The classic protection of the legacy line is removed before the cleanup pull request merges, because that pull request deletes the workflows that produce the classic required checks; the legacy ruleset already covers the line, so it is never unprotected. Otherwise D80 holds: the line stays frozen under the legacy ruleset and one last pull request removes the old workflows, the release-please files and branch-protection.yaml (v1.x-legacy-freeze of typo3-cms pointed at 5e7404b of 2025-11-18, 85 commits behind the head, so D80 was written on the wrong fact; the pull request #75 could only merge after the classic protection was removed; developer, 2026-11-11, durable)
 - D83 [decided] What the split apply does when a child repository already has the tag that a monorepo component tag maps to, at another commit -> It skips that tag with a warning that names the tag and both commits, never moves or overwrites it, and still pushes the branch and the tags the child lacks; a tag at the right commit stays a silent skip as before (the child repositories of php-project carry v2.0.x tags on their old histories and consumers lock the commits of those tags, so an existing tag is never moved; the baseline tags of the monorepo map onto exactly those names and the old code stopped the apply with it is not moved; developer, 2026-11-11, durable)
 - D84 [decided] Which permission set the split apply asks the token service for, now that a child repository receives workflow files -> A new set split in bin/config/token-service.json with contents write and workflows write, requested only by the split apply; the set contents of release and promote stays without workflows, so a release token cannot change workflow files; the App itself holds the workflows permission, granted by the developer on 2026-11-11 (GitHub refused the baseline push to data-handler with: refusing to allow a GitHub App to create or update workflow release-publish.yml without workflows permission; the token service narrows every token to the set of the command, so the permission of the App alone is not enough; developer, 2026-11-11, durable)
+- D85 [decided] Where do the tasks for the open items of PLAN-plugin go? -> Into P6; closing the plan is plan status done, not a task. (The version fix and the baseline moves close the migration of the three repositories (D81); the developer chose P6 over a new phase P7.; owner, 2026-11-11, plan-only)
+- D86 [decided] Which commits make app git release propose a release of a component? -> Only feat, fix, perf and breaking commits; chore, ci, docs, test, style, refactor and build commits in a component path do not release. (Spike in the tool image: with the default configuration of git-cliff any commit in the component path bumps at least a patch, so a ci commit in a package proposes a patch release; release-please did not release for those types.; owner, 2026-11-11, durable)
 
 ## Revisions
 
@@ -754,3 +791,4 @@ Gate: (for r in edotz.typo3-cms edotz.php-project edotz.nodejs-project; do d=$HO
 - 2026-11-11 Record D83 (the split skips a child tag at another commit with a warning and never moves it); add T6.14 to change split.sh and its test accordingly; T6.5 depends on T6.14 (affects D83, T6.14, T6.5) -- the eight children of php-project hold v2.0.x tags at their old commits and the baseline tags of the monorepo map to the same names; split.sh dies with it is not moved on such a tag, so no baseline apply can run; the developer chose skip with a warning and approved the amendment on 2026-11-11 (claude)
 - 2026-11-11 Add T6.15 to fix the five valid open findings of T6.10, T6.11 and T6.14: remove the Merge and Revert bypass of lint-commit.sh, register_cleanup in pr.sh, a stronger negative control in the push test, and the closing line of the split (affects T6.15) -- the tasks are done and never reopened; the developer asked on 2026-11-11 to fix and settle the open findings and approved the amendment; the rule file already says to remove the bypass (claude)
 - 2026-11-11 Record D84 (a token set split with contents and workflows write for the split apply only) and add T6.16 to implement it; T6.6 depends on T6.16 (affects D84, T6.16, T6.6) -- GitHub refused the baseline push to the nodejs-project children because the split head carries workflow files; the token service narrows every token to the set of the command, so the permission the developer granted to the App is not enough; the developer chose a separate set and approved the amendment on 2026-11-11 (claude)
+- 2026-11-11 Add the open items to P6: version_next by commit range with the release type filter, the components.yaml of the plugin repository, and the first release with the baseline move of the release branch in typo3-cms, php-project and nodejs-project (affects P6, T6.17, T6.18, T6.19, T6.20, T6.21, D85, D86) -- The migrations of the three repositories left a tag placement constraint, a patch release for ci commits and the one-time baseline move of the release branches open; the plugin repository cannot use its own pull request command (owner)

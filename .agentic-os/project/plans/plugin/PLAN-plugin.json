@@ -4479,6 +4479,244 @@
             "at": "2026-11-11T13:53:40Z",
             "exit": 0
           }
+        },
+        {
+          "id": "T6.17",
+          "title": "Count a release from the commits after the latest tag and only for feat, fix, perf and breaking changes",
+          "depends": [],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "bin/lib/version.sh",
+              "why": "version_next asks git-cliff for the bump with --tag-pattern and --include-path; a baseline tag on a commit outside the component path is dropped and the older feat counts as unreleased (spike: a/v1.1.0 instead of no change)"
+            },
+            {
+              "ref": "bin/modules/git/release.sh",
+              "why": "builds the git-cliff arguments of the release notes (_RELEASE_CLIFF); notes and bump have to apply the same filter"
+            },
+            {
+              "ref": "tests/git-release/dry-run.sh",
+              "why": "the throwaway repository of the release dry run; the new test follows its shape"
+            },
+            {
+              "ref": "D86",
+              "why": "only feat, fix, perf and breaking commits make a release"
+            },
+            {
+              "ref": "D85",
+              "why": "the task belongs to P6"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "bin/lib/version.sh",
+                "bin/modules/git/release.sh",
+                "bin/config/cliff.toml",
+                "tests/git-version/range.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: a throwaway repository holds a baseline tag on a commit outside the component path and later ci, fix, feat and breaking commits in it",
+            "run": "bash -n bin/lib/version.sh && f=tests/git-version/range.sh && test -f $f && out=$(bash $f) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 6 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-release/dry-run.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && out=$(bash tests/git-release/multi.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && node_modules/.bin/shellcheck bin/lib/version.sh bin/modules/git/release.sh $f"
+          },
+          "why": "The migrations needed baseline tags on the last commit that touches each package, and a ci commit in a package after its baseline proposed a patch release; both come from how git-cliff is asked for the bump.",
+          "result": "version_next reads the commits after the latest stable tag of a component as a range, so the place of the baseline tag no longer matters, and a release is proposed only when a feat, fix, perf or breaking commit of the component is in that range.",
+          "done": "The new test shows no release for a baseline tag outside the component path, no release for a ci commit in the path, a patch for a fix, a minor for a feat, a major for a breaking commit and status 1 without a commit after the tag; the release tests still pass and shellcheck is clean.",
+          "fails": "A baseline tag placed on the wrong commit proposes a release that no change justifies, or a docs or ci commit in a package triggers a release and a publish.",
+          "brief": {
+            "arguments": "In version_next replace the tag-pattern search by the range <latest stable tag of the component>..HEAD, with the range placed before --include-path because that option takes several values and would swallow it; the version is the git-cliff bump of that range; read no change from an empty list of counted commits, because git-cliff prints 0.1.0 for an empty range; count only feat, fix, perf and breaking commits (D86) through a cliff configuration that the tool image can read (check which paths tool_run mounts) and apply the same filter to the release notes in release.sh; keep the channel pre-release counting and the whole-history case of a component without a tag; add tests/git-version/range.sh on a throwaway repository with the cases of the done check.",
+            "output": "bin/lib/version.sh, bin/modules/git/release.sh, bin/config/cliff.toml and tests/git-version/range.sh with ok and FAIL lines",
+            "pattern": "tests/git-release/dry-run.sh",
+            "target": "change"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "T6.18",
+          "title": "Declare the plugin repository itself as a component so that the pull request and push commands work in it",
+          "depends": [],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/pr.sh",
+              "why": "loads components.yaml and refuses without it: pull request 5 of edotz/git-workflow had to be opened with gh"
+            },
+            {
+              "ref": ".github/workflows/status-checks.yml",
+              "why": "runs every command a component lists under checks on the GitHub runner, which has no npm install step"
+            },
+            {
+              "ref": "bin/lib/check.sh",
+              "why": "the minimum check that app git check and the pre-push guard run"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "components.yaml"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: edotz/git-workflow has no components.yaml, so app git pr refuses",
+            "run": "test -f components.yaml && [ \"$(yq '.components | length' components.yaml)\" -ge 1 ] && ! grep -q node_modules components.yaml && bash ${BU_ROOT}/app git check"
+          },
+          "why": "The plugin repository is the one repository that cannot use its own pull request command, and its pre-push guard has nothing to run.",
+          "result": "components.yaml declares the plugin as one component with checks that run on the GitHub runner as they run on the machine of a developer.",
+          "done": "components.yaml exists with at least one component, its checks do not need node_modules, and app git check exits 0.",
+          "fails": "A check that needs the local node_modules turns the job check red on every pull request, or no check runs and a broken script reaches master.",
+          "brief": {
+            "arguments": "Write components.yaml with one component for the repository root (name git-workflow, paths the repository, split no); choose checks that the runner of ubuntu-latest can run as they are (shellcheck is preinstalled there; the shell files of bin and tests); decide version or version none with its version_files by the writers of version.sh (package.json takes a version key).",
+            "output": "components.yaml",
+            "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md: its components.yaml as the example of a declaration",
+            "target": "new"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "T6.19",
+          "title": "First release of typo3-cms and the one-time move of its release branch with promote baseline",
+          "depends": [
+            "T6.17",
+            "T6.9",
+            "T6.3"
+          ],
+          "owner": "developer",
+          "inputs": [
+            {
+              "ref": "D81",
+              "why": "promote baseline moves the release branch once to the release commit and keeps its old head as legacy/pre-promote"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md",
+              "why": "records the baseline tags and the state of the release branch the task starts from"
+            },
+            {
+              "ref": "bin/modules/git/promote.sh",
+              "why": "the baseline mode of the promote command"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: edotz/typo3-cms keeps its release branch at its old head and has no tag legacy/pre-promote",
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md; grep -q '^## First release and baseline of the release branch' $f && ! grep -qiE 'TBD|TODO' $f && s=edotz/typo3-cms && env -u GH_TOKEN gh api repos/$s/git/ref/tags/legacy/pre-promote >/dev/null && head=$(env -u GH_TOKEN gh api repos/$s/commits/2.x --jq .sha) && env -u GH_TOKEN gh api repos/$s/tags --paginate --jq '.[].commit.sha' | grep -qx \"$head\""
+          },
+          "why": "The release branch still holds the content and the workflows of the old approach; it is moved once to a release commit, after a first real release of a component, so that promote follows by fast forward from then on.",
+          "result": "A component of typo3-cms is released by app git release with a pull request free release commit and tag, the release branch 2.x is at that release commit, and its old head is kept as the tag legacy/pre-promote.",
+          "done": "The note has the section First release and baseline of the release branch, the tag legacy/pre-promote exists in edotz/typo3-cms, and the head of 2.x is the commit of a tag.",
+          "fails": "The release branch keeps the old workflows and the old content, or it is replaced without the tag of its old head.",
+          "brief": {
+            "arguments": "Wait for a feat, fix, perf or breaking change of a component of typo3-cms on master after its baseline tag; run app git release --dry-run, then --apply as the App; run app git promote <tag> --dry-run and --apply (baseline mode, D81); write the section First release and baseline of the release branch in the note.",
+            "output": "the release, the moved release branch and the section in the note",
+            "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md",
+            "target": "change"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "T6.20",
+          "title": "First release of php-project and the one-time move of its release branch with promote baseline",
+          "depends": [
+            "T6.17",
+            "T6.9",
+            "T6.5"
+          ],
+          "owner": "developer",
+          "inputs": [
+            {
+              "ref": "D81",
+              "why": "promote baseline moves the release branch once to the release commit and keeps its old head as legacy/pre-promote"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md",
+              "why": "records the baseline tags and the state of the release branch the task starts from"
+            },
+            {
+              "ref": "bin/modules/git/promote.sh",
+              "why": "the baseline mode of the promote command"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: edotz/php-project keeps its release branch at its old head and has no tag legacy/pre-promote",
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md; grep -q '^## First release and baseline of the release branch' $f && ! grep -qiE 'TBD|TODO' $f && s=edotz/php-project && env -u GH_TOKEN gh api repos/$s/git/ref/tags/legacy/pre-promote >/dev/null && head=$(env -u GH_TOKEN gh api repos/$s/commits/2.x --jq .sha) && env -u GH_TOKEN gh api repos/$s/tags --paginate --jq '.[].commit.sha' | grep -qx \"$head\""
+          },
+          "why": "The release branch still holds the content and the workflows of the old approach; it is moved once to a release commit, after a first real release of a component, so that promote follows by fast forward from then on.",
+          "result": "A component of php-project is released by app git release with a pull request free release commit and tag, the release branch 2.x is at that release commit, and its old head is kept as the tag legacy/pre-promote.",
+          "done": "The note has the section First release and baseline of the release branch, the tag legacy/pre-promote exists in edotz/php-project, and the head of 2.x is the commit of a tag.",
+          "fails": "The release branch keeps the old workflows and the old content, or it is replaced without the tag of its old head.",
+          "brief": {
+            "arguments": "Wait for a feat, fix, perf or breaking change of a component of php-project on master after its baseline tag; run app git release --dry-run, then --apply as the App; run app git promote <tag> --dry-run and --apply (baseline mode, D81); write the section First release and baseline of the release branch in the note.",
+            "output": "the release, the moved release branch and the section in the note",
+            "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md",
+            "target": "change"
+          },
+          "status": "pending"
+        },
+        {
+          "id": "T6.21",
+          "title": "First release of nodejs-project and the one-time move of its release branch with promote baseline",
+          "depends": [
+            "T6.17",
+            "T6.9",
+            "T6.6"
+          ],
+          "owner": "developer",
+          "inputs": [
+            {
+              "ref": "D81",
+              "why": "promote baseline moves the release branch once to the release commit and keeps its old head as legacy/pre-promote"
+            },
+            {
+              "ref": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-nodejs-project.md",
+              "why": "records the baseline tags and the state of the release branch the task starts from"
+            },
+            {
+              "ref": "bin/modules/git/promote.sh",
+              "why": "the baseline mode of the promote command"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-nodejs-project.md"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: edotz/nodejs-project keeps its release branch at its old head and has no tag legacy/pre-promote",
+            "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-nodejs-project.md; grep -q '^## First release and baseline of the release branch' $f && ! grep -qiE 'TBD|TODO' $f && s=edotz/nodejs-project && env -u GH_TOKEN gh api repos/$s/git/ref/tags/legacy/pre-promote >/dev/null && head=$(env -u GH_TOKEN gh api repos/$s/commits/1.x --jq .sha) && env -u GH_TOKEN gh api repos/$s/tags --paginate --jq '.[].commit.sha' | grep -qx \"$head\""
+          },
+          "why": "The release branch still holds the content and the workflows of the old approach; it is moved once to a release commit, after a first real release of a component, so that promote follows by fast forward from then on.",
+          "result": "A component of nodejs-project is released by app git release with a pull request free release commit and tag, the release branch 1.x is at that release commit, and its old head is kept as the tag legacy/pre-promote.",
+          "done": "The note has the section First release and baseline of the release branch, the tag legacy/pre-promote exists in edotz/nodejs-project, and the head of 1.x is the commit of a tag.",
+          "fails": "The release branch keeps the old workflows and the old content, or it is replaced without the tag of its old head.",
+          "brief": {
+            "arguments": "Wait for a feat, fix, perf or breaking change of a component of nodejs-project on master after its baseline tag; run app git release --dry-run, then --apply as the App; run app git promote <tag> --dry-run and --apply (baseline mode, D81); write the section First release and baseline of the release branch in the note.",
+            "output": "the release, the moved release branch and the section in the note",
+            "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-nodejs-project.md",
+            "target": "change"
+          },
+          "status": "pending"
         }
       ],
       "gate": {
@@ -5341,6 +5579,26 @@
       "date": "2026-11-11",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D85",
+      "question": "Where do the tasks for the open items of PLAN-plugin go?",
+      "chosen": "Into P6; closing the plan is plan status done, not a task.",
+      "reason": "The version fix and the baseline moves close the migration of the three repositories (D81); the developer chose P6 over a new phase P7.",
+      "by": "owner",
+      "date": "2026-11-11",
+      "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D86",
+      "question": "Which commits make app git release propose a release of a component?",
+      "chosen": "Only feat, fix, perf and breaking commits; chore, ci, docs, test, style, refactor and build commits in a component path do not release.",
+      "reason": "Spike in the tool image: with the default configuration of git-cliff any commit in the component path bumps at least a patch, so a ci commit in a package proposes a patch release; release-please did not release for those types.",
+      "by": "owner",
+      "date": "2026-11-11",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -6006,6 +6264,22 @@
       ],
       "reason": "GitHub refused the baseline push to the nodejs-project children because the split head carries workflow files; the token service narrows every token to the set of the command, so the permission the developer granted to the App is not enough; the developer chose a separate set and approved the amendment on 2026-11-11",
       "by": "claude"
+    },
+    {
+      "date": "2026-11-11",
+      "change": "Add the open items to P6: version_next by commit range with the release type filter, the components.yaml of the plugin repository, and the first release with the baseline move of the release branch in typo3-cms, php-project and nodejs-project",
+      "affects": [
+        "P6",
+        "T6.17",
+        "T6.18",
+        "T6.19",
+        "T6.20",
+        "T6.21",
+        "D85",
+        "D86"
+      ],
+      "reason": "The migrations of the three repositories left a tag placement constraint, a patch release for ci commits and the one-time baseline move of the release branches open; the plugin repository cannot use its own pull request command",
+      "by": "owner"
     }
   ],
   "dismissals": [
