@@ -4276,7 +4276,7 @@
             "from": "environment fact: a bare repository stands in the child and holds a tag at another commit",
             "run": "bash -n bin/modules/git/split.sh && out=$(bash tests/git-split/apply.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 16 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && grep -q 'skipped' bin/modules/git/split.sh && out=$(bash tests/git-split/dry-run.sh) && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && bash ${BU_ROOT}/app lint modules"
           },
-          "status": "pending",
+          "status": "done",
           "why": "The eight children of php-project hold v2.0.x tags at their old commits and the baseline tags of the monorepo map to the same names, so every baseline apply would stop at the tag that is not moved.",
           "result": "The split apply skips a child tag at another commit with a warning and goes on with the branch and the missing tags.",
           "done": "tests/git-split/apply.sh shows ok lines for: a child tag at another commit is skipped with a warning that names the tag, the other tags and the branch still reach the child, the existing tag stays at its old commit, and the cases of T5.3 stay green.",
@@ -4286,6 +4286,20 @@
             "output": "bin/modules/git/split.sh and tests/git-split/apply.sh (ok lines, FAIL lines on a failure)",
             "pattern": "bin/modules/git/split.sh",
             "target": "change"
+          },
+          "findings": [
+            {
+              "file": "bin/modules/git/split.sh",
+              "line": 204,
+              "severity": "style",
+              "summary": "the nothing-to-apply message says has every tag although a skipped tag may sit at another commit",
+              "state": "open"
+            }
+          ],
+          "report": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin/T6.14.md",
+          "last_verify": {
+            "at": "2026-11-11T12:42:44Z",
+            "exit": 0
           }
         }
       ],

@@ -490,7 +490,7 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 | Test a clone with a pre-push shim that pushes in the tool image | T6.11 | inline | T4.9, T5.5 | done |
 | Settle the branch roles of edotz.typo3-cms: release branch 2.x and legacy branch 1.x | T6.12 | developer | T6.2, T6.3, T6.9 | done |
 | Replace the classic protection on master of edotz.git-workflow with the ruleset | T6.13 | developer | T6.2 | pending |
-| Make the split skip with a warning a child tag at another commit | T6.14 | inline | T5.3 | pending |
+| Make the split skip with a warning a child tag at another commit | T6.14 | inline | T5.3 | done |
 
 **Provide the production GitHub App and its token service key** (T6.1)
 - Why: Every migrated repository releases and rules-syncs as the App, and the sandbox App with its test key is no production key; nothing in the plan creates the production App.
