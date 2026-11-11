@@ -479,7 +479,7 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 |---|---|---|---|---|
 | Provide the production GitHub App and its token service key | T6.1 | developer | - | done |
 | Make rules-sync name the rulesets it does not manage | T6.2 | inline | - | done |
-| Migrate edotz.typo3-cms to the new workflow | T6.3 | developer | T5.4, T6.1, T6.2 | pending |
+| Migrate edotz.typo3-cms to the new workflow | T6.3 | developer | T5.4, T6.1, T6.2 | done |
 | Migrate edotz.nodejs-project from yarn to pnpm | T6.4 | developer | - | pending |
 | Migrate edotz.php-project, the pilot monorepo, to the new workflow | T6.5 | developer | T5.5, T6.1, T6.2, T6.3 | pending |
 | Migrate edotz.nodejs-project to the new workflow | T6.6 | developer | T5.5, T6.1, T6.2, T6.4, T6.5 | pending |

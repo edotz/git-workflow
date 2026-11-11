@@ -3617,7 +3617,7 @@
             "from": "environment fact: edotz.typo3-cms runs the new workflow and no old release file is left",
             "run": "f=.agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md; test -s $f && grep -q '^## Repository' $f && grep -q '^## Result' $f && ! grep -qiE 'TBD|TODO' $f && for k in 'classic' 'components.yaml' 'release-please' 'rules-sync' 'pre-push' 'baseline' 'squash' 'release'; do grep -qiF -- \"$k\" $f || exit 1; done && d=$HOME/workspace/edotz.typo3-cms && test -f $d/components.yaml && test ! -f $d/release-please-config.json && test ! -f $d/.release-please-manifest.json && test ! -f $d/.github/workflows/release-please.yml && test ! -f $d/.github/workflows/backport.yml && test -f $d/.github/workflows/status-checks.yml && test ! -f $d/.github/workflows/commit-lint.yml && test ! -f $d/.github/workflows/php-cs-fixer.yml && [ \"$(yq '.components | length' $d/components.yaml)\" = 1 ] && grep -q 'composer.json' $d/components.yaml && grep -q 'ext_emconf.php' $d/components.yaml && grep -q 'php-cs-fixer' $d/components.yaml && s=edotz/typo3-cms && env -u GH_TOKEN gh api repos/$s/branches/master/protection 2>&1 | grep -q 'Branch not protected' && env -u GH_TOKEN gh api repos/$s/rulesets --jq 'map(select(.name == \"master\")) | length' | grep -qx 1"
           },
-          "status": "pending",
+          "status": "done",
           "why": "typo3-cms is the single repository with a release history, 21 tags and release-please, and it needs nothing from the monorepo work: it proves the cutover on a real repository first (D61).",
           "result": "edotz.typo3-cms has components.yaml for one component with composer.json and ext_emconf.php as version files, its latest release-please tag as the baseline, the aggregate check, the rulesets of rules-sync with no foreign ruleset left, the shims and an enabled pre-push guard, and one release made as the App. The old workflows commit-lint.yml and php-cs-fixer.yml are replaced by status-checks.yml with php-cs-fixer declared as a check (D71). The classic branch protection of master is removed after rules-sync --apply has created the master ruleset, so master is never unprotected (D72).",
           "done": "The note migrate-typo3-cms.md has the sections Repository and Result and names components.yaml, release-please, rules-sync, the pre-push guard, the baseline, the squash merge and the release, each with what you saw; release-please-config.json, .release-please-manifest.json, release-please.yml and backport.yml are gone from the repository. status-checks.yml is present, commit-lint.yml and php-cs-fixer.yml are gone, components.yaml declares one component with both version files and the php-cs-fixer check. The note names the classic protection and the required checks it carried, gh api branches/master/protection answers Branch not protected, and the repository holds the ruleset master.",
@@ -3632,7 +3632,11 @@
             "pattern": "pilot-daily-loop.md: the form of a pilot note",
             "target": "new"
           },
-          "consumes": []
+          "consumes": [],
+          "last_verify": {
+            "at": "2026-11-11T11:26:57Z",
+            "exit": 0
+          }
         },
         {
           "id": "T6.4",
