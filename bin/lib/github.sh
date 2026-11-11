@@ -1,7 +1,7 @@
 #!/bin/bash
 # GitHub API Utility Library
 # Requires: core.sh, gh, git
-# Provides: GitHub operations with error handling and validation
+# Provides: github_ensure_authenticated, github_get_runs, github_get_file_contents
 
 # Guard against multiple sourcing
 if [[ -n "${BU_STATE_GITHUB:-}" ]]; then return 0; fi
@@ -9,31 +9,6 @@ BU_STATE_GITHUB=1
 
 # Load core library (handles bootstrap initialization)
 source "${BU_LIB:-${BASH_SOURCE[0]%/*}}/core.sh"
-
-# ============================================
-# Repository Context
-# ============================================
-
-# Get repository full name (owner/name), respecting GH_REPO override
-# Args: None
-# Returns: owner/name string (stdout)
-# Exits: 1 if not in a GitHub repository and GH_REPO not set
-github_get_repo_fullname() {
-  if [[ -n "${GH_REPO:-}" ]]; then
-    logger_debug "Using repository from GH_REPO: $GH_REPO"
-    echo "$GH_REPO"
-    return 0
-  fi
-
-  local repo
-  repo=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null)
-  if [[ -z "$repo" ]]; then
-    logger_error "Not in a GitHub repository and GH_REPO not set"
-    return 1
-  fi
-  logger_debug "Detected repository: $repo"
-  echo "$repo"
-}
 
 # ============================================
 # GitHub Validation Functions
@@ -60,37 +35,6 @@ github_ensure_authenticated() {
   fi
 
   return 0
-}
-
-# ============================================
-# Repository Settings Functions
-# ============================================
-
-# Get repository-level settings from GitHub
-# Args: $1 - owner
-#       $2 - repo name
-# Returns: JSON object with repository settings (stdout)
-# Exits: 1 if not authenticated or API error
-# Requires: gh CLI
-github_get_repo_settings() {
-  local owner="${1:-}"
-  local name="${2:-}"
-
-  if [[ -z "$owner" ]]; then logger_error "Owner required"; return 1; fi
-  if [[ -z "$name" ]]; then logger_error "Repo name required"; return 1; fi
-
-  github_ensure_authenticated || return 1
-
-  local output
-  output=$(gh api "/repos/${owner}/${name}" 2>/dev/null)
-  local exit_code=$?
-
-  if [[ $exit_code -eq 0 ]]; then
-    echo "$output"
-  else
-    logger_error "Failed to get repository settings: ${owner}/${name}"
-    return 1
-  fi
 }
 
 # ============================================
@@ -156,33 +100,6 @@ github_get_file_contents() {
     logger_debug "File not found: ${repo}/${path}@${ref}"
     return 1
   fi
-}
-
-# Apply repository-level settings via GitHub API (PATCH)
-# Args: $1 - owner
-#       $2 - repo name
-#       $3 - JSON settings payload
-# Returns: None (logs result to stderr)
-# Exits: 1 on failure
-# Requires: gh CLI
-github_patch_repo_settings() {
-  local owner="${1:-}"
-  local name="${2:-}"
-  local settings="${3:-}"
-
-  if [[ -z "$owner" ]]; then logger_error "Owner required"; return 1; fi
-  if [[ -z "$name" ]]; then logger_error "Repo name required"; return 1; fi
-  if [[ -z "$settings" ]]; then logger_error "Settings JSON required"; return 1; fi
-
-  github_ensure_authenticated || return 1
-
-  gh api --method PATCH "/repos/${owner}/${name}" \
-    --input - <<< "$settings" >/dev/null 2>&1 || {
-    logger_error "Failed to patch repository settings: ${owner}/${name}"
-    return 1
-  }
-
-  logger_success "Repository settings applied: ${owner}/${name}"
 }
 
 return 0

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Purpose: Check the runs field of app git workflow-status on a throwaway repository: the recent workflow runs from a
-#          stubbed gh, and the empty field without a gh credential and when the runs cannot be read.
+#          stubbed gh, and the empty field without a gh credential, without a remote, when the runs cannot be read
+#          and when gh answers with no JSON array. The case of no gh binary is not covered: the tool image needs docker.
 # Usage: bash tests/git-status/runs.sh
 # Arguments: none; BU_ROOT must be set (the framework shell sets it)
 # Output: one line per case, ok or FAIL
@@ -53,6 +54,10 @@ case "$1 $2" in
     if [[ "${STUB_LIST:-ok}" == "fail" ]]; then
       exit 1
     fi
+    if [[ "${STUB_LIST:-ok}" == "text" ]]; then
+      echo "not json"
+      exit 0
+    fi
     printf '[{"name":"status-checks","status":"completed","conclusion":"success","url":"https://example.test/run/1","createdAt":"2026-11-11T10:00:00Z","headBranch":"master"}]\n'
     ;;
   *)
@@ -92,5 +97,17 @@ ok=no
 out="$(run_status env STUB_AUTH=0 STUB_LIST=fail)" || out=""
 if [[ "$(jq -c '.runs' <<< "$out")" == "[]" && "$(jq -r '.current_branch' <<< "$out")" == "master" ]]; then ok=yes; fi
 case_result "the runs field is empty when the runs cannot be read and the status still prints" "$ok"
+
+ok=no
+out="$(run_status env STUB_AUTH=0 STUB_LIST=text)" || out=""
+if [[ "$(jq -c '.runs' <<< "$out")" == "[]" && "$(jq -r '.current_branch' <<< "$out")" == "master" ]]; then ok=yes; fi
+case_result "the runs field is empty when gh answers with text that is no JSON array" "$ok"
+
+: > "$calls"
+git -C "$repo" remote remove origin
+ok=no
+out="$(run_status env STUB_AUTH=0 STUB_LIST=ok)" || out=""
+if [[ "$(jq -c '.runs' <<< "$out")" == "[]" && ! -s "$calls" && "$(jq -r '.current_branch' <<< "$out")" == "master" ]]; then ok=yes; fi
+case_result "the runs field is empty without a remote and the status still prints" "$ok"
 
 exit "$failed"

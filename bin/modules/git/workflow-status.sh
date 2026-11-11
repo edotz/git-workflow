@@ -121,7 +121,10 @@ get_recent_runs() {
     return 0
   fi
   runs="$(github_get_runs "$slug" "" "$RUNS_LIMIT" 2>/dev/null </dev/null)" || runs="[]"
-  echo "${runs:-[]}"  # out:return
+  if ! json_query "${runs:-null}" 'type == "array"' -e >/dev/null 2>&1; then
+    runs="[]"
+  fi
+  echo "$runs"  # out:return
   return 0
 }
 
