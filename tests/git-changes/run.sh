@@ -7,6 +7,8 @@
 # Output: one line per case, ok or FAIL
 # Exit codes: 0 all cases hold, 1 a case failed
 set -euo pipefail
+# The framework takes an exported PROJECT_ROOT before the working directory; the throwaway repository is the working directory.
+unset PROJECT_ROOT AOS_ROOT SESSION_DIR AOS_TIER_CHAIN
 
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 export PLUGIN_ROOT="$root"
@@ -48,6 +50,13 @@ run_changes() {
 
 run_changes "$repo"
 case_result "a clean tree prints nothing and exits 0" "$([[ "$RC" -eq 0 && -z "$OUT" ]] && echo yes || echo no)"
+
+mkdir -p "${repo}/sub"
+printf 'n\n' > "${repo}/sub/note.txt"
+RC=0
+OUT="$(cd "${repo}/sub" && PROJECT_ROOT="$repo" bash "$changes" 2>&1)" || RC=$?
+case_result "started in a subdirectory it lists the paths relative to the project root" "$([[ "$RC" -eq 0 && "$OUT" == $'untracked\tsub/note.txt' ]] && echo yes || echo no)"
+rm -rf "${repo}/sub"
 
 printf 'new\n' > "${repo}/staged-new.txt"
 git -C "$repo" add staged-new.txt

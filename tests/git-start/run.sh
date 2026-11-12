@@ -5,6 +5,8 @@
 # Output: one line per case, ok or FAIL
 # Exit codes: 0 all cases hold, 1 a case failed
 set -euo pipefail
+# The framework takes an exported PROJECT_ROOT before the working directory; the throwaway repository is the working directory.
+unset PROJECT_ROOT AOS_ROOT SESSION_DIR AOS_TIER_CHAIN
 
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 export PLUGIN_ROOT="$root"
@@ -102,6 +104,13 @@ ok=no
 if [[ "$rc" -eq 0 && "$out" == "fix/good-one" \
   && "$(git -C "$repo" rev-parse HEAD)" == "$(git -C "$repo" rev-parse master)" ]]; then ok=yes; fi
 case_result "the same name under another type is no clash, and the start works from another branch" "$ok"
+
+mkdir -p "${repo}/sub"
+rc=0
+out="$(cd "${repo}/sub" && PROJECT_ROOT="$repo" GIT_WORKFLOW_MAIN_BRANCH=master bash "$start" docs from-subdir 2>/dev/null)" || rc=$?
+ok=no
+if [[ "$rc" -eq 0 && "$out" == "docs/from-subdir" && "$(git -C "$repo" rev-parse --abbrev-ref HEAD)" == "docs/from-subdir" ]]; then ok=yes; fi
+case_result "started in a subdirectory the branch is made in the checkout of the project root" "$ok"
 
 git -C "$repo" push -q origin "master:refs/heads/fix/only-remote"
 git -C "$repo" fetch -q origin
