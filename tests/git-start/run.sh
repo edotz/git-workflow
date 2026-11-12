@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Purpose: Check app git start on a throwaway repository with a bare remote: a good start and the refusals.
+# Purpose: Check app git start on a throwaway repository with a bare remote: the branch is created in the checkout, and the refusals.
 # Usage: bash tests/git-start/run.sh
 # Arguments: none; BU_ROOT must be set (the framework shell sets it)
 # Output: one line per case, ok or FAIL
@@ -27,7 +27,6 @@ trap finish EXIT
 
 remote="${work}/remote.git"
 repo="${work}/r"
-wtbase="${work}/wt"
 git init -q --bare -b master "$remote"
 git init -q -b master "$repo"
 git -C "$repo" config user.name t
@@ -42,28 +41,39 @@ git -C "$repo" push -q origin master
 git -C "$repo" fetch -q origin
 
 run_start() {
-  (cd "$repo" && env GIT_WORKFLOW_MAIN_BRANCH=master GIT_WORKFLOW_WORKTREE_DIR="$wtbase" bash "$start" "$@" 2>&1)
+  (cd "$repo" && env GIT_WORKFLOW_MAIN_BRANCH=master bash "$start" "$@" 2>&1)
 }
 
 run_start_stdout() {
-  (cd "$repo" && env GIT_WORKFLOW_MAIN_BRANCH=master GIT_WORKFLOW_WORKTREE_DIR="$wtbase" bash "$start" "$@" 2>/dev/null)
+  (cd "$repo" && env GIT_WORKFLOW_MAIN_BRANCH=master bash "$start" "$@" 2>/dev/null)
 }
 
+echo "uncommitted" > "${repo}/f"
 rc=0
 out="$(run_start_stdout feat good-one)" || rc=$?
 ok=no
-if [[ "$rc" -eq 0 && "$out" == "${wtbase}/r/feat-good-one" && -d "$out" ]]; then ok=yes; fi
-case_result "a good start prints the path of the worktree" "$ok"
+if [[ "$rc" -eq 0 && "$out" == "feat/good-one" ]]; then ok=yes; fi
+case_result "a good start prints the name of the branch" "$ok"
 
 ok=no
-if [[ "$(git -C "${wtbase}/r/feat-good-one" rev-parse --abbrev-ref HEAD)" == "feat/good-one" \
-  && "$(git -C "$repo" rev-parse feat/good-one)" == "$(git -C "$repo" rev-parse master)" ]]; then ok=yes; fi
-case_result "the worktree holds the branch type/name at the head of the main branch" "$ok"
+if [[ "$(git -C "$repo" rev-parse --abbrev-ref HEAD)" == "feat/good-one" \
+  && "$(git -C "$repo" rev-parse HEAD)" == "$(git -C "$repo" rev-parse master)" ]]; then ok=yes; fi
+case_result "the checkout is on the branch type/name at the head of the main branch" "$ok"
+
+ok=no
+if [[ -z "$(git -C "$repo" config --get branch.feat/good-one.remote || true)" \
+  && -z "$(git -C "$repo" config --get branch.feat/good-one.merge || true)" ]]; then ok=yes; fi
+case_result "the new branch has no upstream" "$ok"
+
+ok=no
+if [[ "$(<"${repo}/f")" == "uncommitted" ]]; then ok=yes; fi
+case_result "an uncommitted change goes along to the new branch" "$ok"
+git -C "$repo" checkout -q -- f
 
 rc=0
 out="$(run_start wip bad-type)" || rc=$?
 ok=no
-if [[ "$rc" -eq 2 && "$out" == *"Unknown type"* && ! -e "${wtbase}/r/wip-bad-type" ]]; then ok=yes; fi
+if [[ "$rc" -eq 2 && "$out" == *"Unknown type"* && "$(git -C "$repo" rev-parse --abbrev-ref HEAD)" == "feat/good-one" ]]; then ok=yes; fi
 case_result "a type outside the commitlint types is refused with exit 2" "$ok"
 
 for bad in "Bad-Name" "bad_name" "bad--name" "-bad" "bad-" "bad/name"; do
@@ -89,20 +99,30 @@ case_result "a branch that exists locally is refused" "$ok"
 rc=0
 out="$(run_start_stdout fix good-one)" || rc=$?
 ok=no
-if [[ "$rc" -eq 0 && "$out" == "${wtbase}/r/fix-good-one" ]]; then ok=yes; fi
-case_result "the same name under another type is no clash" "$ok"
+if [[ "$rc" -eq 0 && "$out" == "fix/good-one" \
+  && "$(git -C "$repo" rev-parse HEAD)" == "$(git -C "$repo" rev-parse master)" ]]; then ok=yes; fi
+case_result "the same name under another type is no clash, and the start works from another branch" "$ok"
 
 git -C "$repo" push -q origin "master:refs/heads/fix/only-remote"
 git -C "$repo" fetch -q origin
 rc=0
 out="$(run_start fix only-remote)" || rc=$?
 ok=no
-if [[ "$rc" -eq 1 && "$out" == *"exists on origin"* && ! -e "${wtbase}/r/fix-only-remote" ]]; then ok=yes; fi
+if [[ "$rc" -eq 1 && "$out" == *"exists on origin"* ]]; then ok=yes; fi
 case_result "a branch that exists only on origin is refused before anything is created" "$ok"
 
 ok=no
 if ! git -C "$repo" rev-parse --verify --quiet refs/heads/fix/only-remote >/dev/null; then ok=yes; fi
 case_result "the refusal creates no local branch" "$ok"
+
+git -C "$repo" switch -q master
+git -C "$repo" commit -q --allow-empty -m "chore: only local"
+rc=0
+out="$(run_start fix behind-origin)" || rc=$?
+ok=no
+if [[ "$rc" -eq 1 && "$out" == *"not in sync"* && "$out" == *"git switch master"* ]] \
+  && ! git -C "$repo" rev-parse --verify --quiet refs/heads/fix/behind-origin >/dev/null; then ok=yes; fi
+case_result "a main branch that differs from origin is refused before the branch is created" "$ok"
 
 if [[ "$failed" -ne 0 ]]; then
   exit 1

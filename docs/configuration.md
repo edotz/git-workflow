@@ -127,7 +127,7 @@ The git commands read their settings from the environment. The table lists every
 | `GIT_WORKFLOW_LEGACY_BRANCHES` | unset | Comma separated branch names or glob patterns of the old lines. The `legacy` ruleset covers them; without a value `rules-sync` skips that ruleset. | `rules-sync` through `bin/config/rulesets.yaml` |
 | `GIT_WORKFLOW_STAGE` | `development` | Stage of the `master` ruleset: `development` or `production`. `rules-sync --stage` overrides it. Any other value is refused. | `rules-sync`, `lib/rules.sh` |
 | `GIT_WORKFLOW_APP_ID` | unset | Numeric ID of the App. It becomes the bypass actor of the rulesets. Required by `rules-sync --apply`; must be digits only. | `rules-sync` |
-| `GIT_WORKFLOW_WORKTREE_DIR` | `$HOME/worktrees` | Absolute directory where worktrees are created, below a folder named after the repository. A relative value is refused. | `start`, `worktree`, `lib/worktree.sh` |
+| `GIT_WORKFLOW_WORKTREE_DIR` | `$HOME/worktrees` | Absolute directory where worktrees are created, below a folder named after the repository. A relative value is refused. | `worktree`, `lib/worktree.sh` |
 
 ### Token service settings
 

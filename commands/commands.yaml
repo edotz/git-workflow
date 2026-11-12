@@ -16,7 +16,7 @@ commands:
   - name: start
     namespace: git
     type: tool
-    description: "Use when work on a new change starts and it needs its own branch and worktree."
+    description: "Use when work on a new change starts and it needs its own branch."
     argument-hint: "<type> <name>"
 
   - name: commit

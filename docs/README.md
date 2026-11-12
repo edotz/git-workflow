@@ -31,7 +31,7 @@
 
 ## The process in five lines
 
-1. `app git start <type> <name>` opens a branch and a worktree from `master`.
+1. `app git start <type> <name>` creates a branch from `master` and switches the checkout to it.
 2. `app git commit` writes a conventional commit; `app git check` runs the minimum check.
 3. `app git pr` pushes the branch and opens the pull request; it is squash-merged, so its title becomes the commit on `master`.
 4. `app git release` counts the version from the `feat`, `fix`, `perf` and breaking commits since the last tag, then commits, tags and publishes it with a short-lived App token.

@@ -46,8 +46,7 @@ The developer's own `gh` credential does the daily work (push, pull request). On
 | master | `GIT_WORKFLOW_MAIN_BRANCH` (default `master`) | Where work lands and where releases are made. Every release is a commit on master. |
 | Release branch | `GIT_WORKFLOW_RELEASE_BRANCH`, for example `1.x` or `2.x` | Follows a release tag by fast forward through `app git promote`. It never gets its own commits. |
 | Legacy branches | `GIT_WORKFLOW_LEGACY_BRANCHES` | Old release lines. They get the legacy ruleset. `app git release` only runs on the main branch. |
-| Feature branches | `<type>/<name>`, created by `app git start` | One change each. The pull request squash-merges it into master. |
-| Worktrees | `GIT_WORKFLOW_WORKTREE_DIR` (default `$HOME/worktrees`), `<dir>/<repo>/<type>-<name>` | One working directory per feature branch. `app git start` creates it. |
+| Feature branches | `<type>/<name>`, created by `app git start` in the checkout you work in | One change each, branched from master without an upstream. The pull request squash-merges it into master. |
 
 The release branch moves only through `app git promote`, and its ruleset blocks deletion and non-fast-forward pushes in both stages. The master ruleset requires a pull request, so direct pushes are refused, but only in the production stage; its development stage has no rules and the file has no `non_fast_forward` rule for `master`. Never force push master by hand in either stage.
 
@@ -121,7 +120,7 @@ The only workflow of a consuming project is `status-checks.yml`. It has one job,
 ```text
 Developer (shell or Claude Code)
   |
-  | app git start feat add-login        branch feat/add-login and its worktree
+  | app git start feat add-login        branch feat/add-login, checked out
   | app git commit <paths>              conventional commit, linted before it is made
   | app git check                       commit lint since the last tag, plus declared checks
   | app git pr                          push as the developer, open the pull request

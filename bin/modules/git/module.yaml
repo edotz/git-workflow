@@ -120,7 +120,7 @@ commands:
         description: "owner/repo of the child, needed to replace a child that does not descend from the split; its old head is kept as legacy/pre-split"
   - name: "start"
     requires: [git, docker]
-    description: "Create the branch <type>/<name> and its worktree from the main branch and print the worktree path."
+    description: "Create the branch <type>/<name> from the main branch, switch to it and print its name."
     when: "Work on a new change starts"
     examples:
       - "bash $BU_ROOT/app git start feat add-login"

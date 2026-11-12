@@ -67,7 +67,7 @@ The split uses splitsh-lite, which runs in the Docker tool image. It takes the f
 
 A component's tag whose commit has no history for its first path stops the split before anything is pushed (see [Baselining](#baselining-existing-child-repositories)).
 
-The tool image has no git in a linked worktree. Run split from the main clone of the repository, not from a worktree created with `app git start`; from a worktree the command fails with `splitsh-lite failed`.
+The tool image has no git in a linked worktree. Run split from the main clone of the repository, not from a linked worktree; from a worktree the command fails with `splitsh-lite failed`.
 
 ## Dry run
 

@@ -60,7 +60,7 @@ One line per script in `bin/modules/git/`. The name is the `app git` command; th
 
 | Script | Command | What it does |
 |---|---|---|
-| `start.sh` | `start` | Creates `<type>/<name>` from the main branch and its worktree (`worktree_create`), refusing a branch that exists locally or on origin |
+| `start.sh` | `start` | Creates `<type>/<name>` from the main branch and switches the checkout to it (`branch_create`), refusing a branch that exists locally or on origin |
 | `commit.sh` | `commit` | Stages the paths, drafts or takes the message, lints it with `lint-commit.sh`, asks for confirmation unless `--yes` with `--message`, commits as the developer; restores the index when the commit fails |
 | `lint-commit.sh` | `lint-commit` | Runs the commitlint binary of `node_modules` on one commit message file with `commitlint.config.mjs` |
 | `check.sh` | `check` | Runs `check_minimum` for every component or one named; prints `<name>: ok` or `<name>: failed`; writes nothing |
@@ -92,6 +92,7 @@ Libraries are in `bin/lib/`. Each has a guard variable `BU_STATE_<NAME>` against
 | `rules.sh` | `rules_load`, `rules_names`, `rules_json` | Reads `bin/config/rulesets.yaml` as JSON and builds one ruleset for a stage in the GitHub body format |
 | `split.sh` | `split_head` | Runs splitsh-lite in the tool image on the first path of a component and returns the split head |
 | `remote.sh` | `remote_slug`, `remote_identity` | Reads `owner/name` from a remote URL and the developer's `user.name` or `user.email`; no network, no token |
+| `branch.sh` | `branch_create` | Creates a branch at the head of the main branch and switches to it without an upstream; refuses when the local main branch is not in sync with origin |
 | `worktree.sh` | `worktree_create`, `worktree_get_path`, `worktree_prune`, `worktree_resolve_base_branch` | Worktree location `<dir>/<repo>/<name with / as ->`, creation from the main branch, refusal when the local main branch is not in sync with origin |
 | `github.sh` | `github_ensure_authenticated`, `github_get_runs`, `github_get_file_contents` | Reads workflow runs and file contents with `gh`; only `workflow-status` uses it |
 
