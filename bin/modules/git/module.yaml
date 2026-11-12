@@ -4,7 +4,7 @@ requires: [git]
 
 commands:
   - name: "branch-cleanup"
-    description: "Identify merged, stale and safe-to-delete branches."
+    description: "Identify merged, stale and active branches and delete the merged ones after the confirmation or with --force."
   - name: "check"
     description: "Run the minimum check of one component or of every component: commit lint since the latest tag plus the checks the component declares."
     when: "Before a pull request or a push, and to see which component is red"
