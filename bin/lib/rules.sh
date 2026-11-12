@@ -75,13 +75,14 @@ rules_names() {
 # Print one ruleset as compact GitHub ruleset JSON for a stage.
 # The stage is the second argument, else GIT_WORKFLOW_STAGE from the environment, else development; a stage the
 # file does not list is refused. A ruleset with include_from takes its branch patterns from that environment
-# setting, comma separated, and a pattern without refs/ or ~ is read as a branch name. The bypass actor id stays
+# setting, comma separated, else from its include_default, and a pattern without refs/ or ~ is read as a branch name.
+# The bypass actor id stays
 # APP_ID_PLACEHOLDER: rules-sync sets it.
 # Args:
 #   $1 - ruleset name (see rules_names)
 #   $2 - stage, optional
 # Returns: ruleset JSON on stdout
-# Exits: 2 on an unknown name or stage, 3 when include_from names an empty setting
+# Exits: 2 on an unknown name or stage, 3 when include_from names an empty setting and the ruleset has no include_default
 # Example: rules_json master production
 rules_json() {
   local name="${1:-}" stage="${2:-${GIT_WORKFLOW_STAGE:-$RULES_DEFAULT_STAGE}}"
@@ -95,10 +96,14 @@ rules_json() {
     die_with "$BU_EXIT_USAGE" "rules: unknown stage ${stage}"
   fi
 
-  local from patterns=""
+  local from default patterns=""
   from=$(json_query "$RULES_DOC" '.rulesets[$n].include_from // ""' --arg n "$name")
   if [[ -n "$from" ]]; then
     patterns="${!from:-}"
+    if [[ -z "${patterns//[[:space:],]/}" ]]; then
+      default=$(json_query "$RULES_DOC" '.rulesets[$n].include_default // ""' --arg n "$name")
+      patterns="$default"
+    fi
     if [[ -z "${patterns//[[:space:],]/}" ]]; then
       die_with "$BU_EXIT_CONFIG" "rules: ${name} needs ${from}, the comma separated branch patterns"
     fi
@@ -107,7 +112,7 @@ rules_json() {
   json_query "$RULES_DOC" '
     .rulesets as $rs
     | $rs[$n] as $r
-    | ($rs[$r.extends // $n] * ($r | del(.extends, .include_from))) as $m
+    | ($rs[$r.extends // $n] * ($r | del(.extends, .include_from, .include_default))) as $m
     | ($m.rules | if type == "object" then .[$s] else . end) as $rules
     | ($p | split(",") | map(gsub("^\\s+|\\s+$"; "") | select(length > 0))
         | map(if startswith("refs/") or startswith("~") then . else "refs/heads/" + . end)) as $inc
