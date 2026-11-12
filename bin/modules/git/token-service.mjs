@@ -7,6 +7,7 @@ const config = JSON.parse(readFileSync(new URL("../../config/token-service.json"
 const appId = process.env.TOKEN_SERVICE_APP_ID;
 const keyPath = process.env.TOKEN_SERVICE_KEY_PATH;
 const port = Number(process.env.TOKEN_SERVICE_PORT || 8790);
+const host = process.env.TOKEN_SERVICE_HOST || "127.0.0.1";
 const org = process.env.TOKEN_SERVICE_ORG || config.org;
 
 if (!appId || !keyPath) {
@@ -121,4 +122,4 @@ createServer(async (req, res) => {
       reply(502, { error: "token service failed" });
     }
   }
-}).listen(port, "0.0.0.0", () => console.log(`token service listening on ${port} for org ${org}`));
+}).listen(port, host, () => console.log(`token service listening on ${host}:${port} for org ${org}`));

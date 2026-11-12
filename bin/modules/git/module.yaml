@@ -134,7 +134,7 @@ commands:
   - name: "token-service"
     script: "token-service.mjs"
     requires: [node]
-    description: "Run the token service that issues narrowed one-hour installation tokens of the GitHub App to organisation members; needs TOKEN_SERVICE_APP_ID and TOKEN_SERVICE_KEY_PATH, listens on TOKEN_SERVICE_PORT (default 8790)."
+    description: "Run the token service that issues narrowed one-hour installation tokens of the GitHub App to organisation members; needs TOKEN_SERVICE_APP_ID and TOKEN_SERVICE_KEY_PATH, listens on TOKEN_SERVICE_HOST (default 127.0.0.1) and TOKEN_SERVICE_PORT (default 8790)."
     arguments:
       - name: "TOKEN_SERVICE_APP_ID"
         description: "ID of the GitHub App (environment variable)"
@@ -142,6 +142,9 @@ commands:
       - name: "TOKEN_SERVICE_KEY_PATH"
         description: "Path of the private key file of the App (environment variable); the key is never copied into an image"
         required: true
+      - name: "TOKEN_SERVICE_HOST"
+        description: "Address the service listens on (environment variable); the container sets 0.0.0.0 and publishes its port on 127.0.0.1 only"
+        required: false
   - name: "workflow-setup"
     description: "Validate the branch settings GIT_WORKFLOW_MAIN_BRANCH and GIT_WORKFLOW_RELEASE_BRANCH and print them."
   - name: "workflow-status"

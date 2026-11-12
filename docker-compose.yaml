@@ -37,6 +37,7 @@ services:
     environment:
       TOKEN_SERVICE_APP_ID: ${TOKEN_SERVICE_APP_ID:-}
       TOKEN_SERVICE_KEY_PATH: /run/secrets/app-key.pem
+      TOKEN_SERVICE_HOST: 0.0.0.0
     volumes:
       - ${TOKEN_SERVICE_KEY_FILE:-/dev/null}:/run/secrets/app-key.pem:ro
     ports:
