@@ -20,7 +20,6 @@
     "allow": [
       "Agent(evolve)",
       "Agent(claude-code-guide)",
-      "Bash(env * bash /home/ohoeft/workspace/edotz.claude-code/bin/app git split * --apply --confirm *)",
       "Bash(bash /home/ohoeft/workspace/edotz.claude-code/bin/app git split * --apply --confirm *)"
     ]
   }

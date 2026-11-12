@@ -16,3 +16,6 @@ The project's own commands: registration, provider config and blueprints, author
 
 ## Constraints
 - Compiled artifacts are build output: never hand-edited.
+
+## Manifest check
+- `jq empty .agentic-os/commands/commands.json` exits 0 after a compile.
