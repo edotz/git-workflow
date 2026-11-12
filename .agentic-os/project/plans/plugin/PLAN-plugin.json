@@ -4677,7 +4677,7 @@
             "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-php-project.md",
             "target": "change"
           },
-          "status": "pending"
+          "status": "dropped"
         },
         {
           "id": "T6.21",
@@ -4724,7 +4724,70 @@
             "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-nodejs-project.md",
             "target": "change"
           },
-          "status": "pending"
+          "status": "dropped"
+        },
+        {
+          "id": "T6.22",
+          "title": "Lint the pull request title with the squash suffix in pr.sh and status-checks.yml",
+          "depends": [
+            "T6.15"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/pr.sh",
+              "why": "_pr_lint_title writes the bare title to a temporary file and lets lint-commit.sh judge it"
+            },
+            {
+              "ref": ".github/workflows/status-checks.yml",
+              "why": "the step Validate the pull request title pipes the bare PR_TITLE into commitlint"
+            },
+            {
+              "ref": "commitlint.config.mjs",
+              "why": "the header limit of 100 characters comes from config-conventional; the squash subject carries the suffix"
+            },
+            {
+              "ref": "tests/git-pr/title.sh",
+              "why": "the throwaway repository and the dry run cases of the title lint; the new cases follow its shape"
+            },
+            {
+              "ref": "D87",
+              "why": "the suffix rule: exact number in CI, fixed 4-digit reserve in pr.sh"
+            },
+            {
+              "ref": "D85",
+              "why": "the task belongs to P6"
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "bin/modules/git/pr.sh",
+                ".github/workflows/status-checks.yml",
+                "tests/git-pr/title.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "from": "environment fact: PR 5 of edotz/git-workflow had a title of 96 characters that passed the title lint and became a 101 character subject on master, which the commit lint refused",
+            "run": "bash -n bin/modules/git/pr.sh && grep -q 'pull_request.number' .github/workflows/status-checks.yml && grep -q '(#' .github/workflows/status-checks.yml && yq '.' .github/workflows/status-checks.yml >/dev/null && out=$(bash tests/git-pr/title.sh) && [ \"$(printf '%s\\n' \"$out\" | grep -c '^ok')\" -ge 13 ] && ! printf '%s\\n' \"$out\" | grep -q '^FAIL' && node_modules/.bin/shellcheck bin/modules/git/pr.sh tests/git-pr/title.sh"
+          },
+          "why": "GitHub appends \" (#N)\" to the squash subject, so a title that passes today can exceed the header limit of 100 characters on master and fail the commit lint after the merge.",
+          "result": "app git pr refuses a title that would exceed the header limit with the squash suffix before anything is pushed, and the status check of the pull request lints the title with its real number appended.",
+          "done": "tests/git-pr/title.sh shows ok lines for: a title of 92 characters passes the dry run, a title of 93 characters is refused with a reason naming the squash suffix and nothing pushed, and the 11 earlier cases stay green; status-checks.yml pipes the title plus the number into commitlint; shellcheck is clean.",
+          "fails": "A title of 96 or more characters still passes pr.sh or the status check and fails the commit lint on master after the squash merge, or the dry run starts needing a token or a network read.",
+          "brief": {
+            "arguments": "In pr.sh _pr_lint_title write the title plus the reserve \" (#9999)\" (a named constant with a one-line why: the squash merge appends the pull request number, unknown before the pull request exists) to the temporary file; the title itself is never rewritten and stays the --title of gh pr create; on refusal the die message names the suffix. In status-checks.yml add PR_NUMBER from github.event.pull_request.number to the env of the step and pipe printf '%s (#%s)\\n' \"$PR_TITLE\" \"$PR_NUMBER\" into commitlint. In tests/git-pr/title.sh add a branch whose subject makes a 92 character title (accepted by the dry run) and one of 93 characters (refused, output names the suffix, no push).",
+            "output": "bin/modules/git/pr.sh, .github/workflows/status-checks.yml and tests/git-pr/title.sh with ok and FAIL lines",
+            "pattern": "tests/git-pr/title.sh",
+            "target": "change"
+          },
+          "status": "done",
+          "last_verify": {
+            "at": "2026-11-12T10:57:56Z",
+            "exit": 0
+          }
         }
       ],
       "gate": {
@@ -5607,6 +5670,26 @@
       "date": "2026-11-11",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D87",
+      "question": "How does the title lint account for the \" (#N)\" that a squash merge appends to the subject?",
+      "chosen": "status-checks.yml lints the title plus \" (#<pull request number>)\", exactly what lands on the main branch; pr.sh does not know the number before the pull request exists and lints the title plus the fixed reserve \" (#9999)\" (8 characters), offline, so a title of 93 or more characters is refused before the push.",
+      "reason": "GitHub appends \" (#N)\" to the squash subject, so a title of 96 or more characters passes the title lint and fails the commit lint on master (PR 5 became 101 characters against the header limit of 100); the fixed reserve keeps the dry run free of a token and a network read and errs on the safe side.",
+      "by": "owner",
+      "date": "2026-11-12",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D88",
+      "question": "How do T6.20 and T6.21 leave P6, now that the first releases of php-project and nodejs-project wait for the first real changes of the sdv.bewerber migration?",
+      "chosen": "T6.20 and T6.21 are dropped; their first releases and the promote baselines of the release branches 2.x (php-project) and 1.x (nodejs-project) become tasks of a continuation plan that follows PLAN-plugin and is planned once the first real change exists (for php-project the PHP >=8.4 <8.5 constraint, D6 of the typo3-13-4-migration concept). T6.19 stays: typo3-cms has its releasable fix commit and the developer runs its release after the first migration tasks.",
+      "reason": "The baseline tags of php-project and nodejs-project sit on HEAD and no commit after them is a feat, fix, perf or breaking one, so app git release proposes nothing and promote refuses a tag that is no release commit (D81); an artificial commit or a relaxed promote was not chosen. Keeping the tasks would hold the P6 gate and the plan status done until the sdv migration has produced those changes.",
+      "by": "owner",
+      "date": "2026-11-12",
+      "scope": "durable",
+      "status": "decided"
     }
   ],
   "review_reports": [
@@ -6297,6 +6380,29 @@
       ],
       "reason": "The verify as written rejected a check that works on the runner and on the machine of a developer; approved by the developer",
       "by": "owner"
+    },
+    {
+      "date": "2026-11-12",
+      "change": "Record D87 (the title lint counts the squash suffix: exact number in CI, fixed reserve in pr.sh) and add T6.22 to lint the pull request title with the suffix in pr.sh and status-checks.yml",
+      "affects": [
+        "P6",
+        "T6.22",
+        "D87"
+      ],
+      "reason": "GitHub appends ' (#N)' to the squash subject, so a title of 96 or more characters passes the title lint and fails the commit lint on master (PR 5 became 101 characters); the developer chose the fixed 4-digit reserve in pr.sh and approved the amendment on 2026-11-12",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-12",
+      "change": "Record D88 and drop T6.20 and T6.21: the first releases and promote baselines of php-project and nodejs-project move to a continuation plan that follows PLAN-plugin",
+      "affects": [
+        "P6",
+        "T6.20",
+        "T6.21",
+        "D88"
+      ],
+      "reason": "Their baseline tags sit on HEAD and no feat, fix, perf or breaking commit follows, so release proposes nothing and promote refuses a baseline tag (D81); the first real change comes with the sdv.bewerber migration; the developer chose to drop them and continue in a later plan and approved the amendment on 2026-11-12",
+      "by": "claude"
     }
   ],
   "dismissals": [

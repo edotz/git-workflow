@@ -1,7 +1,8 @@
 ## Now
-- m6-retire-old: typo3-cms, php-project migrated; nodejs-project merged, next its ten child baselines with the split token set (T6.16), then T6.4 and T6.6 notes, T6.13, T6.7, T6.8
+- m6-retire-old: all P6 tasks but T6.19 to T6.21 done; next a task for the squash subject limit, then the first releases and promote baseline per repo, then close the plan
 
 ## Log
+- 2026-11-11 plugin (a24bcf21): baselined the ten nodejs-project children and closed their old release PRs, retired the classic protection code, moved git-workflow to rulesets, made version_next count from a range with the feat, fix, perf and breaking filter (D85, D86); PRs 5 to 7 merged
 - 2026-11-11 plugin (a24bcf21): migrated typo3-cms (branch roles, 2.x/1.x) and php-project (children baselined, old release train removed), nodejs-project to pnpm and components, added promote baseline, PR title lint, split skip and the split token set (D79 to D84)
 - 2026-11-10 plugin (a24bcf21): registered /git:split (T5.4, D77, D78), piloted the monorepo in the sandbox (T5.5) and fixed the push hooks in the tool image, migrated typo3-cms up to its rulesets and merged PRs, cleaned up its branches and protection
 - 2026-11-10 plugin (a24bcf21): piloted the daily loop in the sandbox (T4.12), registered the commands, detailed P5 and P6 with a plan review (D61 to D76), built the production App, the rules-sync foreign report and the split dry run and apply (T5.1 to T5.3), cleaned up temp work and memory
