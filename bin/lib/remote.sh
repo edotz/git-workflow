@@ -1,8 +1,9 @@
 #!/bin/bash
 # Remote Utility Library
 # Requires: core.sh, git.sh, git
-# Provides: remote_slug, remote_identity: the repository slug of a remote and the developer identity, both read from
-#           the local git configuration only; no token and no tool image.
+# Provides: remote_slug, remote_on_github, remote_identity: the repository slug of a remote, whether it lives on
+#           github.com, and the developer identity, all read from the local git configuration only; no token and
+#           no tool image.
 
 # Guard against multiple sourcing
 if [[ -n "${BU_STATE_REMOTE:-}" ]]; then return 0; fi
@@ -50,6 +51,18 @@ remote_slug() {
   fi
   echo "$path" # out:return
   return 0
+}
+
+# Tell whether a remote lives on github.com. The https, ssh:// and scp forms are read; any other host, GitHub
+# Enterprise included, is not github.com.
+# Args:
+#   $1 - remote name, optional (default origin)
+# Returns: 0 when the URL of the remote is on github.com, 1 otherwise or when the remote does not exist
+# Example: if remote_on_github; then ...
+remote_on_github() {
+  local remote="${1:-origin}" url
+  url="$(git remote get-url "$remote" 2>/dev/null)" || return 1
+  [[ "$url" =~ ^(https://([^@/]+@)?|ssh://([^@/]+@)?|[^@/:]+@)github\.com[:/] ]]
 }
 
 # Print the identity of the developer: the value of git config user.name or user.email.

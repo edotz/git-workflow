@@ -3,7 +3,9 @@
 # Identifies merged, stale, and safe-to-delete branches; a squash-merged branch counts as merged
 # when git cherry finds no commit of it that is not applied to the main branch (also as one squashed commit), or a
 # merged pull request has it as its head
-# Output: Interactive cleanup with safety checks
+# Output: the report of the analysis, then, after the confirmation or with --force, one line per deleted or kept branch
+# Deletes only a branch that git proves applied to the main branch; a branch that only a merged pull request names is kept.
+# The branch that is checked out and the protected branches are never deleted.
 
 set -euo pipefail
 
@@ -24,6 +26,7 @@ source "${PLUGIN_LIB}/remote.sh"
 readonly MAIN_BRANCH="${GIT_WORKFLOW_MAIN_BRANCH:-master}"
 readonly RELEASE_BRANCH="${GIT_WORKFLOW_RELEASE_BRANCH:-master}"
 readonly STALE_DAYS="${PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS:-30}"
+readonly CLEANUP_AUTH=(-c "core.hooksPath=/dev/null" -c "credential.helper=" -c "credential.helper=!gh auth git-credential")
 
 # ============================================
 # CLI Specification
@@ -33,8 +36,8 @@ cli_set_spec \
   description "${MODULE_DESCRIPTION:-}" \
   version     "${MODULE_VERSION:-2.0.0}"
 
-cli_add_flag "dry-run" "d" "Preview changes without deleting"
-cli_add_flag "force" "f" "Skip confirmation prompt"
+cli_add_flag "dry-run" "d" "Print the report and delete nothing"
+cli_add_flag "force" "f" "Skip the confirmation and delete the merged branches"
 cli_add_flag "remote-only" "r" "Only analyze remote branches"
 cli_add_flag "local-only" "l" "Only analyze local branches"
 
@@ -55,6 +58,18 @@ is_protected() {
     fi
   done
   
+  # The legacy branches of the plugin setting, comma separated, globs allowed
+  local legacy pattern
+  local -a legacy_patterns=()
+  IFS=',' read -r -a legacy_patterns <<< "${GIT_WORKFLOW_LEGACY_BRANCHES:-}"
+  for legacy in "${legacy_patterns[@]}"; do
+    pattern="${legacy//[[:space:]]/}"
+    # shellcheck disable=SC2053 # the legacy branch patterns are globs on purpose
+    if [[ -n "$pattern" && "$branch" == $pattern ]]; then
+      return 0
+    fi
+  done
+
   # Special patterns
   if [[ "$branch" == "release-please--"* ]] || [[ "$branch" == "backport/"* ]]; then
     return 0
@@ -130,6 +145,17 @@ calculate_days_old() {
   echo $(( (current_timestamp - timestamp) / 86400 ))  # out:return
 }
 
+# The ref that holds the main branch: a squash merge made on GitHub is on origin/<main> until the developer pulls.
+# Args: none
+# Returns: origin/<main> when it exists, else <main> (stdout)
+resolve_main_ref() {
+  if git rev-parse --verify --quiet "origin/${MAIN_BRANCH}" >/dev/null 2>&1; then
+    echo "origin/${MAIN_BRANCH}"  # out:return
+  else
+    echo "$MAIN_BRANCH"  # out:return
+  fi
+}
+
 # Dispatch branch analysis to local or remote analyzer
 # Args: $1 - scope: "local" | "remote"
 # Returns: JSON with categorized branches
@@ -152,11 +178,8 @@ analyze_local_branches() {
   
   git fetch --prune origin 2>/dev/null || true
 
-  # A squash merge made on GitHub is on origin/<main> until the developer pulls.
-  local base="$MAIN_BRANCH"
-  if git rev-parse --verify --quiet "origin/${MAIN_BRANCH}" >/dev/null 2>&1; then
-    base="origin/${MAIN_BRANCH}"
-  fi
+  local base
+  base="$(resolve_main_ref)"
 
   while IFS= read -r branch; do
     # Skip protected branches
@@ -266,6 +289,83 @@ display_report() {
   print_line ""
 }
 
+# Delete the merged local branches. Only a branch that git proves applied to the main branch is deleted, with -D,
+# because a squash merge leaves no ancestor for -d; a branch that only a merged pull request names is kept, as its
+# tip can hold commits the pull request did not have. The checked out branch is kept, and so is a branch at the same
+# commit as the main branch: nothing tells it from a branch that was just cut.
+# Args: $1 - results JSON, $2 - ref of the main branch
+# Stdout: one line per branch
+delete_local_branches() {
+  local results="$1" base="$2" current branch
+  local -a merged
+  readarray -t merged < <(json_query "$results" '.local_branches.merged[]' -r)
+  current="$(git_get_current_branch)"
+
+  for branch in "${merged[@]}"; do
+    # shellcheck disable=SC2310
+    if [[ "$branch" == "$current" ]]; then
+      print_item warning "kept ${branch}" "checked out, switch to another branch first"
+    elif [[ "$(git rev-parse "$branch")" == "$(git rev-parse "$base")" ]]; then
+      print_item warning "kept ${branch}" "at the same commit as the main branch, nothing tells it from a branch just cut"
+    elif ! is_merged "$branch" "$base"; then
+      print_item warning "kept ${branch}" "only a merged pull request names it, git cherry finds commits the main branch lacks"
+    elif git branch -D -- "$branch" >/dev/null 2>&1; then
+      print_item ok "deleted ${branch}" "local"
+    else
+      print_item error "failed ${branch}" "git branch -D refused it, is it checked out in a worktree?"
+    fi
+  done
+  return 0
+}
+
+# Delete the merged remote branches with the developer's login, one push per branch, under the same rule as the local
+# ones. Nothing is deleted unless origin is a GitHub repository and the developer is logged in. The branches of origin
+# are fetched first and each deletion carries the tip that was proven merged as a lease, so a commit pushed in the
+# meantime keeps the branch.
+# Args: $1 - results JSON
+# Stdout: one line per branch
+delete_remote_branches() {
+  local results="$1" branch sha url
+  local -a merged
+  readarray -t merged < <(json_query "$results" '.remote_branches.merged[]' -r)
+  if [[ "${#merged[@]}" -eq 0 ]]; then
+    return 0
+  fi
+  if [[ -z "$PR_LOOKUP_SLUG" ]]; then
+    print_item warning "kept the remote branches" "no developer login or no origin with an owner/name"
+    return 0
+  fi
+  # shellcheck disable=SC2310
+  if ! remote_on_github origin; then
+    print_item warning "kept the remote branches" "origin is not a github.com repository, the deletion would go to another one"
+    return 0
+  fi
+
+  url="https://github.com/${PR_LOOKUP_SLUG}.git"
+  # shellcheck disable=SC2310
+  if ! GH_TOKEN="$PR_LOOKUP_TOKEN" tool_run git "${CLEANUP_AUTH[@]}" fetch --prune "$url" "+refs/heads/*:refs/remotes/origin/*" </dev/null >/dev/null 2>&1; then
+    print_item warning "kept the remote branches" "the current branches of origin cannot be read"
+    return 0
+  fi
+
+  for branch in "${merged[@]}"; do
+    sha="$(git rev-parse --verify --quiet "refs/remotes/origin/${branch}" || true)"
+    # shellcheck disable=SC2310
+    if [[ -z "$sha" ]]; then
+      print_item warning "kept origin/${branch}" "gone from origin since the report"
+    elif [[ "$sha" == "$(git rev-parse --verify --quiet "refs/remotes/origin/${MAIN_BRANCH}" || true)" ]]; then
+      print_item warning "kept origin/${branch}" "at the same commit as the main branch, nothing tells it from a branch just cut"
+    elif ! is_merged "origin/${branch}" "origin/${MAIN_BRANCH}"; then
+      print_item warning "kept origin/${branch}" "only a merged pull request names it, git cherry finds commits the main branch lacks"
+    elif GH_TOKEN="$PR_LOOKUP_TOKEN" tool_run git "${CLEANUP_AUTH[@]}" push "--force-with-lease=refs/heads/${branch}:${sha}" "$url" --delete "refs/heads/${branch}" </dev/null >/dev/null 2>&1; then
+      print_item ok "deleted origin/${branch}" "remote"
+    else
+      print_item error "failed origin/${branch}" "the push of the deletion was refused, the branch changed on origin or the login may not delete it"
+    fi
+  done
+  return 0
+}
+
 # ============================================
 # Main Function
 # ============================================
@@ -346,7 +446,9 @@ main() {
     fi
   fi
 
-  print_line "$results"
+  delete_local_branches "$results" "$(resolve_main_ref)"
+  delete_remote_branches "$results"
+  return 0
 }
 
 main "$@"
