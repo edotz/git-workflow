@@ -76,8 +76,7 @@ rules_names() {
 # The stage is the second argument, else GIT_WORKFLOW_STAGE from the environment, else development; a stage the
 # file does not list is refused. A ruleset with include_from takes its branch patterns from that environment
 # setting, comma separated, else from its include_default, and a pattern without refs/ or ~ is read as a branch name.
-# The bypass actor id stays
-# APP_ID_PLACEHOLDER: rules-sync sets it.
+# The bypass actor id stays APP_ID_PLACEHOLDER: rules-sync sets it.
 # Args:
 #   $1 - ruleset name (see rules_names)
 #   $2 - stage, optional
