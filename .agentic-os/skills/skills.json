@@ -138,6 +138,12 @@
       "enabled": true,
       "description": "Use when a plan task, an agent process or a command step must state how it is carried out (parallel perspectives, a delegated agent or manual work), or when a change of the choice table is proposed.",
       "origin": "framework"
+    },
+    {
+      "name": "git-workflow",
+      "enabled": true,
+      "description": "Use when work in a repository with a components.yaml and the edotz git-workflow plugin involves starting a branch, committing, naming or opening a pull request, releasing a version, promoting a release branch, splitting a monorepo component to its child repository or syncing branch rulesets, or when an app git command refuses a step or a release proposes nothing.",
+      "origin": "plugin:edotz.git-workflow"
     }
   ],
   "claude": []
