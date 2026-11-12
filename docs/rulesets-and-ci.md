@@ -10,7 +10,7 @@ The plugin uses rulesets, not classic branch protection. A repository that still
 
 | Ruleset | Branches | Applies when |
 |---|---|---|
-| `master` | `refs/heads/master` | always |
+| `master` | the branch named by `GIT_WORKFLOW_MAIN_BRANCH` (default `master`) | always |
 | `release` | the branch named by `GIT_WORKFLOW_RELEASE_BRANCH` | the setting is set |
 | `legacy` | the patterns of `GIT_WORKFLOW_LEGACY_BRANCHES` | the setting is set |
 
@@ -185,13 +185,12 @@ The workflow needs no secrets. Do not add a secret to it for the title lint or t
 
 ## Hooks and shims
 
-The plugin installs three git hook shims. The shims call the framework, which runs the hook scripts that the plugin registers.
+The plugin installs two git hook shims. The shims call the framework, which runs the hook scripts that the plugin registers.
 
 | Git hook | Shim file | Registered script | What it does |
 |---|---|---|---|
 | `commit-msg` | `.git-templates/hooks/commit-msg` | `bin/hooks/commit-msg/conventional` | runs `app git lint-commit <message file>` on the message; a refused message stops the commit |
 | `pre-push` | `.git-templates/hooks/pre-push` | `bin/hooks/pre-push/minimum-check` | runs `app git check` for every component: the commit lint since the latest tag of each component plus the declared checks; a red component stops the push. The hook exits 0 when there is no `components.yaml`. |
-| `pre-commit` | `.git-templates/hooks/pre-commit` | none | the shim is installed, but the plugin registers no script for it |
 
 Each shim is a file with the marker `# agentic-os-hook:`, and runs `agentic-os hook trigger <key>`. The mapping of the hook keys to git is `adapters/git/hooks/hooks.yaml`.
 

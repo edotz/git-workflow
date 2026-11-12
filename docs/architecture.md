@@ -17,7 +17,7 @@ edotz.git-workflow/
     config/                       env.defaults, rulesets.yaml, token-service.json, cliff.toml
     hooks/                        hook scripts, one file per event and name, plus hooks.yaml
   adapters/git/hooks/hooks.yaml   the mapping of the hook keys to git events
-  .git-templates/hooks/           the shims that git runs (pre-commit, commit-msg, pre-push)
+  .git-templates/hooks/           the shims that git runs (commit-msg, pre-push)
   .docker/Dockerfile              the tool image (target tool) and the token service image
   docker-compose.yaml             builds the tool image and the token service container
   .env.defaults                   the pins of the tool image (digests, versions, checksums)
@@ -73,7 +73,7 @@ One line per script in `bin/modules/git/`. The name is the `app git` command; th
 | `workflow-status.sh` | `workflow-status` | Prints JSON: the sync of the release branch, per component the latest tag, the commits since it, the release branch position, and recent workflow runs |
 | `workflow-setup.sh` | `workflow-setup` | Validates `GIT_WORKFLOW_MAIN_BRANCH` and `GIT_WORKFLOW_RELEASE_BRANCH` (no whitespace) and prints them |
 | `worktree.sh` | `worktree` | Lists, creates (`--start`) or prunes worktrees |
-| `branch-cleanup.sh` | `branch-cleanup` | Analyses local and remote branches as merged, stale or active and prints them; see the gap in [Known gaps](#known-gaps) |
+| `branch-cleanup.sh` | `branch-cleanup` | Analyses local and remote branches as merged, stale or active, prints them, and deletes the merged ones after the confirmation (only what git proves applied to the main branch) |
 | `token-service.mjs` | `token-service` | Node HTTP service that issues installation tokens; see [Token path](#token-path) |
 
 The ide domain (`bin/modules/ide/`, `module.yaml` with domain `ide`) holds three scripts that are not part of the git workflow: `vscode-setup.sh` writes the title bar colour and a Project Manager entry for a worktree, `vscode-teardown.sh` removes that entry, and `vscode-profile.sh` composes and decomposes `.code-profile` files. Their default profiles directory is `.vscode/profiles` of the plugin, overridable with `PLUGIN_EDOTZ_GIT_WORKFLOW_VSCODE_PROFILES_DIR`.
@@ -94,7 +94,7 @@ Libraries are in `bin/lib/`. Each has a guard variable `BU_STATE_<NAME>` against
 | `remote.sh` | `remote_slug`, `remote_identity` | Reads `owner/name` from a remote URL and the developer's `user.name` or `user.email`; no network, no token |
 | `branch.sh` | `branch_create` | Creates a branch at the head of the main branch and switches to it without an upstream; refuses when the local main branch is not in sync with origin |
 | `worktree.sh` | `worktree_create`, `worktree_get_path`, `worktree_prune`, `worktree_resolve_base_branch` | Worktree location `<dir>/<repo>/<name with / as ->`, creation from the main branch, refusal when the local main branch is not in sync with origin |
-| `github.sh` | `github_ensure_authenticated`, `github_get_runs`, `github_get_file_contents` | Reads workflow runs and file contents with `gh`; only `workflow-status` uses it |
+| `github.sh` | `github_ensure_authenticated`, `github_get_runs` | Reads workflow runs with `gh`; only `workflow-status` uses it |
 
 ### Contracts between modules and libraries
 
@@ -162,14 +162,13 @@ The shell side never writes the developer token or the installation token to a f
 |---|---|---|
 | `contents` | contents: write | `release`, `promote` |
 | `split` | contents: write, workflows: write | `split` |
-| `pull-requests` | pull_requests: write | none; defined but no module requests it (see [Known gaps](#known-gaps)) |
 | `administration` | administration: write | `rules-sync` |
 
 The service's error replies are `400` (set unknown, repository not owner/name, body not JSON), `401`, `403`, `404`, `413` (body above 4096 bytes), and `502` with the text "token service failed" for an unexpected error. The service logs the refusal reason, never a token.
 
 **Running the service.** Two ways, both needing the App's ID and the path of its private key in the environment (variable names only: `TOKEN_SERVICE_APP_ID`, `TOKEN_SERVICE_KEY_PATH`):
 
-- `bash app git token-service` runs the script with `node` on the host and listens on all interfaces (`0.0.0.0`) at `TOKEN_SERVICE_PORT` (default 8790). The script refuses to start when the key file does not contain a private key. See Known gaps for why the bind address matters.
+- `bash app git token-service` runs the script with `node` on the host and listens on `TOKEN_SERVICE_HOST` (default `127.0.0.1`) at `TOKEN_SERVICE_PORT` (default 8790). The script refuses to start when the key file does not contain a private key.
 - `docker compose` builds the `token-service` target and runs it with a read-only root filesystem, `no-new-privileges`, the key file mounted read-only at a fixed path inside the container, and the port published on `127.0.0.1` only. The key is never copied into an image. The client uses the same URL either way.
 
 Hosting, key custody and the permission design belong to [GitHub App and token service](github-app-and-token-service.md).
@@ -178,7 +177,7 @@ Hosting, key custody and the permission design belong to [GitHub App and token s
 
 Three layers, each with a different owner:
 
-1. **Git events.** `bin/hooks/hooks.yaml` declares the hook keys of the plugin: `pre-commit`, `commit-msg` and `pre-push`, all of type `guard`. `adapters/git/hooks/hooks.yaml` maps each key to its git event (`targets[0].event`), says that it blocks, and gives the block exit code of the hook (`hook`).
+1. **Git events.** `bin/hooks/hooks.yaml` declares the hook keys of the plugin: `commit-msg` and `pre-push`, all of type `guard`. `adapters/git/hooks/hooks.yaml` maps each key to its git event (`targets[0].event`), says that it blocks, and gives the block exit code of the hook (`hook`).
 2. **Shims.** `.git-templates/hooks/<event>` is a three-line script with the marker line `# agentic-os-hook:` that runs `agentic-os hook trigger <event> "$@"`. `app git shims` copies each mapped shim into the hooks directory git uses (`core.hooksPath` when set, else the common git directory, so a worktree shares it). It refuses to overwrite a file without the marker and reports it as a conflict. `--check` reports missing or stale shims and exits 1. A mapped event with no shim file is a problem (exit 3).
 3. **Hook scripts.** Files under `bin/hooks/<event>/<name>`, each with a header line `# aos-hook: output=none advisory=<true|false> default=<on|off>`:
 
@@ -187,8 +186,6 @@ Three layers, each with a different owner:
 | `commit-msg/conventional` | commit-msg | false | Runs `app git lint-commit` on the message file |
 | `pre-push/minimum-check` | pre-push | false | Runs `bin/modules/git/check.sh` when the project has a `components.yaml`; needs `PLUGIN_ROOT` |
 | `session-start/git-shims` | session-start | true | Runs `app git shims` in a git repository; exit 3 is not an error for a session |
-
-The plugin ships no `pre-commit` script: the `pre-commit` key and its shim exist, and nothing is registered for them.
 
 **Enabling.** A consuming project enables hook scripts in `.agentic-os/hooks/hooks.json`, in the `shared` list by name (`commit-msg/conventional`, `pre-push/minimum-check`, `session-start/git-shims`). The plugin's own repository does the same. Hook scripts are discovered from the plugin's `bin/hooks/`, as `plugin.yaml` declares `hooks` among its surfaces.
 
@@ -211,18 +208,19 @@ Tests live in `tests/<area>/<case>.sh`, one area per command or library:
 | Area | Files | Covers |
 |---|---|---|
 | `git-check` | `run.sh` | `check`: green, a non-conventional commit, a failing declared check, unknown component |
-| `git-commit` | `lint.sh`, `run.sh` | `lint-commit` (no bypass for Merge or Revert), `commit` with a stub provider |
+| `git-cleanup` | `run.sh` | `branch-cleanup`: the dry run, the confirmation, the deletion of merged branches, the branches that are kept |
+| `git-commit` | `lint.sh`, `run.sh` | `lint-commit` (no bypass for Merge or Revert, `--help`), `commit` with a stub provider |
 | `git-pr` | `dry-run.sh`, `title.sh` | `pr` dry run, refusal of the main branch and of a red check; title lint |
 | `git-promote` | `ff.sh`, `baseline.sh` | fast-forward, dry run and refusals; baseline mode with `--confirm` |
 | `git-release` | `dry-run.sh`, `multi.sh` | the dry run end to end, several components and a single root component |
 | `git-remote` | `run.sh` | the three URL forms, a missing remote, the identity values |
-| `git-rules` | `build.sh`, `sync.sh`, `foreign.sh` | the ruleset JSON for each stage; sync against stub `docker`, `gh`, `curl`; foreign rulesets and classic protection |
+| `git-rules` | `build.sh`, `sync.sh`, `foreign.sh` | the ruleset JSON for each stage and for the main branch setting; sync against stub `docker`, `gh`, `curl`; foreign rulesets and classic protection |
 | `git-shims` | `run.sh`, `push.sh` | installation, stale shims, `--check`, worktrees, `core.hooksPath`; a push in the tool image with the hook disabled |
 | `git-split` | `dry-run.sh`, `apply.sh` | the dry run and the apply against bare child repositories inside the monorepo's git directory |
-| `git-start` | `run.sh` | a good start and the refusals |
+| `git-start` | `run.sh` | the branch in the current checkout, no upstream, carried changes, the refusals |
 | `git-status` | `runs.sh` | the `runs` field of `workflow-status` with a stubbed `gh` |
 | `git-version` | `range.sh` | `version_next` and `version_notes_args` on throwaway repositories |
-| `token-service` | `check.sh` | the service against the sandbox App: a narrowed token, the refusals, a log without tokens |
+| `token-service` | `bind.sh`, `check.sh` | the address the service listens on; `check.sh` runs it against the sandbox App: a narrowed token, the refusals, a log without tokens |
 
 Conventions, the same in every file:
 
@@ -304,11 +302,7 @@ A new pin key must be added to `TOOL_PIN_KEYS`. The image hash covers exactly th
 
 Found while reading the code for this manual. Each one is a fact about the code today, not a plan.
 
-1. **`branch-cleanup` deletes nothing.** After the confirmation, `branch-cleanup.sh` prints the analysis JSON and ends. No delete command appears in the script. The `--force`, `--dry-run` and confirmation flags do not change that. The manual [Daily loop](daily-loop.md) must not promise deletion until this changes.
-2. **`pull-requests` is unused.** The set is in `token-service.json`; no module requests it. `pr.sh` uses the developer's own token.
-3. **The master ruleset targets `refs/heads/master` literally.** `bin/config/rulesets.yaml` writes the include as `refs/heads/master`, while `GIT_WORKFLOW_MAIN_BRANCH` can name another branch. A project with another main branch needs the ruleset edited.
-4. **The `pre-commit` key has no hook script.** The mapping and the shim exist, nothing is registered.
-5. **`lint-commit --help`** reads `--help` as a message file and reports it as missing. The other commands print their help.
-6. **`plugin.yaml` names the `claude` adapter** without an `adapters/claude/` directory in this plugin (see [Slash commands](#slash-commands)).
-7. **The host token service listens on all interfaces.** `token-service.mjs` binds `0.0.0.0`, so `app git token-service` run on the host accepts connections from the network, not only from the developer's machine. The container publishes its port on `127.0.0.1` only. The service checks the developer's login and the organisation membership before it issues a token, but the bind address is wider than the design needs.
-8. **The `ide` domain** has no manual in this set. Its three scripts are described above only.
+1. **`plugin.yaml` names the `claude` adapter** without an `adapters/claude/` directory in this plugin (see [Slash commands](#slash-commands)).
+2. **`branch-cleanup` still protects `release-please--*` and `backport/*`.** Both names belong to the retired old approach; the protection does no harm, and the patterns can go when no repository holds such a branch any more.
+3. **`worktree --start` accepts an existing branch.** Unlike `start`, it checks the existing branch out in the new worktree instead of refusing it.
+4. **The `ide` domain** has no manual in this set. Its three scripts are described above only.

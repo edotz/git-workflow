@@ -21,7 +21,7 @@ The loop is strict about commit messages on purpose. A pull request is squash-me
 | 3. Check | `bash app git check [component]` | One line per component: `ok` or `failed` |
 | 4. Pull request | `bash app git pr [--dry-run] [--draft]` | Branch pushed, pull request opened |
 | 5. Merge | GitHub, "Squash and merge" | One commit on `master` |
-| 6. Cleanup | `branch-cleanup`, `git branch -D` | Merged branch removed |
+| 6. Cleanup | `bash app git branch-cleanup` | Merged local and remote branches removed |
 | Any time | `bash app git workflow-status` | JSON status of the branch and the components |
 
 ## 1. Start
@@ -212,10 +212,9 @@ No `app git` command merges a pull request.
 
 1. Update the main branch with git: `git switch master` and `git pull --ff-only`. The next `start` refuses until the local main branch equals `origin/master`.
 2. List what can be removed: `bash app git branch-cleanup --dry-run`. A squash-merged branch is shown as `merged`. Protected names (`master`, the release branch, `main`, `develop`, and a few others) are skipped. A branch that is not merged and whose last commit is older than `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` days (default 30) is shown as `stale`.
-3. Delete the local branch with `git branch -D feat/add-login`. Use `-D`: the squash commit on `master` is not a descendant of the branch, so `git branch -d` refuses it. Do this only after the pull request shows as merged.
-4. Delete the remote branch on GitHub, or with `git push origin --delete feat/add-login`.
+3. Delete the merged branches: `bash app git branch-cleanup`. It asks once; `--force` skips the question, and `--local-only` or `--remote-only` limits it to one side. The remote branches are deleted with your `gh` login, one push per branch.
 
-`branch-cleanup` does not delete anything. It fetches and prunes the remote-tracking branches of `origin`, prints the groups, and with `--force` prints a JSON report. Steps 3 and 4 are the deletions.
+`branch-cleanup` deletes a branch only when git itself proves that every commit of it is on the main branch (merge, rebase, or a squash merge); a branch that only a merged pull request names is kept, because its tip can hold commits the pull request did not have. It never deletes the checked-out branch, a protected name, or a branch that is not merged. Each branch gets one line, `deleted <branch>` or `kept <branch>` with the reason. Do not rely on `git branch -d`: a squash commit is no descendant of the branch, so only `-D` deletes it by hand.
 
 ## 7. Status
 
@@ -241,7 +240,6 @@ Prints JSON and writes nothing. The keys are `current_branch`, `current_version`
 |---|---|---|---|---|
 | commit-msg | `app git shims` | `bin/hooks/commit-msg/conventional`, which runs `app git lint-commit <file>` | The message is refused. | `app git commit`, which lints itself |
 | pre-push | `app git shims` | `bin/hooks/pre-push/minimum-check`, which runs `app git check` for all components | The check is red. | `app git pr`, which runs the same check before it pushes |
-| pre-commit | `app git shims` | Nothing. The shim exists, but no hook script is registered for it. | Never | Not applicable |
 
 The session-start hook of Claude Code runs `app git shims` at the start of a session. It is advisory: it reports a problem and does not block.
 

@@ -134,6 +134,7 @@ The git commands read their settings from the environment. The table lists every
 | Name | Default | Meaning | Read by |
 |---|---|---|---|
 | `TOKEN_SERVICE_URL` | `http://127.0.0.1:<TOKEN_SERVICE_PORT>` | Base URL the CLI calls for installation tokens. Set it only when the service runs elsewhere. | `lib/token.sh` (through `release`, `promote`, `split`, `rules-sync --apply`) |
+| `TOKEN_SERVICE_HOST` | `127.0.0.1` | Address the token service listens on. The container sets `0.0.0.0` and publishes its port on the loopback address only. | `token-service.mjs`, `docker-compose.yaml` |
 | `TOKEN_SERVICE_PORT` | `8790` | Port of the default URL. The compose file publishes the container on this port, on the loopback address only. | `lib/token.sh`, `docker-compose.yaml`, `token-service.mjs` |
 | `TOKEN_SERVICE_APP_ID` | empty | Numeric ID of the App the service signs for. Required by the service; the service stops without it. | `token-service.mjs`, `docker-compose.yaml` |
 | `TOKEN_SERVICE_KEY_PATH` | `/run/secrets/app-key.pem` inside the container | Path the service reads the App's private key from. Required by the service; set by compose inside the container. Its value on a host is never recorded in a repository or a document. | `token-service.mjs`, `docker-compose.yaml` |
@@ -229,7 +230,6 @@ Only these types change what a user of the component gets, so only these types b
 |---|---|---|---|
 | `contents` | `contents: write` | `release --apply`, `promote --apply` | Pushes the release commit and tag, creates the GitHub Release, moves the release branch. |
 | `split` | `contents: write`, `workflows: write` | `split --apply` | Pushes the split head and the component tags to a child repository. The child repository receives workflow files with the component history, so only this set carries `workflows: write`; see [GitHub App and token service](github-app-and-token-service.md#permission-sets). |
-| `pull-requests` | `pull_requests: write` | no command | Defined, not requested by any command today. |
 | `administration` | `administration: write` | `rules-sync --apply` | Creates and updates rulesets. |
 
 The `org` key is `edotz`. A set name that is not listed is refused with `permission set unknown`.
@@ -244,12 +244,13 @@ The `org` key is `edotz`. A set name that is not listed is refused with `permiss
 | `rulesets.<name>` | One ruleset per name: `master`, `release`, `legacy`. |
 | `target`, `enforcement` | Copied to the ruleset body (`branch`, `active`). |
 | `conditions.ref_name` | Branch patterns of the ruleset. |
-| `include_from` | Name of an environment variable holding the comma separated branch patterns. Unset or blank is a configuration failure, and `rules-sync` skips that ruleset. |
+| `include_from` | Name of an environment variable holding the comma separated branch patterns. Unset or blank is a configuration failure, and `rules-sync` skips that ruleset, unless the entry has `include_default`. |
+| `include_default` | The branch patterns used when the `include_from` setting is unset or blank. |
 | `extends` | Name of another entry; the fields of this entry win. |
 | `bypass_actors` | The App as the bypass actor. The placeholder `APP_ID_PLACEHOLDER` is replaced by `GIT_WORKFLOW_APP_ID` before the body is sent. |
 | `rules` | A list of rules, or a map from stage name to a list. |
 
-A pattern in `include_from` without `refs/` or `~` is read as a branch name and gets the prefix `refs/heads/`. The `master` ruleset has no `include_from`: its pattern is `refs/heads/master` in the file, whatever `GIT_WORKFLOW_MAIN_BRANCH` says.
+A pattern in `include_from` without `refs/` or `~` is read as a branch name and gets the prefix `refs/heads/`. The `master` ruleset takes its pattern from `GIT_WORKFLOW_MAIN_BRANCH` and falls back to `master` through `include_default`, so it always applies.
 
 The loader (`rules_load` in `bin/lib/rules.sh`) refuses a file that is not valid YAML with exit 3, and a file without a stage list or a ruleset map with exit 3. A missing file is exit 4. An unknown ruleset or stage name is exit 2.
 
