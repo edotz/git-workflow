@@ -106,7 +106,7 @@ async function handle(req) {
   };
 }
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   const reply = (status, body) => {
     res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });
     res.end(JSON.stringify(body));
@@ -122,4 +122,5 @@ createServer(async (req, res) => {
       reply(502, { error: "token service failed" });
     }
   }
-}).listen(port, host, () => console.log(`token service listening on ${host}:${port} for org ${org}`));
+});
+server.listen(port, host, () => console.log(`token service listening on ${host}:${server.address().port} for org ${org}`));

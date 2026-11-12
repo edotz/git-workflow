@@ -10,16 +10,17 @@ root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 service="${root}/bin/modules/git/token-service.mjs"
 failed=0
 
+work="$(mktemp -d)"
+
 case_result() {
   if [[ "$2" == "yes" ]]; then
     echo "ok   $1"
   else
     echo "FAIL $1"
+    if [[ -s "${work}/log" ]]; then sed 's/^/     service log: /' "${work}/log"; fi
     failed=1
   fi
 }
-
-work="$(mktemp -d)"
 pid=""
 finish() {
   if [[ -n "$pid" ]]; then
@@ -65,10 +66,10 @@ reachable() {
   curl -s -o /dev/null --max-time 2 "http://$1:$2/token"
 }
 
-port=$((20000 + RANDOM % 20000))
-start_service "$port"
+start_service 0
+port="$(sed -n 's/^token service listening on [0-9.]*:\([0-9][0-9]*\) for org.*/\1/p' "${work}/log")"
 ok=no
-if grep -q "listening on 127.0.0.1:${port}" "${work}/log"; then ok=yes; fi
+if [[ -n "$port" ]] && grep -q "listening on 127.0.0.1:${port} " "${work}/log"; then ok=yes; fi
 case_result "the service listens on 127.0.0.1 by default" "$ok"
 
 ok=no
@@ -80,14 +81,14 @@ if [[ -n "$other_ip" ]]; then
   if ! reachable "$other_ip" "$port"; then ok=yes; fi
   case_result "the service does not answer on ${other_ip}, an address of this machine that is not loopback" "$ok"
 else
-  case_result "no non-loopback address on this machine: only the log line proves the bind" "yes"
+  echo "skip the address of this machine that is not loopback: there is none, only the log line proves the bind"
 fi
 stop_service
 
-port=$((20000 + RANDOM % 20000))
-start_service "$port" TOKEN_SERVICE_HOST=0.0.0.0
+start_service 0 TOKEN_SERVICE_HOST=0.0.0.0
+port="$(sed -n 's/^token service listening on [0-9.]*:\([0-9][0-9]*\) for org.*/\1/p' "${work}/log")"
 ok=no
-if grep -q "listening on 0.0.0.0:${port}" "${work}/log"; then ok=yes; fi
+if [[ -n "$port" ]] && grep -q "listening on 0.0.0.0:${port} " "${work}/log"; then ok=yes; fi
 case_result "TOKEN_SERVICE_HOST=0.0.0.0 makes the service listen on all interfaces, as in the container" "$ok"
 stop_service
 
