@@ -1,28 +1,27 @@
-# Handoff plugin (2026-11-11)
+# Handoff plugin (2026-11-11, second close)
 
 ## State
-- PLAN-plugin B-1: P1 to P5 done. P6 done: T6.1, T6.2, T6.3, T6.5, T6.9 to T6.12, T6.14 to T6.16. Pending: T6.4, T6.6 (notes missing), T6.13, T6.7, T6.8.
-- Built and verified this session: promote baseline mode (T6.9), PR title lint in pr.sh and status-checks (T6.10), pre-push shim test (T6.11), split skips a child tag at another commit (T6.14), commitlint decides alone (T6.15), token set split with workflows write (T6.16, image rebuilt, container stopped). tests git-promote, git-pr, git-shims, git-split, git-commit pass; shellcheck clean.
-- Migrated: typo3-cms (master, rulesets, 2.x release, 1.x legacy, PRs 72 to 75, draft release deleted). php-project (T6.5 done: PR 70, 71, 72, rulesets, eight children baselined and cleaned, baseline tags on 6f6acc4). nodejs-project: PR 18 (pnpm), PR 19 (components, workspace field), rulesets master and release 1.x, classic protection gone, ten baseline tags on 721da35.
-- Branch chore/git-workflow-concept is pushed; uncommitted: ledger files, .claude/output-styles.
+- PLAN-plugin B-1: every task of P1 to P6 is done except the developer tasks T6.19 to T6.21. PRs 5, 6 and 7 of edotz/git-workflow are merged; master is at 4d90824; nothing is uncommitted but .claude/output-styles/ (not ours).
+- Built and verified this session: nodejs-project (ten children baselined with legacy/pre-split, notes migrate-nodejs-pnpm.md and migrate-nodejs-project.md, four old release-please PRs closed and six release-please branches deleted in the children); classic protection code, run-status and the heredoc templates retired, workflow-status has a runs field (T6.7); project context in the new wording (T6.8); git-workflow itself has rulesets master and release (1.x), squash on, classic protection gone (T6.13); components.yaml of the plugin and the pushed baseline tag v0.1.0 (T6.18); version_next counts the commits after the latest tag and only feat, fix, perf and breaking (T6.17, bin/config/cliff.toml, tests/git-version/range.sh).
 
 ## Open (first one is next)
-1. START: nodejs-project child baselines. Start the token service with the production key, run from ~/worktrees/nodejs-project-clone with pnpm 10 on PATH and env overrides (GIT_WORKFLOW_APP_ID=5694393, STAGE=production, MAIN_BRANCH=master, RELEASE_BRANCH=1.x): data-handler first, then nine, one per run, --confirm edotz/<name>. data-handler already has legacy/pre-split.
-2. Write notes migrate-nodejs-pnpm.md (T6.4) and migrate-nodejs-project.md (T6.6), record both. Hoist, --npm-path npm, token set split, workflows permission belong in them.
-3. T6.13 classic protection of master of this repo, T6.7, T6.8 (also stale bin-modules.md lint-bypass note).
-4. Open amends: version.sh range instead of tag-on-path (a ci commit after a baseline tag bumps a patch); first real release then the 2.x/1.x baseline move with promote baseline (D81) in typo3-cms, php-project, nodejs-project.
+1. START: add a task through /aos:plan for the squash subject: GitHub appends " (#N)", so a title of 96 or more characters passes the title lint and fails the commit lint on master (PR 5 became 101 characters); lint title plus the suffix in pr.sh and status-checks.yml.
+2. T6.19 to T6.21 (developer): first release per repo, then app git promote <tag> baseline of the release branch (typo3-cms 2.x, php-project 2.x, nodejs-project 1.x, D81). Each waits for a feat, fix, perf or breaking commit after its baseline. Check first whether the changes of the closed release PRs (utilities 2.0.0 with a breaking change) are in the baselined versions; the monorepo history holds no commit with their messages.
+3. After them: gate of P6, milestone m6-retire-old to done, plan status done.
+4. Leftovers: branch-cleanup still protects release-please-- and backport/ branches; github_get_file_contents has no caller; git-cliff runs three docker starts per component (--bump --context could merge two).
 
 ## Decided, do not reopen
-- D79 release branch keeps its name (2.x typo3-cms and php-project, 1.x nodejs-project), moved once by promote baseline. D80/D82 legacy lines frozen, tag legacy/1.x-freeze, classic protection removed before the cleanup PR. D81 promote baseline. D83 split skips a child tag at another commit, never moves it. D84 token set split only for the split apply.
-- Children follow the monorepo: master is the split target, 1.x/2.x and old tags stay.
-- Commit lint has no Merge/Revert bypass (like CI).
+- D85 new tasks go into P6, not a P7: they finish the migration (D81). D86 only feat, fix, perf and breaking commits release: a ci or chore commit in a package no longer bumps a patch.
+- Daily loop: a branch in the main checkout (git switch -c from master, then git branch --unset-upstream), not a worktree per change.
+- Children follow the monorepo; D79 to D84 stand.
 
 ## Traps
-- Shell exports GIT_WORKFLOW_*, PROJECT_ROOT, AOS_PLUGIN_TIERS: use env -u or overrides in other repos; never cat .env.
-- The tool image cannot run git in a linked worktree: use real clones. Baseline tags on a commit at or after the last cleanup of the package dirs.
-- A permission granted to the App is not enough: the token set must carry it, the image holds the config (rebuild).
-- Classifier denies pushes to master, merges, protection removal at times; shell grep is a ugrep function (use command grep).
-- Pull requests only through app git pr (title linted); raw gh pr create --fill produced a bad squash title once.
+- The shell exports GIT_WORKFLOW_RELEASE_BRANCH=0.x over the .env, so branch-cleanup --force would delete 1.x; find the export before using it.
+- origin is an SSH URL and the session has no key: fetch and push by https with -c credential.helper='!gh auth git-credential' (app git pr does this itself).
+- app git pr derives the PR title from the branch name; name the branch like the subject. Never gh pr create --fill.
+- Classifier denies background loops and destructive applies unless the allow rule in .agentic-os/adapters/claude/templates/settings.local.json is live; reading .env is denied.
+- git-cliff takes --include-path with several values: put the range before it; the config goes over stdin (tool_run mounts the repo only).
+- Commit headers over 100 characters are refused by lint-commit; plan amend --dry-run writes.
 
 ## Read first
-Memory: MEMORY.md, project-nodejs-project-migration-state, project-php-project-migration-state, project-typo3-cms-migration-state, reference-production-app, project-token-service-hosting, feedback-pr-title-via-git-pr. PLAN-plugin, notes migrate-typo3-cms.md and migrate-php-project.md.
+Memory: MEMORY.md, project-nodejs-project-migration-state, project-php-project-migration-state, project-typo3-cms-migration-state, reference-production-app, project-token-service-hosting. PLAN-plugin, notes migrate-nodejs-project.md and app-production.md.
