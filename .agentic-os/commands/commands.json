@@ -138,6 +138,12 @@
       "enabled": true,
       "description": "Use when a component with its own child repository has changes or releases that the child has to receive.",
       "origin": "plugin:edotz.git-workflow"
+    },
+    {
+      "name": "stage",
+      "enabled": true,
+      "description": "Use when the project moves between development and production, or the live master ruleset may differ from the stage expected.",
+      "origin": "plugin:edotz.git-workflow"
     }
   ],
   "claude": []
