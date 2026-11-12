@@ -69,6 +69,25 @@ _commit_draft() {
   return 0
 }
 
+# Make the relative paths relative to the project root: the command runs there, and the developer typed them where it
+# was started, which may be a directory below the root. Absolute paths and a start at the root stay as they are.
+# Args: $1 - name of the array of paths
+_commit_rebase_paths() {
+  local -n _paths="$1"
+  local from root i
+  from="$(pwd -P)"
+  root="$(cd "$PROJECT_ROOT" && pwd -P)"
+  if [[ "$from" == "$root" || "$from" != "$root"/* ]]; then
+    return 0
+  fi
+  for i in "${!_paths[@]}"; do
+    if [[ "${_paths[$i]}" != /* ]]; then
+      _paths[i]="${from#"${root}"/}/${_paths[$i]}"
+    fi
+  done
+  return 0
+}
+
 # Ask the developer to confirm; the answer is read from stdin, so an end of input declines.
 _commit_confirm() {
   local answer=""
@@ -100,6 +119,8 @@ main() {
   fi
   paths+=("${CLI_ARGS[@]}")
 
+  _commit_rebase_paths paths
+  cd "$PROJECT_ROOT"
   git_ensure_repo
   tool_image_ensure
   _commit_identity

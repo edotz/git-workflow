@@ -55,6 +55,7 @@ _start_refuse_existing() {
 main() {
   cli_parse "$@"
 
+  cd "$PROJECT_ROOT"
   git_ensure_repo || die_with "${BU_EXIT_FAILURE}" "Not a git repository"
 
   local type name

@@ -371,6 +371,7 @@ delete_remote_branches() {
 # ============================================
 main() {
   cli_parse "$@"
+  cd "$PROJECT_ROOT"
   
   # Validate git repository
   git_ensure_repo || die "Not a git repository"

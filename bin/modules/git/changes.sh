@@ -52,6 +52,7 @@ _changes_list() {
 
 main() {
   cli_parse "$@"
+  cd "$PROJECT_ROOT"
   git_ensure_repo || die_with "${BU_EXIT_FAILURE}" "Not a git repository"
   tool_image_ensure
 
