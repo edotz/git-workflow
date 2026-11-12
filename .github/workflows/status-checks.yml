@@ -24,9 +24,10 @@ jobs:
       - name: Validate the pull request title
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           npm install --silent --prefix "$RUNNER_TEMP/commitlint" @commitlint/cli@21 @commitlint/config-conventional@21
-          printf '%s\n' "$PR_TITLE" | NODE_PATH="$RUNNER_TEMP/commitlint/node_modules" "$RUNNER_TEMP/commitlint/node_modules/.bin/commitlint" --config commitlint.config.mjs
+          printf '%s (#%s)\n' "$PR_TITLE" "$PR_NUMBER" | NODE_PATH="$RUNNER_TEMP/commitlint/node_modules" "$RUNNER_TEMP/commitlint/node_modules/.bin/commitlint" --config commitlint.config.mjs
       - name: Run the checks declared in components.yaml
         run: |
           if [ ! -f components.yaml ]; then
