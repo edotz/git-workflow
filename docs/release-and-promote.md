@@ -8,20 +8,20 @@ This manual covers how the plugin decides a version, how `app git release` makes
 2. Run the dry run and read the proposal:
 
    ```bash
-   bash app git release --dry-run
+   bash ${BU_ROOT}/app git release --dry-run
    ```
 
 3. Apply it. This makes the release commit, the tag, the push and the GitHub Release:
 
    ```bash
-   bash app git release --apply
+   bash ${BU_ROOT}/app git release --apply
    ```
 
 4. If the repository has a release branch, move it to the release:
 
    ```bash
-   bash app git promote v1.1.0 --dry-run
-   bash app git promote v1.1.0 --apply
+   bash ${BU_ROOT}/app git promote v1.1.0 --dry-run
+   bash ${BU_ROOT}/app git promote v1.1.0 --apply
    ```
 
 The dry run changes nothing. The apply runs on `master` only, with a clean working tree.
@@ -86,7 +86,7 @@ The release also writes `CHANGELOG.md` and `README.md` in the component's home d
 ## The release command
 
 ```bash
-bash app git release (--dry-run | --apply) [--draft] [--pre <channel>]
+bash ${BU_ROOT}/app git release (--dry-run | --apply) [--draft] [--pre <channel>]
 ```
 
 Give exactly one of `--dry-run` and `--apply`; otherwise the command stops with exit 2.
@@ -192,7 +192,7 @@ The repository has one component `object` at the root, with `paths: ["."]` and `
 Dry run:
 
 ```bash
-bash app git release --dry-run
+bash ${BU_ROOT}/app git release --dry-run
 ```
 
 Expected output, from the layout above: a `[release object]` section with `version — 1.1.0`, `tag — v1.1.0` and `files — package.json, CHANGELOG.md, README.md`. The notes list the `feat` commit under a Features group. The fixture of the test `tests/git-release/dry-run.sh` asserts the version, the tag, the file and the notes text; the exact notes depend on git-cliff.
@@ -200,7 +200,7 @@ Expected output, from the layout above: a `[release object]` section with `versi
 Apply:
 
 ```bash
-bash app git release --apply
+bash ${BU_ROOT}/app git release --apply
 ```
 
 Result on `master`: one commit `chore(object): release v1.1.0` that changes `package.json`, `CHANGELOG.md` and, when it has the markers, `README.md`. Tag `v1.1.0` on that commit. A GitHub Release `v1.1.0`, not a pre-release.
@@ -210,8 +210,8 @@ Run the apply again: the tag is on `HEAD`, so the component is pending and the a
 Promote, when the repository has a release branch `release` (set in `.env` as `GIT_WORKFLOW_RELEASE_BRANCH=release`):
 
 ```bash
-bash app git promote v1.1.0 --dry-run
-bash app git promote v1.1.0 --apply
+bash ${BU_ROOT}/app git promote v1.1.0 --dry-run
+bash ${BU_ROOT}/app git promote v1.1.0 --apply
 ```
 
 ## Worked example: monorepo
@@ -233,7 +233,7 @@ Tags so far: `api/v1.0.0` and `web/v2.0.0`. Since then, a `feat` in `api/` and a
 Dry run:
 
 ```bash
-bash app git release --dry-run
+bash ${BU_ROOT}/app git release --dry-run
 ```
 
 Expected output, as the test `tests/git-release/multi.sh` asserts it: a `[release api]` section with `version — 1.1.0` and `tag — api/v1.1.0`, and a `[release web]` section with `version — 2.0.1` and `tag — web/v2.0.1`. The files are `api/package.json, api/CHANGELOG.md, api/README.md` and `web/package.json, web/CHANGELOG.md, web/README.md`.
@@ -241,7 +241,7 @@ Expected output, as the test `tests/git-release/multi.sh` asserts it: a `[releas
 Apply:
 
 ```bash
-bash app git release --apply
+bash ${BU_ROOT}/app git release --apply
 ```
 
 Result on `master`: `chore(api): release api/v1.1.0`, then `chore(web): release web/v2.0.1`, each with its tag and its GitHub Release. Both releases are created with `--latest=false`.
@@ -249,8 +249,8 @@ Result on `master`: `chore(api): release api/v1.1.0`, then `chore(web): release 
 Then, when the repository has a release branch, promote the release that should go live. The release branch is one branch for the repository, so promote one tag at a time, the newest first:
 
 ```bash
-bash app git promote web/v2.0.1 --dry-run
-bash app git promote web/v2.0.1 --apply
+bash ${BU_ROOT}/app git promote web/v2.0.1 --dry-run
+bash ${BU_ROOT}/app git promote web/v2.0.1 --apply
 ```
 
 ## When nothing is proposed
@@ -275,11 +275,11 @@ Do not work around the empty proposal by editing `version_files` or by adding a 
 
 ## Promote
 
-`app git promote <tag>` moves the release branch to the commit of a release tag. The release branch is `GIT_WORKFLOW_RELEASE_BRANCH` (see [Configuration](configuration.md)). If it equals the main branch, the command prints `nothing to promote` and stops.
+`app git promote <tag>` moves the release branch to the commit of a release tag. The release branch is `GIT_WORKFLOW_RELEASE_BRANCH` (see [Configuration](git-workflow-configuration.md)). If it equals the main branch, the command prints `nothing to promote` and stops.
 
 ```bash
-bash app git promote <tag> --dry-run
-bash app git promote <tag> --apply [--confirm <owner/repo>]
+bash ${BU_ROOT}/app git promote <tag> --dry-run
+bash ${BU_ROOT}/app git promote <tag> --apply [--confirm <owner/repo>]
 ```
 
 The tag must be a release tag: its commit's subject must read `chore(<component>): release <tag>`. Any other tag is refused, including a baseline tag placed on an ordinary commit.
@@ -329,7 +329,7 @@ Apply without `--confirm`: refused with exit 2 before any token is fetched. The 
 Apply with the confirmation:
 
 ```bash
-bash app git promote v1.0.0 --apply --confirm owner/repo
+bash ${BU_ROOT}/app git promote v1.0.0 --apply --confirm owner/repo
 ```
 
 The steps:
@@ -353,6 +353,16 @@ The old head is still reachable through `legacy/pre-promote`. A second apply pri
 The `release` ruleset (from `bin/config/rulesets.yaml`, created by `app git rules-sync`) has four rules: a pull request requirement, linear history, no deletion and no non-fast-forward. The App is the only bypass actor. A developer push to the release branch is therefore refused, and only `promote` moves it. The baseline case replaces the branch, which is a non-fast-forward; it works only because the App bypasses the ruleset and the lease names the old head. The tests do not prove the developer refusal; see [Rulesets and CI](rulesets-and-ci.md).
 
 Never push the release branch by hand, and never force it. The lease and the `legacy/pre-promote` tag are the only safe way to replace it.
+
+## No backport
+
+A release is made on the main branch only, and `promote` moves the release branch to the release commit of a tag, never to anything else. There is no flow that applies one fix to the release branch alone:
+
+1. The fix reaches the main branch through a pull request.
+2. `app git release` releases it, together with every other unreleased `feat`, `fix` and `perf` commit on the main branch.
+3. `app git promote <tag>` moves the release branch to that release.
+
+When the main branch holds unreleased features that must not reach production yet, the dry run of the release shows them. The choice is then to ship them with the fix, or to wait; a hand-made tag or a cherry-pick onto the release branch is not an option, because `promote` accepts only a tag whose commit is a release commit.
 
 ## What a release does not do
 

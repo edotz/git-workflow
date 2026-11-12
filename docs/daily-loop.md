@@ -16,20 +16,20 @@ The loop is strict about commit messages on purpose. A pull request is squash-me
 
 | Step | Command | Result |
 |---|---|---|
-| 1. Start | `bash app git start <type> <name>` | Branch `<type>/<name>` from the main branch, checked out; its name is printed |
-| 2. Commit | `bash app git commit <paths>` | One commit of the named paths, with a checked message |
-| 3. Check | `bash app git check [component]` | One line per component: `ok` or `failed` |
-| 4. Pull request | `bash app git pr [--dry-run] [--draft]` | Branch pushed, pull request opened |
+| 1. Start | `bash ${BU_ROOT}/app git start <type> <name>` | Branch `<type>/<name>` from the main branch, checked out; its name is printed |
+| 2. Commit | `bash ${BU_ROOT}/app git commit <paths>` | One commit of the named paths, with a checked message |
+| 3. Check | `bash ${BU_ROOT}/app git check [component]` | One line per component: `ok` or `failed` |
+| 4. Pull request | `bash ${BU_ROOT}/app git pr [--dry-run] [--draft]` | Branch pushed, pull request opened |
 | 5. Merge | GitHub, "Squash and merge" | One commit on `master` |
-| 6. Cleanup | `bash app git branch-cleanup` | Merged local and remote branches removed |
-| Any time | `bash app git workflow-status` | JSON status of the branch and the components |
+| 6. Cleanup | `bash ${BU_ROOT}/app git branch-cleanup` | Merged local and remote branches removed |
+| Any time | `bash ${BU_ROOT}/app git workflow-status` | JSON status of the branch and the components |
 
 ## 1. Start
 
 Run it inside the repository.
 
 ```bash
-bash app git start feat add-login
+bash ${BU_ROOT}/app git start feat add-login
 ```
 
 Expected output: one line, the name of the new branch, `feat/add-login`. The checkout is now on that branch. Uncommitted changes of the working tree go along, as with `git switch`; git refuses the switch when a change would be overwritten.
@@ -55,7 +55,7 @@ Rules:
 ## 2. Commit
 
 ```bash
-bash app git commit src/login.js
+bash ${BU_ROOT}/app git commit src/login.js
 ```
 
 What the command does, in order:
@@ -77,7 +77,7 @@ Options:
 With a message, and without the confirmation:
 
 ```bash
-bash app git commit --message 'feat(login): keep the session after a reload' --yes src/login.js
+bash ${BU_ROOT}/app git commit --message 'feat(login): keep the session after a reload' --yes src/login.js
 ```
 
 Expected output: the header `commit message`, the message, and a line `commit` with the short hash of the new commit.
@@ -111,8 +111,8 @@ A plain `git commit` in a clone with the shims runs the commit-msg hook instead,
 ## 3. Check
 
 ```bash
-bash app git check
-bash app git check web
+bash ${BU_ROOT}/app git check
+bash ${BU_ROOT}/app git check web
 ```
 
 Without an argument the check runs for every component of `components.yaml`. With a name it runs for that component only. For each component it runs two steps, and every step runs even when an earlier one failed:
@@ -134,7 +134,7 @@ The output also names each failing commit (`commit lint failed: <subject>`) and 
 | `commit lint failed: <subject>` | 1 | Reword that commit. Use `git commit --amend` for the last commit, and an interactive rebase in your terminal for an older one. Then run the check again. |
 | `check command failed: <command>` | 1 | Run the command from the repository root and fix what it reports. |
 | `check: component 'x' is not declared in components.yaml` | 4 | Name a component declared in `components.yaml`. |
-| `components.yaml` is not valid | 3 | Fix the file. See [configuration.md](configuration.md). |
+| `components.yaml` is not valid | 3 | Fix the file. See [git-workflow-configuration.md](git-workflow-configuration.md). |
 
 The check reads the history and writes nothing. It is also the pre-push guard: `git push` runs it for all components first (see [Hooks](#hooks-that-guard-the-loop)).
 
@@ -143,7 +143,7 @@ The check reads the history and writes nothing. It is also the pre-push guard: `
 Start with a dry run. It changes nothing and needs no login:
 
 ```bash
-bash app git pr --dry-run
+bash ${BU_ROOT}/app git pr --dry-run
 ```
 
 Expected output: the header `pull request`, then the branch, the title, and the body. The body lists the commit subjects of the branch, oldest first, as `- <subject>` lines. The dry run runs the minimum check and the title lint too, so a red check or a refused title stops it here.
@@ -151,8 +151,8 @@ Expected output: the header `pull request`, then the branch, the title, and the 
 Then open the pull request:
 
 ```bash
-bash app git pr
-bash app git pr --draft
+bash ${BU_ROOT}/app git pr
+bash ${BU_ROOT}/app git pr --draft
 ```
 
 Expected output: a line `push` with the branch name, and a line `pull request` with the URL.
@@ -211,15 +211,15 @@ No `app git` command merges a pull request.
 ## 6. After the merge
 
 1. Update the main branch with git: `git switch master` and `git pull --ff-only`. The next `start` refuses until the local main branch equals `origin/master`.
-2. List what can be removed: `bash app git branch-cleanup --dry-run`. A squash-merged branch is shown as `merged`. Protected names (`master`, the release branch, `main`, `develop`, and a few others) are skipped. A branch that is not merged and whose last commit is older than `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` days (default 30) is shown as `stale`.
-3. Delete the merged branches: `bash app git branch-cleanup`. It asks once; `--force` skips the question, and `--local-only` or `--remote-only` limits it to one side. The remote branches are deleted with your `gh` login, one push per branch.
+2. List what can be removed: `bash ${BU_ROOT}/app git branch-cleanup --dry-run`. A squash-merged branch is shown as `merged`. Protected names (`master`, the release branch, `main`, `develop`, and a few others) are skipped. A branch that is not merged and whose last commit is older than `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` days (default 30) is shown as `stale`.
+3. Delete the merged branches: `bash ${BU_ROOT}/app git branch-cleanup`. It asks once; `--force` skips the question, and `--local-only` or `--remote-only` limits it to one side. The remote branches are deleted with your `gh` login, one push per branch.
 
 `branch-cleanup` deletes a branch only when git itself proves that every commit of it is on the main branch (merge, rebase, or a squash merge); a branch that only a merged pull request names is kept, because its tip can hold commits the pull request did not have. It never deletes the checked-out branch, a protected name (the main and release branches, the patterns of `GIT_WORKFLOW_LEGACY_BRANCHES`, `release-please--*` and `backport/*`), a branch at the same commit as the main branch (nothing tells it from one just cut), or a branch that is not merged. The remote branches are deleted only when `origin` is on github.com: the command fetches `origin` first and pushes each deletion with a lease on the tip it proved merged, so a commit pushed in the meantime keeps the branch. Each branch gets one line, `deleted <branch>`, `kept <branch>` or `failed <branch>`, with the reason. Do not rely on `git branch -d`: a squash commit is no descendant of the branch, so only `-D` deletes it by hand.
 
 ## 7. Status
 
 ```bash
-bash app git workflow-status
+bash ${BU_ROOT}/app git workflow-status
 ```
 
 Prints JSON and writes nothing. The keys are `current_branch`, `current_version`, `sync_status` (`ahead_of_release`, `behind_release`), `working_tree`, `unreleased_commits` (counts of `feat`, `fix` and breaking commits, and up to 50 `details`), `components` (per component `latest_release`, `commits_since_release` and `release_branch`, which is `on`, `behind` or `absent`), and `runs` (the last five workflow runs). `runs` is empty without a gh credential or a network. The shape, with illustrative values:
@@ -265,7 +265,7 @@ Each slash command runs the same `app git` command with the arguments you type, 
 
 Rules for the slash commands:
 
-- `/git:commit` needs `--message` and `--yes` in Claude Code. The confirmation reads from standard input, and the shell of a Claude Code session gives none. Without them the commit is declined with `commit: not confirmed, nothing was committed`. Run `bash app git commit` in a terminal to get the prompt.
+- `/git:commit` needs `--message` and `--yes` in Claude Code. The confirmation reads from standard input, and the shell of a Claude Code session gives none. Without them the commit is declined with `commit: not confirmed, nothing was committed`. Run `bash ${BU_ROOT}/app git commit` in a terminal to get the prompt.
 - Commands run in the directory of the session, on the branch that is checked out there.
 - Slash commands for release, promote, split and rules-sync are listed in [command-reference.md](command-reference.md).
 

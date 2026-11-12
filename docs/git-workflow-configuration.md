@@ -2,7 +2,7 @@
 
 This manual lists every file and setting that the plugin reads: the component declaration `components.yaml`, the environment variables and the `.env` files, the stages, the commit message rules, the changelog filter, and the settings of the token service. The process that uses the rulesets is in [Rulesets and CI](rulesets-and-ci.md). The App and the token service are described in [GitHub App and token service](github-app-and-token-service.md).
 
-Commands are written as `app git <command>` in prose and as `bash app git <command>` in examples, where `app` is the entry point of the framework in your project.
+Commands are written as `app git <command>` in prose and as `bash ${BU_ROOT}/app git <command>` in examples, where `${BU_ROOT}/app` is the entry point of the agentic-os framework.
 
 ## Where each setting lives
 

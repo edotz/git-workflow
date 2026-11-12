@@ -72,8 +72,8 @@ The tool image has no git in a linked worktree. Run split from the main clone of
 ## Dry run
 
 ```bash
-bash app git split --dry-run
-bash app git split web --dry-run
+bash ${BU_ROOT}/app git split --dry-run
+bash ${BU_ROOT}/app git split web --dry-run
 ```
 
 Without a name, the dry run goes through every component in `components.yaml`. A component with `split: no` is listed as skipped. The dry run reads each child with the developer's own `gh` credential, so the developer needs read access to the child. It changes nothing, on the child or in the tree.
@@ -109,7 +109,7 @@ A failed read of the child is reported as `failed read of <url>`. It is differen
 ## Apply
 
 ```bash
-bash app git split <component> --apply [--confirm <owner/repo>]
+bash ${BU_ROOT}/app git split <component> --apply [--confirm <owner/repo>]
 ```
 
 Give exactly one of `--dry-run` and `--apply`. `--apply` takes one component name: one child per run. Without a name it stops with exit 2 and pushes nothing.
@@ -165,7 +165,7 @@ Order of work for each existing child:
 5. Apply for that child only, with the confirmation of its name:
 
    ```bash
-   bash app git split lib --apply --confirm edotz/lib
+   bash ${BU_ROOT}/app git split lib --apply --confirm edotz/lib
    ```
 
 6. Run the dry run again. It must say `the child is at the split head already`.

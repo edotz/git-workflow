@@ -1,6 +1,6 @@
 # Command reference
 
-Every `app git` command of the plugin, and the eight git slash commands of Claude Code. Run a command in a consuming project as `bash app git <command>`. `bash app git <command> --help` prints its options.
+Every `app git` command of the plugin, and the eight git slash commands of Claude Code. Run a command in a consuming project as `bash ${BU_ROOT}/app git <command>`. `bash ${BU_ROOT}/app git <command> --help` prints its options.
 
 The tables list the options each command reads. The common flags that `--help` prints for every command (`--verbose`, `--debug`, `--json`, `--version`) are not repeated here.
 
@@ -10,7 +10,7 @@ The process behind release, promote and split is in [release-and-promote.md](rel
 
 ### Exit codes
 
-From `bash app lib exit-codes`. Each command section lists the codes it returns.
+From `bash ${BU_ROOT}/app lib exit-codes`. Each command section lists the codes it returns.
 
 | Code | Name | Meaning |
 |---|---|---|
@@ -51,7 +51,7 @@ Credentials are not environment settings of this table. `pr`, `split` (dry run) 
 Creates the branch `<type>/<name>` from the main branch, switches the checkout to it and prints the branch name. The branch has no upstream. Uncommitted changes of the working tree go along, as with `git switch`.
 
 ```text
-bash app git start <type> <name>
+bash ${BU_ROOT}/app git start <type> <name>
 ```
 
 | Argument | Required | Meaning |
@@ -64,7 +64,7 @@ Reads `GIT_WORKFLOW_MAIN_BRANCH`. Needs Docker for the check of existing branche
 Exit codes: 0, 1 (branch exists locally or on origin, local main differs from `origin/<main>`, git refuses the switch), 2 (usage, unknown type, invalid name), 4 (Docker missing).
 
 ```bash
-bash app git start feat add-login
+bash ${BU_ROOT}/app git start feat add-login
 ```
 
 Expected output: one line, for example `feat/add-login`.
@@ -76,7 +76,7 @@ It never fetches, never reuses an existing branch and never pushes.
 Stages the named paths and commits them with a conventional message. Without `--message` the Claude CLI drafts the message from the staged diff of those paths. The message is linted with commitlint before the commit, and the commit asks for confirmation unless `--yes` is given together with `--message`.
 
 ```text
-bash app git commit [--message <text>] [--yes] <paths>...
+bash ${BU_ROOT}/app git commit [--message <text>] [--yes] <paths>...
 ```
 
 | Option | Meaning |
@@ -90,7 +90,7 @@ Reads the git identity (`user.name`, `user.email`) and `CLAUDE_BIN`, optionally.
 Exit codes: 0, 1 (nothing to commit in the paths, not confirmed, the message is empty, git refused the commit), 2 (no paths, no provider and no `--message`), 3 (lint refused the message, git identity not set), 4 (Docker missing).
 
 ```bash
-bash app git commit --message 'fix(login): keep the session' --yes src/login.js
+bash ${BU_ROOT}/app git commit --message 'fix(login): keep the session' --yes src/login.js
 ```
 
 Expected output: the header `commit message`, the message, and a line `commit` with the short hash.
@@ -102,7 +102,7 @@ It never pushes, never commits a path it was not given, never amends, and never 
 Runs the minimum check: the commit lint of the commits since the latest tag of each component, and the commands declared in its `checks`. Writes nothing and fetches nothing.
 
 ```text
-bash app git check [component]
+bash ${BU_ROOT}/app git check [component]
 ```
 
 | Argument | Meaning |
@@ -114,7 +114,7 @@ Reads `components.yaml` and the commit history. Runs the declared commands on th
 Exit codes: 0 (every component ok), 1 (one or more components red), 3 (`components.yaml` not valid), 4 (the named component is not declared).
 
 ```bash
-bash app git check
+bash ${BU_ROOT}/app git check
 ```
 
 Expected output, one line per component:
@@ -131,7 +131,7 @@ It never writes to the repository, never uses a token, and never pushes. Without
 Pushes the current branch and opens the pull request as the developer. The title is the subject of the only commit of the branch, or the branch name made readable when there are several commits. The body lists the commit subjects, oldest first.
 
 ```text
-bash app git pr [--dry-run] [--draft]
+bash ${BU_ROOT}/app git pr [--dry-run] [--draft]
 ```
 
 | Option | Meaning |
@@ -144,8 +144,8 @@ Reads `GIT_WORKFLOW_MAIN_BRANCH`. The apply takes the developer's token from `gh
 Exit codes: 0, 1 (current branch is the main branch, detached `HEAD`, the minimum check is red, no commit the main branch lacks), 3 (title refused by commitlint, no developer login), 4 (no remote `origin`, git cannot list the commits, gh or Docker missing).
 
 ```bash
-bash app git pr --dry-run
-bash app git pr --draft
+bash ${BU_ROOT}/app git pr --dry-run
+bash ${BU_ROOT}/app git pr --draft
 ```
 
 Expected output of the dry run: the header `pull request`, the branch, the title, and the body lines `- <subject>`. Expected output of the apply: a line `push` with the branch, and a line `pull request` with the URL.
@@ -157,7 +157,7 @@ It never pushes or opens a pull request while the minimum check is red, never re
 Reports the state of the branch and of the components as JSON.
 
 ```text
-bash app git workflow-status
+bash ${BU_ROOT}/app git workflow-status
 ```
 
 Reads `GIT_WORKFLOW_MAIN_BRANCH`, `GIT_WORKFLOW_RELEASE_BRANCH` and `PACKAGE_FILE`. Needs Docker, because git runs in the tool image. The `runs` key needs a gh login and a network; without them it is an empty array and the command still succeeds.
@@ -173,7 +173,7 @@ It never writes and never pushes.
 Groups the local and remote branches as `merged`, `stale` or `active`, and deletes the merged ones after the confirmation. A squash-merged branch counts as merged. Protected names (the main and release branches, the patterns of `GIT_WORKFLOW_LEGACY_BRANCHES`, `main`, `master`, `develop`, `development`, `staging`, `production`, `release-please--*` and `backport/*`) are skipped.
 
 ```text
-bash app git branch-cleanup [--dry-run] [--force] [--local-only | --remote-only]
+bash ${BU_ROOT}/app git branch-cleanup [--dry-run] [--force] [--local-only | --remote-only]
 ```
 
 | Option | Meaning |
@@ -188,7 +188,7 @@ Reads `GIT_WORKFLOW_MAIN_BRANCH`, `GIT_WORKFLOW_RELEASE_BRANCH`, `GIT_WORKFLOW_L
 Exit codes: 0, 1 (not a git repository).
 
 ```bash
-bash app git branch-cleanup --dry-run
+bash ${BU_ROOT}/app git branch-cleanup --dry-run
 ```
 
 Expected output: lines `merged: feat/add-login`, `stale: old/thing`, `active: ...`, with the `origin/` prefix for remote branches, then the line `Use --dry-run to preview, --force to skip confirmation`. Without a terminal and without `--force` it prints `Not interactive - use --force to skip the confirmation`, deletes nothing and exits 0.
@@ -200,7 +200,7 @@ A branch is deleted only when git proves that every commit of it is applied to t
 Lists worktrees, prunes stale references, or creates a worktree for a new branch.
 
 ```text
-bash app git worktree [--list | --prune | --start <branch>]
+bash ${BU_ROOT}/app git worktree [--list | --prune | --start <branch>]
 ```
 
 | Option | Meaning |
@@ -214,7 +214,7 @@ Reads `GIT_WORKFLOW_WORKTREE_DIR` and `GIT_WORKFLOW_MAIN_BRANCH`. Needs no Docke
 Exit codes: 0, 1 (worktree creation failed, the worktree exists), 3 (`GIT_WORKFLOW_WORKTREE_DIR` not absolute).
 
 ```bash
-bash app git worktree --list
+bash ${BU_ROOT}/app git worktree --list
 ```
 
 Expected output: the line `Active worktrees:`, then one line per worktree as `<branch> → <path>`.
@@ -226,7 +226,7 @@ It never removes a worktree directory or a branch. Unlike `start`, `--start` doe
 Validates a commit message file against `commitlint.config.mjs`. The hooks call it, and so do `commit` and `pr`.
 
 ```text
-bash app git lint-commit <commit-msg-file>
+bash ${BU_ROOT}/app git lint-commit <commit-msg-file>
 ```
 
 | Argument | Meaning |
@@ -240,7 +240,7 @@ Exit codes: 0 (accepted), 1 (file not found, commitlint not installed, or commit
 
 ```bash
 printf 'added stuff\n' > msg.txt
-bash app git lint-commit msg.txt
+bash ${BU_ROOT}/app git lint-commit msg.txt
 ```
 
 Expected output: commitlint's report, which includes `type may not be empty`, and a non-zero exit.
@@ -252,7 +252,7 @@ It never edits the file.
 Installs the git hook shims of the plugin into the hooks directory that git uses, and reports what is missing or stale.
 
 ```text
-bash app git shims [--check]
+bash ${BU_ROOT}/app git shims [--check]
 ```
 
 | Option | Meaning |
@@ -264,7 +264,7 @@ Reads no setting. The hooks directory is `core.hooksPath` when set, else the com
 Exit codes: 0 (every shim is in place), 1 (`--check` found a shim missing or stale, or a write failed), 3 (a conflict with a foreign hook file, a mapped hook without a shim file, or no mapped hook), 4 (not inside a repository, or the hook mapping is missing).
 
 ```bash
-bash app git shims
+bash ${BU_ROOT}/app git shims
 ```
 
 Expected output, one line per hook: `commit-msg: installed in <hooks directory>` on the first run, and `commit-msg: current` on the next.
@@ -280,7 +280,7 @@ These commands are described at reference level. The process is in [release-and-
 Releases every component whose commits since its latest stable tag make a release. Dry run prints the plan; apply makes the release commit `chore(<component>): release <tag>`, the tag, the push, and the GitHub Release.
 
 ```text
-bash app git release (--dry-run | --apply) [--draft] [--pre <channel>]
+bash ${BU_ROOT}/app git release (--dry-run | --apply) [--draft] [--pre <channel>]
 ```
 
 | Option | Meaning |
@@ -295,8 +295,8 @@ Reads `GIT_WORKFLOW_MAIN_BRANCH`, `TOKEN_SERVICE_URL`, `TOKEN_SERVICE_PORT`. Nee
 Exit codes: 0, 1 (runtime failure), 2 (neither or both of `--dry-run` and `--apply`), 3 (git identity not set for apply).
 
 ```bash
-bash app git release --dry-run
-bash app git release --apply --pre rc
+bash ${BU_ROOT}/app git release --dry-run
+bash ${BU_ROOT}/app git release --apply --pre rc
 ```
 
 Expected output of the dry run: a header `release <component>` per component with the lines `version`, `tag` and `files`, then the notes. Apply does the steps listed above and leaves master unchanged apart from the release commit.
@@ -308,7 +308,7 @@ It never releases a component that has no release-making commit since its tag, a
 Moves the release branch to the commit of a release tag. It never moves the branch to the head of `master`. A fast-forward needs no confirmation. When the release branch is not an ancestor of the tag commit, the command is in baseline mode and needs `--confirm`.
 
 ```text
-bash app git promote <tag> (--dry-run | --apply) [--confirm <owner/repo>]
+bash ${BU_ROOT}/app git promote <tag> (--dry-run | --apply) [--confirm <owner/repo>]
 ```
 
 | Argument or option | Meaning |
@@ -323,8 +323,8 @@ Reads `GIT_WORKFLOW_MAIN_BRANCH`, `GIT_WORKFLOW_RELEASE_BRANCH`, `TOKEN_SERVICE_
 Exit codes: 0, 1 (runtime failure), 2 (no tag, neither or both flags, a diverged branch without `--confirm`, `--confirm` names another repository), 4 (the tag does not exist).
 
 ```bash
-bash app git promote v1.2.0 --dry-run
-bash app git promote v1.2.0 --apply
+bash ${BU_ROOT}/app git promote v1.2.0 --dry-run
+bash ${BU_ROOT}/app git promote v1.2.0 --apply
 ```
 
 The dry run names the commit and, when the branch diverged, the divergence. Apply pushes the fast-forward. The process is in [release-and-promote.md](release-and-promote.md).
@@ -336,8 +336,8 @@ It never moves the release branch to the head of `master`, and never replaces a 
 Shows, or pushes, the split of one component into its child repository. Dry run prints the split head, its ancestry to the child head, and the tree difference. Apply pushes the split head to the child's main branch, and the component tags as `vX.Y.Z`. One child per apply.
 
 ```text
-bash app git split [<component>] --dry-run
-bash app git split <component> --apply [--confirm <owner/repo>]
+bash ${BU_ROOT}/app git split [<component>] --dry-run
+bash ${BU_ROOT}/app git split <component> --apply [--confirm <owner/repo>]
 ```
 
 | Argument or option | Meaning |
@@ -352,8 +352,8 @@ Reads `GIT_WORKFLOW_MAIN_BRANCH`, `TOKEN_SERVICE_URL`, `TOKEN_SERVICE_PORT`. The
 Exit codes: 0, 1 (runtime failure), 2 (the component has `split: no`, `--confirm` names another child, a child that does not descend without `--confirm`, neither or both flags, apply without exactly one component), 3 (the child's default branch differs from `GIT_WORKFLOW_MAIN_BRANCH`), 4 (component not declared).
 
 ```bash
-bash app git split web --dry-run
-bash app git split web --apply
+bash ${BU_ROOT}/app git split web --dry-run
+bash ${BU_ROOT}/app git split web --apply
 ```
 
 It never moves a child tag that exists at another commit, which is skipped with a warning, and never replaces a child without `--confirm`.
@@ -363,7 +363,7 @@ It never moves a child tag that exists at another commit, which is skipped with 
 Creates or updates the branch rulesets of the repository from `bin/config/rulesets.yaml`, as the App.
 
 ```text
-bash app git rules-sync [--dry-run | --apply] [--stage <development|production>]
+bash ${BU_ROOT}/app git rules-sync [--dry-run | --apply] [--stage <development|production>]
 ```
 
 | Option | Meaning |
@@ -377,7 +377,7 @@ Reads `GIT_WORKFLOW_STAGE`, `GIT_WORKFLOW_APP_ID`, `GIT_WORKFLOW_RELEASE_BRANCH`
 Exit codes: 0, 1 (runtime failure), 2 (both `--dry-run` and `--apply`, an unknown ruleset or stage), 3 (`GIT_WORKFLOW_APP_ID` missing or not numeric on apply, `rulesets.yaml` not valid).
 
 ```bash
-bash app git rules-sync --dry-run --stage production
+bash ${BU_ROOT}/app git rules-sync --dry-run --stage production
 ```
 
 Expected output: one line per ruleset with its action.
@@ -391,7 +391,7 @@ It never touches or deletes a ruleset that the file does not name. A ruleset or 
 Validates `GIT_WORKFLOW_MAIN_BRANCH` and `GIT_WORKFLOW_RELEASE_BRANCH` and prints them. The `apply`, `check` and `init` forms are removed; rulesets are applied with `rules-sync`.
 
 ```text
-bash app git workflow-setup [validate]
+bash ${BU_ROOT}/app git workflow-setup [validate]
 ```
 
 Reads `GIT_WORKFLOW_MAIN_BRANCH` and `GIT_WORKFLOW_RELEASE_BRANCH`, both defaulting to `master`.
@@ -399,7 +399,7 @@ Reads `GIT_WORKFLOW_MAIN_BRANCH` and `GIT_WORKFLOW_RELEASE_BRANCH`, both default
 Exit codes: 0, 2 (unknown option or command, or a removed form), 3 (a branch setting holds whitespace).
 
 ```bash
-bash app git workflow-setup
+bash ${BU_ROOT}/app git workflow-setup
 ```
 
 Expected output:
@@ -416,7 +416,7 @@ It never writes a setting.
 Runs the token service: a local server that issues one-hour installation tokens of the GitHub App, narrowed to one repository and one permission set, to the members of the organisation. It runs as a long-lived process. It takes its settings from the environment only; `--help` is not supported.
 
 ```text
-TOKEN_SERVICE_APP_ID=<app-id> TOKEN_SERVICE_KEY_PATH=<path-to-key> bash app git token-service
+TOKEN_SERVICE_APP_ID=<app-id> TOKEN_SERVICE_KEY_PATH=<path-to-key> bash ${BU_ROOT}/app git token-service
 ```
 
 | Variable | Meaning |
@@ -435,7 +435,7 @@ It never prints or stores the key. The permission sets are in `bin/config/token-
 
 ## Slash commands
 
-The eight git slash commands are defined in `commands/commands.yaml` and dispatch with the same blueprint: each runs `bash app git <name> $ARGUMENTS`, reports the output unchanged, and adds nothing. Their options, environment variables and exit codes are those of the `app git` command they run, listed above. The arguments are passed as typed after the slash command.
+The eight git slash commands are defined in `commands/commands.yaml` and dispatch with the same blueprint: each runs `bash ${BU_ROOT}/app git <name> $ARGUMENTS`, reports the output unchanged, and adds nothing. Their options, environment variables and exit codes are those of the `app git` command they run, listed above. The arguments are passed as typed after the slash command.
 
 | Slash command | Runs | Argument hint |
 |---|---|---|

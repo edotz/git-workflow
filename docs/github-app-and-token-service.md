@@ -2,7 +2,7 @@
 
 The plugin does its privileged writes (release, promote, split, rulesets) as a GitHub App, `git-workflow-app`, and not with a personal token. A token service on the developer's machine issues the App's short-lived installation tokens, narrowed to one repository and one permission set, to members of the organisation who prove their login. This manual explains the design, the permissions, how a token is issued, how the service is hosted and how its key is kept, what happens when it is down, how to add a repository, and what an attacker could do with a token.
 
-The commands are in [Command reference](command-reference.md). The config that the service reads is in [Configuration](configuration.md#token-servicejson).
+The commands are in [Command reference](command-reference.md). The config that the service reads is in [Configuration](git-workflow-configuration.md#token-servicejson).
 
 ## Why an App and not personal tokens
 
@@ -172,7 +172,7 @@ A line `token service listening on 8790 for org edotz` shows a start. A line `re
 
 ### Without Docker
 
-`bash app git token-service` runs the same code on the host. It needs Node, the dependencies installed with `npm ci` in the plugin root, and the two variables `TOKEN_SERVICE_APP_ID` and `TOKEN_SERVICE_KEY_PATH` set in the environment. It refuses to start when either is missing, and when the file at the key path has no private key in it.
+`bash ${BU_ROOT}/app git token-service` runs the same code on the host. It needs Node, the dependencies installed with `npm ci` in the plugin root, and the two variables `TOKEN_SERVICE_APP_ID` and `TOKEN_SERVICE_KEY_PATH` set in the environment. It refuses to start when either is missing, and when the file at the key path has no private key in it.
 
 ## Key custody
 
@@ -274,7 +274,7 @@ The service listens on the loopback address of the machine. Any process of the m
 
 ## Related
 
-- [Configuration](configuration.md): the settings of the token service and `token-service.json`.
+- [Configuration](git-workflow-configuration.md): the settings of the token service and `token-service.json`.
 - [Rulesets and CI](rulesets-and-ci.md): what `rules-sync --apply` writes with the `administration` token.
 - [Release and promote](release-and-promote.md): the commands that use the `contents` token.
 - [Monorepo and split](monorepo-and-split.md): the `split` set and the child repositories.

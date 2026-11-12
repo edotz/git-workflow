@@ -168,7 +168,7 @@ The service's error replies are `400` (set unknown, repository not owner/name, b
 
 **Running the service.** Two ways, both needing the App's ID and the path of its private key in the environment (variable names only: `TOKEN_SERVICE_APP_ID`, `TOKEN_SERVICE_KEY_PATH`):
 
-- `bash app git token-service` runs the script with `node` on the host and listens on `TOKEN_SERVICE_HOST` (default `127.0.0.1`) at `TOKEN_SERVICE_PORT` (default 8790). The script refuses to start when the key file does not contain a private key.
+- `bash ${BU_ROOT}/app git token-service` runs the script with `node` on the host and listens on `TOKEN_SERVICE_HOST` (default `127.0.0.1`) at `TOKEN_SERVICE_PORT` (default 8790). The script refuses to start when the key file does not contain a private key.
 - `docker compose` builds the `token-service` target and runs it with a read-only root filesystem, `no-new-privileges`, the key file mounted read-only at a fixed path inside the container, and the port published on `127.0.0.1` only. The key is never copied into an image. The client uses the same URL either way.
 
 Hosting, key custody and the permission design belong to [GitHub App and token service](github-app-and-token-service.md).
@@ -289,7 +289,7 @@ Choose the kind of setting first:
 
 | Kind | Where it is read | Where it is declared |
 |---|---|---|
-| Workflow setting for a project (branch names, stage, App ID, worktree directory) | Environment: `GIT_WORKFLOW_*`, read directly, with a default in the code. The framework loads the project's `.env` at bootstrap; the environment wins. | Document in [Configuration](configuration.md) |
+| Workflow setting for a project (branch names, stage, App ID, worktree directory) | Environment: `GIT_WORKFLOW_*`, read directly, with a default in the code. The framework loads the project's `.env` at bootstrap; the environment wins. | Document in [Configuration](git-workflow-configuration.md) |
 | Plugin setting with a default, overridable per project | `${PLUGIN_EDOTZ_GIT_WORKFLOW_<NAME>:-<default>}`, as `branch-cleanup.sh` reads `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` | A key in `bin/config/env.defaults`. Every key starts with `PLUGIN_EDOTZ_GIT_WORKFLOW_` and must not redefine a framework key. |
 | Tool version or checksum | `.env.defaults` (pins) | The key in `.env.defaults`, the name in `TOOL_PIN_KEYS` in `bin/lib/tool.sh`, the `ARG` in `.docker/Dockerfile`, the `args` entry in `docker-compose.yaml` |
 | Ruleset | `bin/config/rulesets.yaml` | Edit the entry; `app git rules-sync --dry-run` shows the change |

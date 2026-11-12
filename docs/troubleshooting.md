@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Each table gives a symptom as the tool prints it, its cause, and the fix. Commands are written for a consuming project as `bash app git <command>`. Messages are quoted from the sources; `...` marks a value that the tool fills in. The adoption order is in [adopting-in-a-project.md](adopting-in-a-project.md), the exit codes and options in [command-reference.md](command-reference.md).
+Each table gives a symptom as the tool prints it, its cause, and the fix. Commands are written for a consuming project as `bash ${BU_ROOT}/app git <command>`. Messages are quoted from the sources; `...` marks a value that the tool fills in. The adoption order is in [adopting-in-a-project.md](adopting-in-a-project.md), the exit codes and options in [command-reference.md](command-reference.md).
 
 ## Setup and environment
 
@@ -11,7 +11,7 @@ Each table gives a symptom as the tool prints it, its cause, and the fix. Comman
 | `Command not found: gh` or `Command not found: curl` | A host tool that the token request or the pull request needs is missing. | Install the tool and run `gh auth login`. |
 | `commitlint is not installed: run npm install in <plugin root>` | The plugin root has no `node_modules`. `lint-commit` runs commitlint from there. | Run `npm install` in the plugin root. |
 | `check command failed: ...` with `shellcheck: not found`, in a new worktree | `components.yaml` runs the tools from `node_modules/.bin`, and a new worktree has no `node_modules`. | Run `npm install` in the worktree, or run the check from the main clone. |
-| `workflow-setup validate` shows a branch that is not the one in `.env` | A `GIT_WORKFLOW_*` variable is exported in the shell. The environment wins over `.env`. The sandbox pilot saw a release branch named from a shell export. | Find the variable with `env \| grep GIT_WORKFLOW_`, run `unset` on it, and run `bash app git workflow-setup validate` again. |
+| `workflow-setup validate` shows a branch that is not the one in `.env` | A `GIT_WORKFLOW_*` variable is exported in the shell. The environment wins over `.env`. The sandbox pilot saw a release branch named from a shell export. | Find the variable with `env \| grep GIT_WORKFLOW_`, run `unset` on it, and run `bash ${BU_ROOT}/app git workflow-setup validate` again. |
 | `git fetch` or `git push` fails with a permission error on an `ssh` remote, such as `git@github.com:<owner>/<repo>.git`, when no key is set up for it | Your own git commands use the remote `origin` as configured. The plugin's own fetches and pushes (release, promote, split, pr) always use `https://github.com/<owner>/<repo>.git` with the `gh` credential helper, so they are not affected by the remote form. | Point `origin` at the https URL (`git remote set-url origin https://github.com/<owner>/<repo>.git`) and let git use `gh` as the credential helper (`gh auth setup-git`, a `gh` command that these sources do not contain). The plugin reads both URL forms to find the repository. |
 | `workflow-setup validate` refuses a branch name with whitespace | `GIT_WORKFLOW_MAIN_BRANCH` or `GIT_WORKFLOW_RELEASE_BRANCH` holds a space. | Set a branch name without whitespace in `.env`. |
 | `rules: <name> needs GIT_WORKFLOW_RELEASE_BRANCH` or `... needs GIT_WORKFLOW_LEGACY_BRANCHES, the comma separated branch patterns` | The variable is set but blank. An unset `GIT_WORKFLOW_LEGACY_BRANCHES` is not an error: the legacy ruleset is skipped. | Set the variable to a branch name, or unset it. |
@@ -62,8 +62,8 @@ The allowed types are the ones of `commitlint.config.mjs`: `feat`, `fix`, `docs`
 | A squash subject over 100 characters is on `master` | A pull request title was longer than the limit at merge time. | Keep the title under the limit before merging. A commit already on `master` is not changed by the plugin. |
 | `commit lint failed: <subject>` with `type may not be empty` for a `Merge ...` or `Revert ...` subject | commitlint passes only the forms it ignores by default: `Merge branch`, `Merge pull request` and `Revert ...`. Any other subject starting with `Merge` or `Revert` is refused. | Write a conventional subject. Do not bypass the lint. |
 | `commit lint failed: <subject>` from `check`, `pr` or the pre-push guard, for a commit you did not write today | `check` lints every commit since the latest tag of the component, in every path of the repository, not only the component's paths. A non-conventional commit in that range fails every check. | The commit cannot be reworded once pushed. Decide with the developer whether the baseline tag of the component must move; do not bypass the lint. |
-| `pr: the minimum check is red, nothing was pushed` | A component's check or commit lint is red. | Run `bash app git check` to see the component and the step that failed. |
-| `pr: the current branch is master, open the pull request from another branch` | `pr` was run on the main branch. | Commit on a feature branch, for example from `bash app git start`. |
+| `pr: the minimum check is red, nothing was pushed` | A component's check or commit lint is red. | Run `bash ${BU_ROOT}/app git check` to see the component and the step that failed. |
+| `pr: the current branch is master, open the pull request from another branch` | `pr` was run on the main branch. | Commit on a feature branch, for example from `bash ${BU_ROOT}/app git start`. |
 | `pr: the branch <branch> has no commit that master lacks` | The branch has nothing to propose. | Commit the change first. |
 | `pr: HEAD is not on a branch` | Detached HEAD. | Check out a branch. |
 | Pull request check `check` stays pending, or the pull request is blocked | The workflow has a `paths:` filter that matches no changed file, so `check` never reports. | Remove the path filter from `status-checks.yml`. |
@@ -75,12 +75,12 @@ The allowed types are the ones of `commitlint.config.mjs`: `feat`, `fix`, `docs`
 | `Nothing to release: no component changed since its latest tag` | Nothing counts: the baseline tag is on HEAD, or the commits since the tag are only `chore`, `ci`, `docs`, `test`, `style`, `refactor` or `build`, or they lie outside the component's paths. | Run `git log <tag>..HEAD -- <paths>` to see the commits. A `feat`, `fix`, `perf` or breaking commit releases. |
 | `release: apply runs on master, the current branch is <branch>` | `release --apply` was run off the main branch. | Switch to `master` and run again. |
 | `release: the working tree has uncommitted changes, nothing was changed` | The tree is not clean. | Commit or stash your own changes, then run again. |
-| `release: the minimum check is red, nothing was changed` | A component check failed. | Run `bash app git check`, fix the failing step, and run again. |
+| `release: the minimum check is red, nothing was changed` | A component check failed. | Run `bash ${BU_ROOT}/app git check`, fix the failing step, and run again. |
 | `version: <file> has no version key, Composer reads the tag: remove it from version_files` | A `composer.json` in `version_files` has no `version` key. | Remove that file from `version_files`. |
 | `version: <file> takes plain X.Y.Z versions only, got <version>` | `--pre` was given for a component that lists `ext_emconf.php`. That writer takes final versions only. | Make the final release of that component without `--pre`. |
 | `version: <file> holds <n> 'version' lines, expected exactly one` | The `ext_emconf.php` writer needs exactly one `'version' =>` line. | Keep one such line in the file. |
-| `release --dry-run` shows `pending` for a tag that is on HEAD | A previous apply stopped after the commit and the tag, before the GitHub Release. The sandbox pilot saw an interrupted apply. | Run `bash app git release --apply` again. The release is idempotent: it creates only what is missing. |
-| `Could not resolve host: github.com` during apply; the commit and the tag stay local | Network loss during the push. The sandbox pilot saw this. | Restore the network and run `bash app git release --apply` again. |
+| `release --dry-run` shows `pending` for a tag that is on HEAD | A previous apply stopped after the commit and the tag, before the GitHub Release. The sandbox pilot saw an interrupted apply. | Run `bash ${BU_ROOT}/app git release --apply` again. The release is idempotent: it creates only what is missing. |
+| `Could not resolve host: github.com` during apply; the commit and the tag stay local | Network loss during the push. The sandbox pilot saw this. | Restore the network and run `bash ${BU_ROOT}/app git release --apply` again. |
 | `promote: <tag> is not a release tag, its commit reads '<subject>'` | The tag is not on a release commit. A release commit reads `chore(<component>): release <tag>`. | Promote the tag of the release commit, not a tag on another commit. |
 | `promote: <branch> is not a fast-forward ... run again with --apply --confirm <owner/repo>` | The first move of the release branch after a migration is a baseline. | Expected. Run the dry run, then the apply once with `--confirm`. |
 | `promote: the tag legacy/pre-promote of <slug> could not be pushed, it may exist at another commit` | A `legacy/pre-promote` tag already exists on the remote at another commit. | Check the existing tag. Rename or delete it on the remote yourself, with the developer's decision, then run again. |
@@ -105,10 +105,10 @@ The allowed types are the ones of `commitlint.config.mjs`: `feat`, `fix`, `docs`
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `<hook>: conflict, <path> is not an agentic-os shim and stays as it is` (exit 3) | A foreign hook file sits where the shim goes. | Move that file aside with the developer's decision, then run `bash app git shims` again. |
-| `bash app git shims --check` exits 1 and names `missing or stale` | A shim is missing or differs from the plugin's shim. | Run `bash app git shims`. |
-| The shim prints `No hook registry ... no hooks run`, and the pre-push guard does nothing | `bash app hooks install` was not run. The shim alone registers nothing. | Run `bash app hooks install`, then `bash app hooks enable pre-push minimum-check`. |
-| The guard is installed but a push goes through a non-conventional commit | The hook is registered but disabled. The sandbox pilot saw `app hooks install` register the plugin hook disabled. | Run `bash app hooks status` and enable the hook with `bash app hooks enable pre-push minimum-check`. |
+| `<hook>: conflict, <path> is not an agentic-os shim and stays as it is` (exit 3) | A foreign hook file sits where the shim goes. | Move that file aside with the developer's decision, then run `bash ${BU_ROOT}/app git shims` again. |
+| `bash ${BU_ROOT}/app git shims --check` exits 1 and names `missing or stale` | A shim is missing or differs from the plugin's shim. | Run `bash ${BU_ROOT}/app git shims`. |
+| The shim prints `No hook registry ... no hooks run`, and the pre-push guard does nothing | `bash ${BU_ROOT}/app hooks install` was not run. The shim alone registers nothing. | Run `bash ${BU_ROOT}/app hooks install`, then `bash ${BU_ROOT}/app hooks enable pre-push minimum-check`. |
+| The guard is installed but a push goes through a non-conventional commit | The hook is registered but disabled. The sandbox pilot saw `app hooks install` register the plugin hook disabled. | Run `bash ${BU_ROOT}/app hooks status` and enable the hook with `bash ${BU_ROOT}/app hooks enable pre-push minimum-check`. |
 | `agentic-os: not found` on a commit or a push | The shim runs `agentic-os hook trigger`, and the shell has no `agentic-os` on `PATH`. The tool image has no `agentic-os` either. | Put `agentic-os` on the `PATH` of the host shell. The plugin's own pushes run without repository hooks, because the checks already ran on the host. |
 
 ## Worktrees and branches
