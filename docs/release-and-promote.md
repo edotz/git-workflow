@@ -354,6 +354,16 @@ The `release` ruleset (from `bin/config/rulesets.yaml`, created by `app git rule
 
 Never push the release branch by hand, and never force it. The lease and the `legacy/pre-promote` tag are the only safe way to replace it.
 
+## No backport
+
+A release is made on the main branch only, and `promote` moves the release branch to the release commit of a tag, never to anything else. There is no flow that applies one fix to the release branch alone:
+
+1. The fix reaches the main branch through a pull request.
+2. `app git release` releases it, together with every other unreleased `feat`, `fix` and `perf` commit on the main branch.
+3. `app git promote <tag>` moves the release branch to that release.
+
+When the main branch holds unreleased features that must not reach production yet, the dry run of the release shows them. The choice is then to ship them with the fix, or to wait; a hand-made tag or a cherry-pick onto the release branch is not an option, because `promote` accepts only a tag whose commit is a release commit.
+
 ## What a release does not do
 
 - It does not publish packages. Packages (npm, Composer) are the consumer's workflows. The App has no packages permission.
