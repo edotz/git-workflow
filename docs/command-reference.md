@@ -31,7 +31,7 @@ Settings come from the environment. The `.env` file of the project root is loade
 | `GIT_WORKFLOW_LEGACY_BRANCHES` | rules-sync | Comma separated patterns of legacy branches | unset |
 | `GIT_WORKFLOW_STAGE` | rules-sync | `development` or `production` | `development` |
 | `GIT_WORKFLOW_APP_ID` | rules-sync `--apply` | Numeric id of the GitHub App | required for apply |
-| `GIT_WORKFLOW_WORKTREE_DIR` | start, worktree | Absolute base directory of worktrees | `$HOME/worktrees` |
+| `GIT_WORKFLOW_WORKTREE_DIR` | worktree | Absolute base directory of worktrees | `$HOME/worktrees` |
 | `TOKEN_SERVICE_URL` | release, promote, split, rules-sync | URL of the token service | `http://127.0.0.1:<port>` |
 | `TOKEN_SERVICE_PORT` | release, promote, split, rules-sync, token-service | Port of the token service | `8790` |
 | `TOKEN_SERVICE_APP_ID` | token-service | Id of the App | required |
@@ -47,7 +47,7 @@ Credentials are not environment settings of this table. `pr`, `split` (dry run) 
 
 ### start
 
-Creates the branch `<type>/<name>` and its worktree from the main branch, and prints the worktree path. The branch name is the type and the name joined by `/`; the path replaces `/` with `-`.
+Creates the branch `<type>/<name>` from the main branch, switches the checkout to it and prints the branch name. The branch has no upstream. Uncommitted changes of the working tree go along, as with `git switch`.
 
 ```text
 bash app git start <type> <name>
@@ -58,17 +58,17 @@ bash app git start <type> <name>
 | `type` | yes | One of `feat fix docs style refactor perf test build ci chore`. |
 | `name` | yes | Lower case letters and digits, with single hyphens. |
 
-Reads `GIT_WORKFLOW_MAIN_BRANCH` and `GIT_WORKFLOW_WORKTREE_DIR`. Needs Docker.
+Reads `GIT_WORKFLOW_MAIN_BRANCH`. Needs Docker for the check of existing branches.
 
-Exit codes: 0, 1 (branch exists locally or on origin, worktree exists, local main differs from `origin/<main>`, git failure), 2 (usage, unknown type, invalid name), 3 (worktree directory not absolute), 4 (Docker missing).
+Exit codes: 0, 1 (branch exists locally or on origin, local main differs from `origin/<main>`, git refuses the switch), 2 (usage, unknown type, invalid name), 4 (Docker missing).
 
 ```bash
 bash app git start feat add-login
 ```
 
-Expected output: one line, for example `/home/you/worktrees/web/feat-add-login`.
+Expected output: one line, for example `feat/add-login`.
 
-It never fetches, never reuses an existing branch, never pushes, and never removes a worktree.
+It never fetches, never reuses an existing branch and never pushes.
 
 ### commit
 
@@ -445,13 +445,13 @@ The eight git slash commands are defined in `commands/commands.yaml` and dispatc
 | `/git:rules-sync` | `app git rules-sync` | `[--dry-run\|--apply] [--stage <development\|production>]` |
 | `/git:split` | `app git split` | `[component] --dry-run` or `<component> --apply [--confirm <owner/repo>]` |
 
-Commands run in the directory of the Claude Code session. Start the session in the worktree that `/git:start` printed.
+Commands run in the directory of the Claude Code session, on the branch that is checked out there.
 
 Each slash command takes the options, settings and exit codes of the `app git` command in the table above; its output is the output of that command.
 
 | Slash command | Example | Never |
 |---|---|---|
-| `/git:start` | `/git:start feat add-login` | Checks out an existing branch. Leave the printed worktree. |
+| `/git:start` | `/git:start feat add-login` | Reuses an existing branch. |
 | `/git:commit` | `/git:commit src/login.js --message "feat(login): keep the session after a reload" --yes` | Pushes, or commits paths that were not named. Without `--message` and `--yes` the confirmation gets no answer, and the commit is declined with `commit: not confirmed, nothing was committed`. |
 | `/git:check` | `/git:check web` | Writes to the repository. |
 | `/git:pr` | `/git:pr --dry-run`, `/git:pr --draft` | Uses `gh pr create --fill`. Pushes while the minimum check is red. |

@@ -16,30 +16,29 @@ The loop is strict about commit messages on purpose. A pull request is squash-me
 
 | Step | Command | Result |
 |---|---|---|
-| 1. Start | `bash app git start <type> <name>` | Branch `<type>/<name>` and a worktree; the path is printed |
+| 1. Start | `bash app git start <type> <name>` | Branch `<type>/<name>` from the main branch, checked out; its name is printed |
 | 2. Commit | `bash app git commit <paths>` | One commit of the named paths, with a checked message |
 | 3. Check | `bash app git check [component]` | One line per component: `ok` or `failed` |
 | 4. Pull request | `bash app git pr [--dry-run] [--draft]` | Branch pushed, pull request opened |
 | 5. Merge | GitHub, "Squash and merge" | One commit on `master` |
-| 6. Cleanup | `branch-cleanup`, `git worktree remove`, `git branch -D` | Local branch and worktree removed |
+| 6. Cleanup | `branch-cleanup`, `git branch -D` | Merged branch removed |
 | Any time | `bash app git workflow-status` | JSON status of the branch and the components |
 
 ## 1. Start
 
-Run it inside the repository, from the main clone or any worktree of it.
+Run it inside the repository.
 
 ```bash
 bash app git start feat add-login
 ```
 
-Expected output: one line, the absolute path of the new worktree, for example `/home/you/worktrees/web/feat-add-login`. Work inside that path. Do not change the branch of the main clone.
+Expected output: one line, the name of the new branch, `feat/add-login`. The checkout is now on that branch. Uncommitted changes of the working tree go along, as with `git switch`; git refuses the switch when a change would be overwritten.
 
 Rules:
 
 - The type is one of the ten types of `commitlint.config.mjs`: `feat fix docs style refactor perf test build ci chore`.
 - The name is lower case letters and digits, with single hyphens between words: `add-login`.
-- The branch is `<type>/<name>`, created from the local main branch (`GIT_WORKFLOW_MAIN_BRANCH`, default `master`).
-- The worktree is `<GIT_WORKFLOW_WORKTREE_DIR>/<repository>/<type>-<name>`. The directory defaults to `$HOME/worktrees` and must be an absolute path. The slash of the branch becomes a hyphen in the path: `feat/add-login` lives in `.../feat-add-login`.
+- The branch is `<type>/<name>`, created from the local main branch (`GIT_WORKFLOW_MAIN_BRANCH`, default `master`) and checked out in the current checkout. It has no upstream, so `git pull` on it does not pull `master`.
 - Name the branch like the subject you want. A single commit gives its own subject as the pull request title. Several commits give a title built from the branch name, so `feat/add-login` becomes `feat: add login` (see [Pull request](#4-pull-request)).
 
 `start` does not fetch. It refuses to start while the local main branch differs from `origin/<main>`, so update master first.
@@ -48,11 +47,9 @@ Rules:
 |---|---|---|
 | `Unknown type 'x': one of feat fix ...` | 2 | Use one of the ten types. |
 | `Invalid name 'X': lower case letters and digits, separated by single hyphens` | 2 | Rename it, for example `add-login`. |
-| `Branch exists locally: feat/add-login` | 1 | `start` never reuses a branch. Pick another name, or work in the existing worktree. |
+| `Branch exists locally: feat/add-login` | 1 | `start` never reuses a branch. Pick another name, or switch to the existing branch with `git switch`. |
 | `Branch exists on origin: feat/add-login` | 1 | Pick another name. `start` does not check out a remote branch. |
 | `Local master is not in sync with origin/master. Run: git fetch origin && git merge origin/master` | 1 | Run the printed command in the main clone, then start again. |
-| `Worktree already exists: <path>` | 1 | Work in that path, or remove the worktree (see [After the merge](#6-after-the-merge)). |
-| `GIT_WORKFLOW_WORKTREE_DIR must be an absolute path` | 3 | Set it to an absolute directory. |
 | Docker is not available | 4 | Start Docker. |
 
 ## 2. Commit
@@ -213,18 +210,10 @@ No `app git` command merges a pull request.
 
 ## 6. After the merge
 
-1. Update the main branch in the main clone, with git: `git switch master` and `git pull --ff-only`. The next `start` refuses until the local main branch equals `origin/master`.
+1. Update the main branch with git: `git switch master` and `git pull --ff-only`. The next `start` refuses until the local main branch equals `origin/master`.
 2. List what can be removed: `bash app git branch-cleanup --dry-run`. A squash-merged branch is shown as `merged`. Protected names (`master`, the release branch, `main`, `develop`, and a few others) are skipped. A branch that is not merged and whose last commit is older than `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` days (default 30) is shown as `stale`.
-3. Remove the worktree. Run from the main clone, with the path that `start` printed:
-
-   ```bash
-   git worktree remove /home/you/worktrees/web/feat-add-login
-   bash app git worktree --prune
-   ```
-
-   `git worktree remove` refuses a worktree with uncommitted changes. `worktree --prune` is needed only after a worktree directory was deleted by hand.
-4. Delete the local branch with `git branch -D feat/add-login`. Use `-D`: the squash commit on `master` is not a descendant of the branch, so `git branch -d` refuses it. Do this only after the pull request shows as merged.
-5. Delete the remote branch on GitHub, or with `git push origin --delete feat/add-login`.
+3. Delete the local branch with `git branch -D feat/add-login`. Use `-D`: the squash commit on `master` is not a descendant of the branch, so `git branch -d` refuses it. Do this only after the pull request shows as merged.
+4. Delete the remote branch on GitHub, or with `git push origin --delete feat/add-login`.
 
 `branch-cleanup` does not delete anything. It fetches and prunes the remote-tracking branches of `origin`, prints the groups, and with `--force` prints a JSON report. Steps 3 and 4 are the deletions.
 
@@ -279,7 +268,7 @@ Each slash command runs the same `app git` command with the arguments you type, 
 Rules for the slash commands:
 
 - `/git:commit` needs `--message` and `--yes` in Claude Code. The confirmation reads from standard input, and the shell of a Claude Code session gives none. Without them the commit is declined with `commit: not confirmed, nothing was committed`. Run `bash app git commit` in a terminal to get the prompt.
-- Commands run in the directory of the session. Start the session in the worktree that `/git:start` printed, or the commit and the push act on the main clone.
+- Commands run in the directory of the session, on the branch that is checked out there.
 - Slash commands for release, promote, split and rules-sync are listed in [command-reference.md](command-reference.md).
 
 ## Rules

@@ -31,7 +31,7 @@ Set the roles in the project `.env` before the first `rules-sync`. Do not export
 | `GIT_WORKFLOW_LEGACY_BRANCHES` | comma separated old lines, for example `1.x`; unset means no legacy ruleset | unset |
 | `GIT_WORKFLOW_APP_ID` | numeric ID of the App; the bypass actor of the rulesets | none; required for `rules-sync --apply` |
 | `GIT_WORKFLOW_STAGE` | `development` or `production` | `development` |
-| `GIT_WORKFLOW_WORKTREE_DIR` | absolute folder for worktrees | `$HOME/worktrees` |
+| `GIT_WORKFLOW_WORKTREE_DIR` | absolute folder for the worktrees of `app git worktree` | `$HOME/worktrees` |
 
 ```bash
 bash app git workflow-setup validate
@@ -328,17 +328,15 @@ bash app git branch-cleanup --dry-run
 
 Lists merged, stale and safe-to-delete branches. A squash-merged branch counts as merged: its tree is compared with the base, and a merged pull request with the branch as head counts too, using your `gh` login. Stale means older than `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` (default 30). Flags: `--local-only`, `--remote-only`, `--dry-run`, `--force`. Without `--force` it asks before it deletes.
 
-### Worktrees
+### Starting a change
 
 ```bash
 bash app git start feat add-login
-bash app git worktree --list
-bash app git worktree --prune
 ```
 
-`start` creates the branch `<type>/<name>` and its worktree from the main branch, and prints the path. The type is one of the commit types (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`). The path is `GIT_WORKFLOW_WORKTREE_DIR` or `$HOME/worktrees`, then the repository name, then the branch with `/` replaced by `-`.
+`start` creates the branch `<type>/<name>` from the main branch, switches the checkout to it and prints its name. The type is one of the commit types (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`). The branch has no upstream.
 
-`start` refuses a branch that exists locally or on origin, and refuses when local `master` differs from `origin/master`. Run `split` and `release` from the main clone, not from a linked worktree: the sandbox pilot recorded a `splitsh-lite failed` there. A worktree also needs its own `npm install` for checks that run from `node_modules/.bin`.
+`start` refuses a branch that exists locally or on origin, and refuses when local `master` differs from `origin/master`. `app git worktree` still manages linked worktrees for those who want one; run `split` and `release` from the main clone, not from a linked worktree: the sandbox pilot recorded a `splitsh-lite failed` there. A linked worktree also needs its own `npm install` for checks that run from `node_modules/.bin`.
 
 ### Slash commands in Claude Code
 
@@ -346,7 +344,7 @@ The plugin registers these commands in `commands/commands.yaml`. Each one runs t
 
 | Command | Argument hint | Use |
 |---|---|---|
-| `/git:start` | `<type> <name>` | a new branch and worktree |
+| `/git:start` | `<type> <name>` | a new branch from the main branch |
 | `/git:commit` | `<paths> [--message <text>] [--yes]` | commit the paths named, with a conventional message |
 | `/git:check` | `[component]` | the minimum check, before a pull request or a push |
 | `/git:pr` | `[--dry-run] [--draft]` | push the branch and open the pull request |
