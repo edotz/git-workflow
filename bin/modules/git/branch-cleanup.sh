@@ -58,6 +58,18 @@ is_protected() {
     fi
   done
   
+  # The legacy branches of the plugin setting, comma separated, globs allowed
+  local legacy pattern
+  local -a legacy_patterns=()
+  IFS=',' read -r -a legacy_patterns <<< "${GIT_WORKFLOW_LEGACY_BRANCHES:-}"
+  for legacy in "${legacy_patterns[@]}"; do
+    pattern="${legacy//[[:space:]]/}"
+    # shellcheck disable=SC2053 # the legacy branch patterns are globs on purpose
+    if [[ -n "$pattern" && "$branch" == $pattern ]]; then
+      return 0
+    fi
+  done
+
   # Special patterns
   if [[ "$branch" == "release-please--"* ]] || [[ "$branch" == "backport/"* ]]; then
     return 0
@@ -279,7 +291,8 @@ display_report() {
 
 # Delete the merged local branches. Only a branch that git proves applied to the main branch is deleted, with -D,
 # because a squash merge leaves no ancestor for -d; a branch that only a merged pull request names is kept, as its
-# tip can hold commits the pull request did not have. The checked out branch is kept.
+# tip can hold commits the pull request did not have. The checked out branch is kept, and so is a branch at the same
+# commit as the main branch: nothing tells it from a branch that was just cut.
 # Args: $1 - results JSON, $2 - ref of the main branch
 # Stdout: one line per branch
 delete_local_branches() {
@@ -292,9 +305,11 @@ delete_local_branches() {
     # shellcheck disable=SC2310
     if [[ "$branch" == "$current" ]]; then
       print_item warning "kept ${branch}" "checked out, switch to another branch first"
+    elif [[ "$(git rev-parse "$branch")" == "$(git rev-parse "$base")" ]]; then
+      print_item warning "kept ${branch}" "at the same commit as the main branch, nothing tells it from a branch just cut"
     elif ! is_merged "$branch" "$base"; then
       print_item warning "kept ${branch}" "only a merged pull request names it, git cherry finds commits the main branch lacks"
-    elif git branch -D "$branch" >/dev/null 2>&1; then
+    elif git branch -D -- "$branch" >/dev/null 2>&1; then
       print_item ok "deleted ${branch}" "local"
     else
       print_item error "failed ${branch}" "git branch -D refused it, is it checked out in a worktree?"
@@ -304,29 +319,48 @@ delete_local_branches() {
 }
 
 # Delete the merged remote branches with the developer's login, one push per branch, under the same rule as the local
-# ones. Without a login or a remote slug nothing is deleted.
+# ones. Nothing is deleted unless origin is a GitHub repository and the developer is logged in. The branches of origin
+# are fetched first and each deletion carries the tip that was proven merged as a lease, so a commit pushed in the
+# meantime keeps the branch.
 # Args: $1 - results JSON
 # Stdout: one line per branch
 delete_remote_branches() {
-  local results="$1" branch
+  local results="$1" branch sha url
   local -a merged
   readarray -t merged < <(json_query "$results" '.remote_branches.merged[]' -r)
   if [[ "${#merged[@]}" -eq 0 ]]; then
     return 0
   fi
   if [[ -z "$PR_LOOKUP_SLUG" ]]; then
-    print_item warning "kept the remote branches" "no developer login or no GitHub remote, run: gh auth login"
+    print_item warning "kept the remote branches" "no developer login or no origin with an owner/name"
+    return 0
+  fi
+  # shellcheck disable=SC2310
+  if ! remote_on_github origin; then
+    print_item warning "kept the remote branches" "origin is not a github.com repository, the deletion would go to another one"
+    return 0
+  fi
+
+  url="https://github.com/${PR_LOOKUP_SLUG}.git"
+  # shellcheck disable=SC2310
+  if ! GH_TOKEN="$PR_LOOKUP_TOKEN" tool_run git "${CLEANUP_AUTH[@]}" fetch --prune "$url" "+refs/heads/*:refs/remotes/origin/*" </dev/null >/dev/null 2>&1; then
+    print_item warning "kept the remote branches" "the current branches of origin cannot be read"
     return 0
   fi
 
   for branch in "${merged[@]}"; do
+    sha="$(git rev-parse --verify --quiet "refs/remotes/origin/${branch}" || true)"
     # shellcheck disable=SC2310
-    if ! is_merged "origin/${branch}" "origin/${MAIN_BRANCH}"; then
+    if [[ -z "$sha" ]]; then
+      print_item warning "kept origin/${branch}" "gone from origin since the report"
+    elif [[ "$sha" == "$(git rev-parse --verify --quiet "refs/remotes/origin/${MAIN_BRANCH}" || true)" ]]; then
+      print_item warning "kept origin/${branch}" "at the same commit as the main branch, nothing tells it from a branch just cut"
+    elif ! is_merged "origin/${branch}" "origin/${MAIN_BRANCH}"; then
       print_item warning "kept origin/${branch}" "only a merged pull request names it, git cherry finds commits the main branch lacks"
-    elif GH_TOKEN="$PR_LOOKUP_TOKEN" tool_run git "${CLEANUP_AUTH[@]}" push "https://github.com/${PR_LOOKUP_SLUG}.git" --delete "refs/heads/${branch}" </dev/null >/dev/null 2>&1; then
+    elif GH_TOKEN="$PR_LOOKUP_TOKEN" tool_run git "${CLEANUP_AUTH[@]}" push "--force-with-lease=refs/heads/${branch}:${sha}" "$url" --delete "refs/heads/${branch}" </dev/null >/dev/null 2>&1; then
       print_item ok "deleted origin/${branch}" "remote"
     else
-      print_item error "failed origin/${branch}" "the push of the deletion was refused"
+      print_item error "failed origin/${branch}" "the push of the deletion was refused, the branch changed on origin or the login may not delete it"
     fi
   done
   return 0

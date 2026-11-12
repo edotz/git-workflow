@@ -62,6 +62,10 @@ git -C "$repo" commit -q -m "fix: squash"
 git -C "$repo" branch --no-track backport/merged master
 git -C "$repo" branch --no-track fix/current-merged master
 
+# A legacy branch that master has, one commit behind it, and a branch just cut at the tip of master.
+git -C "$repo" branch --no-track legacy/old master~1
+git -C "$repo" branch --no-track fix/fresh master
+
 # A branch with a commit that master lacks.
 git -C "$repo" switch -q -c fix/unmerged
 echo u > "${repo}/u"
@@ -74,7 +78,7 @@ git -C "$repo" fetch -q origin
 git -C "$repo" switch -q fix/current-merged
 
 run_cleanup() {
-  (cd "$repo" && env GIT_WORKFLOW_MAIN_BRANCH=master GIT_WORKFLOW_RELEASE_BRANCH=1.x bash "$cleanup" "$@" 2>&1 </dev/null)
+  (cd "$repo" && env GIT_WORKFLOW_MAIN_BRANCH=master GIT_WORKFLOW_RELEASE_BRANCH=1.x GIT_WORKFLOW_LEGACY_BRANCHES="legacy/*" bash "$cleanup" "$@" 2>&1 </dev/null)
 }
 
 has_branch() {
@@ -125,12 +129,97 @@ ok=no
 if has_branch backport/merged && has_branch fix/unmerged && has_branch master; then ok=yes; fi
 case_result "a protected name, an unmerged branch and the main branch are kept" "$ok"
 
+ok=no
+if has_branch legacy/old && [[ "$out" != *"legacy/old"* ]]; then ok=yes; fi
+case_result "a branch of GIT_WORKFLOW_LEGACY_BRANCHES is kept and not even reported" "$ok"
+
+ok=no
+if has_branch fix/fresh && [[ "$out" == *"kept fix/fresh"* && "$out" == *"same commit as the main branch"* ]]; then ok=yes; fi
+case_result "a branch at the same commit as the main branch is kept and says why" "$ok"
+
 rc=0
 out="$(run_cleanup --force --remote-only)" || rc=$?
 ok=no
 if [[ "$rc" -eq 0 && "$out" == *"kept the remote branches"* ]] \
   && git -C "$remote" rev-parse --verify --quiet refs/heads/fix/remote-merged >/dev/null; then ok=yes; fi
 case_result "a remote that is no GitHub remote keeps its merged branch and says why" "$ok"
+
+# The remote side: origin looks like a GitHub repository and the tool image and gh are stubs; the stub docker runs the
+# tool on the host and swaps the GitHub URL of the script for the bare remote.
+stubs="${work}/stubs"
+mkdir "$stubs"
+cat > "${stubs}/docker" <<'STUB'
+#!/usr/bin/env bash
+case "${1:-}" in
+  image) exit 0 ;;
+  run)
+    shift
+    while [[ $# -gt 0 && "$1" != edotz-git-workflow-tools:* ]]; do shift; done
+    shift
+    args=()
+    for arg in "$@"; do
+      args+=("${arg/https:\/\/github.com\/o\/r.git/${STUB_REMOTE}}")
+    done
+    exec "${args[@]}"
+    ;;
+esac
+exit 1
+STUB
+cat > "${stubs}/gh" <<'STUB'
+#!/usr/bin/env bash
+case "${1:-} ${2:-}" in
+  "auth token") echo "stub-token" ;;
+  "pr list") echo 0 ;;
+  *) exit 1 ;;
+esac
+STUB
+chmod +x "${stubs}/docker" "${stubs}/gh"
+
+run_remote_cleanup() {
+  (cd "$repo" && env PATH="${stubs}:${PATH}" STUB_REMOTE="$remote" GIT_WORKFLOW_MAIN_BRANCH=master GIT_WORKFLOW_RELEASE_BRANCH=1.x GIT_WORKFLOW_LEGACY_BRANCHES="legacy/*" bash "$cleanup" --force --remote-only 2>&1 </dev/null)
+}
+
+has_remote_branch() {
+  git -C "$remote" rev-parse --verify --quiet "refs/heads/$1" >/dev/null
+}
+
+git -C "$repo" remote set-url origin "https://github.com/o/r.git"
+
+# Three remote branches behind master: one merged, one that gets a commit the local tracking ref does not know, and
+# one at the tip of master.
+git -C "$repo" push -q "$remote" "master~1:refs/heads/fix/remote-gone" "master~1:refs/heads/fix/remote-raced" "master:refs/heads/fix/remote-fresh"
+git -C "$repo" fetch -q "$remote" "+refs/heads/*:refs/remotes/origin/*"
+git -C "$repo" switch -q --no-track -c scratch origin/fix/remote-raced
+echo late > "${repo}/late"
+git -C "$repo" add late
+git -C "$repo" commit -q -m "fix: pushed after the analysis"
+git -C "$repo" push -q "$remote" "scratch:refs/heads/fix/remote-raced"
+git -C "$repo" switch -q fix/current-merged
+git -C "$repo" branch -q -D scratch
+git -C "$repo" update-ref refs/remotes/origin/fix/remote-raced "$(git -C "$repo" rev-parse master~1)"
+
+rc=0
+out="$(run_remote_cleanup)" || rc=$?
+ok=no
+if [[ "$rc" -eq 0 && "$out" == *"deleted origin/fix/remote-gone"* ]] && ! has_remote_branch fix/remote-gone; then ok=yes; fi
+case_result "a merged remote branch is deleted on origin" "$ok"
+
+ok=no
+if has_remote_branch fix/remote-raced && [[ "$out" == *"kept origin/fix/remote-raced"* ]]; then ok=yes; fi
+case_result "a branch that received a commit after the analysis is kept, the fetch before the deletion shows it" "$ok"
+
+ok=no
+if has_remote_branch fix/remote-fresh && [[ "$out" == *"kept origin/fix/remote-fresh"* && "$out" == *"same commit as the main branch"* ]]; then ok=yes; fi
+case_result "a remote branch at the same commit as the main branch is kept" "$ok"
+
+git -C "$repo" remote set-url origin "https://gitlab.example.org/o/r.git"
+git -C "$remote" update-ref refs/heads/fix/remote-other-host "$(git -C "$repo" rev-parse master~1)"
+git -C "$repo" update-ref refs/remotes/origin/fix/remote-other-host "$(git -C "$repo" rev-parse master~1)"
+rc=0
+out="$(run_remote_cleanup)" || rc=$?
+ok=no
+if [[ "$rc" -eq 0 && "$out" == *"not a github.com repository"* ]] && has_remote_branch fix/remote-other-host; then ok=yes; fi
+case_result "an origin that is not on github.com keeps its remote branches and says why" "$ok"
 
 if [[ "$failed" -ne 0 ]]; then
   exit 1

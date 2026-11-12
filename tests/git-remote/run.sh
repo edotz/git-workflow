@@ -52,6 +52,26 @@ check_slug "the https form with .git" "https://github.com/acme/widget.git" "acme
 check_slug "the https form without .git" "https://github.com/acme/widget" "acme/widget"
 check_slug "a query string is dropped" "https://github.com/acme/widget?x=1" "acme/widget"
 
+check_github() {
+  local label="$1" url="$2" want="$3" rc=0 ok=no
+  git -C "$repo" remote remove origin 2>/dev/null || true
+  git -C "$repo" remote add origin "$url"
+  run_remote remote_on_github >/dev/null || rc=$?
+  if [[ "$rc" -eq "$want" ]]; then ok=yes; fi
+  case_result "$label" "$ok"
+}
+
+check_github "remote_on_github reads the https form of github.com" "https://github.com/acme/widget.git" 0
+check_github "remote_on_github reads the https form with a user" "https://x-access-token@github.com/acme/widget.git" 0
+check_github "remote_on_github reads the scp form" "git@github.com:acme/widget.git" 0
+check_github "remote_on_github reads the ssh:// form" "ssh://git@github.com/acme/widget.git" 0
+check_github "remote_on_github refuses another host" "https://gitlab.com/acme/widget.git" 1
+check_github "remote_on_github refuses a host that only ends in github.com" "https://evilgithub.com/acme/widget.git" 1
+check_github "remote_on_github refuses a host that starts with github.com" "https://github.com.example.org/acme/widget.git" 1
+check_github "remote_on_github refuses a path" "${work}/not-a-slug" 1
+
+git -C "$repo" remote remove origin
+git -C "$repo" remote add origin "https://github.com/acme/widget.git"
 git -C "$repo" remote add upstream "https://example.org/other/tool.git"
 rc=0
 out="$(run_remote remote_slug upstream)" || rc=$?
