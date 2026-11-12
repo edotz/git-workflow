@@ -103,6 +103,25 @@ run_pr --dry-run
 expect_rc 3 "dry run refuses a branch name that is no conventional title"
 expect_out "'Topic name'" "the refusal names the title"
 
+# The squash merge appends " (#N)": a title of 92 characters still fits the header limit of 100, one of 93 does not.
+long_subject() {
+  printf 'feat: %s' "$(head -c "$(($1 - 6))" < /dev/zero | tr '\0' 'x')"
+}
+git -C "$REPO" switch -q master
+git -C "$REPO" switch -q -c feat/fits
+commit "$(long_subject 92)"
+run_pr --dry-run
+expect_rc 0 "dry run passes a title of 92 characters"
+git -C "$REPO" switch -q master
+git -C "$REPO" switch -q -c feat/too-long
+commit "$(long_subject 93)"
+run_pr --dry-run
+expect_rc 3 "dry run refuses a title of 93 characters"
+expect_out "squash suffix" "the refusal names the squash suffix"
+run_pr
+expect_rc 3 "pr refuses a title of 93 characters"
+expect_out "nothing was pushed" "the refusal of the long title says that nothing was pushed"
+
 if [[ "$FAILS" -ne 0 ]]; then
   printf '%s check(s) failed\n' "$FAILS"
   exit 1

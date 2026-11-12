@@ -93,16 +93,19 @@ _pr_text() {
   return 0
 }
 
-# Refuse a title that commitlint refuses; the title is never rewritten, a squash merge puts it on the main branch.
+# The squash merge appends " (#N)" to the title and the pull request number is unknown before the pull request exists.
+readonly _PR_SQUASH_SUFFIX=" (#9999)"
+
+# Refuse a title that commitlint refuses, with the squash suffix appended; the title is never rewritten, a squash merge puts it on the main branch.
 # Reads: _PR_TITLE
 _pr_lint_title() {
   local reason
   register_cleanup _pr_cleanup
   _PR_TITLEFILE="$(mktemp)"
-  printf '%s\n' "$_PR_TITLE" > "$_PR_TITLEFILE"
+  printf '%s%s\n' "$_PR_TITLE" "$_PR_SQUASH_SUFFIX" > "$_PR_TITLEFILE"
   if ! reason="$(bash "${PLUGIN_ROOT}/bin/modules/git/lint-commit.sh" "$_PR_TITLEFILE" 2>&1)"; then
     logger_error "$reason"
-    die_with "$BU_EXIT_CONFIG" "pr: the title '${_PR_TITLE}' did not pass commitlint, see the reason above, nothing was pushed"
+    die_with "$BU_EXIT_CONFIG" "pr: the title '${_PR_TITLE}' did not pass commitlint with the squash suffix '${_PR_SQUASH_SUFFIX}' appended, see the reason above, nothing was pushed"
   fi
   return 0
 }
