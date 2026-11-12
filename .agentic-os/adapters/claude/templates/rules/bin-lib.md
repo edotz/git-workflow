@@ -19,7 +19,7 @@ Plugin-local bash libraries sourced by the git modules through PLUGIN_ROOT: gith
 - The libraries stay plugin-local by design, not contributed to the framework lib (developer's answer).
 
 ## Environment
-- Needs `git` on PATH; worktree.sh calls `require_command "git"` at load time. github.sh and token.sh need `gh`, token.sh also `curl`, tool.sh `docker`, component.sh `jq` 1.5+ and `yq` 4.0+.
+- Needs `git` on PATH; worktree.sh and branch.sh call `require_command "git"` at load time. github.sh and token.sh need `gh`, token.sh also `curl`, tool.sh `docker`, component.sh `jq` 1.5+ and `yq` 4.0+.
 
 ## Constraints
 - A change is done when shellcheck is clean (developer's answer).

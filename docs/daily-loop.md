@@ -49,7 +49,7 @@ Rules:
 | `Invalid name 'X': lower case letters and digits, separated by single hyphens` | 2 | Rename it, for example `add-login`. |
 | `Branch exists locally: feat/add-login` | 1 | `start` never reuses a branch. Pick another name, or switch to the existing branch with `git switch`. |
 | `Branch exists on origin: feat/add-login` | 1 | Pick another name. `start` does not check out a remote branch. |
-| `Local master is not in sync with origin/master. Run: git fetch origin && git merge origin/master` | 1 | Run the printed command in the main clone, then start again. |
+| `Local master is not in sync with origin/master. Run: git fetch origin && git switch master && git merge --ff-only origin/master` | 1 | Run the printed command, then start again. |
 | Docker is not available | 4 | Start Docker. |
 
 ## 2. Commit

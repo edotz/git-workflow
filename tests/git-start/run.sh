@@ -120,7 +120,7 @@ git -C "$repo" commit -q --allow-empty -m "chore: only local"
 rc=0
 out="$(run_start fix behind-origin)" || rc=$?
 ok=no
-if [[ "$rc" -eq 1 && "$out" == *"not in sync"* ]] \
+if [[ "$rc" -eq 1 && "$out" == *"not in sync"* && "$out" == *"git switch master"* ]] \
   && ! git -C "$repo" rev-parse --verify --quiet refs/heads/fix/behind-origin >/dev/null; then ok=yes; fi
 case_result "a main branch that differs from origin is refused before the branch is created" "$ok"
 
