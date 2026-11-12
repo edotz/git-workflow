@@ -41,7 +41,7 @@ Rules:
 - The branch is `<type>/<name>`, created from the local main branch (`GIT_WORKFLOW_MAIN_BRANCH`, default `master`) and checked out in the current checkout. It has no upstream, so `git pull` on it does not pull `master`.
 - Name the branch like the subject you want. A single commit gives its own subject as the pull request title. Several commits give a title built from the branch name, so `feat/add-login` becomes `feat: add login` (see [Pull request](#4-pull-request)).
 
-`start` does not fetch. It refuses to start while the local main branch differs from `origin/<main>`, so update master first.
+`start` does not fetch. It refuses to start while the local main branch differs from `origin/<main>` (when that remote branch is known), so update master first.
 
 | Message | Exit | Fix |
 |---|---|---|
@@ -214,7 +214,7 @@ No `app git` command merges a pull request.
 2. List what can be removed: `bash app git branch-cleanup --dry-run`. A squash-merged branch is shown as `merged`. Protected names (`master`, the release branch, `main`, `develop`, and a few others) are skipped. A branch that is not merged and whose last commit is older than `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` days (default 30) is shown as `stale`.
 3. Delete the merged branches: `bash app git branch-cleanup`. It asks once; `--force` skips the question, and `--local-only` or `--remote-only` limits it to one side. The remote branches are deleted with your `gh` login, one push per branch.
 
-`branch-cleanup` deletes a branch only when git itself proves that every commit of it is on the main branch (merge, rebase, or a squash merge); a branch that only a merged pull request names is kept, because its tip can hold commits the pull request did not have. It never deletes the checked-out branch, a protected name, or a branch that is not merged. Each branch gets one line, `deleted <branch>` or `kept <branch>` with the reason. Do not rely on `git branch -d`: a squash commit is no descendant of the branch, so only `-D` deletes it by hand.
+`branch-cleanup` deletes a branch only when git itself proves that every commit of it is on the main branch (merge, rebase, or a squash merge); a branch that only a merged pull request names is kept, because its tip can hold commits the pull request did not have. It never deletes the checked-out branch, a protected name (the main and release branches, the patterns of `GIT_WORKFLOW_LEGACY_BRANCHES`, `release-please--*` and `backport/*`), a branch at the same commit as the main branch (nothing tells it from one just cut), or a branch that is not merged. The remote branches are deleted only when `origin` is on github.com: the command fetches `origin` first and pushes each deletion with a lease on the tip it proved merged, so a commit pushed in the meantime keeps the branch. Each branch gets one line, `deleted <branch>`, `kept <branch>` or `failed <branch>`, with the reason. Do not rely on `git branch -d`: a squash commit is no descendant of the branch, so only `-D` deletes it by hand.
 
 ## 7. Status
 

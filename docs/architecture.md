@@ -73,7 +73,7 @@ One line per script in `bin/modules/git/`. The name is the `app git` command; th
 | `workflow-status.sh` | `workflow-status` | Prints JSON: the sync of the release branch, per component the latest tag, the commits since it, the release branch position, and recent workflow runs |
 | `workflow-setup.sh` | `workflow-setup` | Validates `GIT_WORKFLOW_MAIN_BRANCH` and `GIT_WORKFLOW_RELEASE_BRANCH` (no whitespace) and prints them |
 | `worktree.sh` | `worktree` | Lists, creates (`--start`) or prunes worktrees |
-| `branch-cleanup.sh` | `branch-cleanup` | Analyses local and remote branches as merged, stale or active, prints them, and deletes the merged ones after the confirmation (only what git proves applied to the main branch) |
+| `branch-cleanup.sh` | `branch-cleanup` | Analyses local and remote branches as merged, stale or active, prints them, and deletes the merged ones after the confirmation: only what git proves applied to the main branch, never a protected or legacy branch, remote branches only on github.com with a fetch and a lease |
 | `token-service.mjs` | `token-service` | Node HTTP service that issues installation tokens; see [Token path](#token-path) |
 
 The ide domain (`bin/modules/ide/`, `module.yaml` with domain `ide`) holds three scripts that are not part of the git workflow: `vscode-setup.sh` writes the title bar colour and a Project Manager entry for a worktree, `vscode-teardown.sh` removes that entry, and `vscode-profile.sh` composes and decomposes `.code-profile` files. Their default profiles directory is `.vscode/profiles` of the plugin, overridable with `PLUGIN_EDOTZ_GIT_WORKFLOW_VSCODE_PROFILES_DIR`.
@@ -91,7 +91,7 @@ Libraries are in `bin/lib/`. Each has a guard variable `BU_STATE_<NAME>` against
 | `check.sh` | `check_minimum` | Lints the subjects since the latest tag with `lint-commit.sh`, then runs each declared check from the repository root; every step runs, every failure is printed |
 | `rules.sh` | `rules_load`, `rules_names`, `rules_json` | Reads `bin/config/rulesets.yaml` as JSON and builds one ruleset for a stage in the GitHub body format |
 | `split.sh` | `split_head` | Runs splitsh-lite in the tool image on the first path of a component and returns the split head |
-| `remote.sh` | `remote_slug`, `remote_identity` | Reads `owner/name` from a remote URL and the developer's `user.name` or `user.email`; no network, no token |
+| `remote.sh` | `remote_slug`, `remote_on_github`, `remote_identity` | Reads `owner/name` from a remote URL, tells whether the remote is on github.com, and reads the developer's `user.name` or `user.email`; no network, no token |
 | `branch.sh` | `branch_create` | Creates a branch at the head of the main branch and switches to it without an upstream; refuses when the local main branch is not in sync with origin |
 | `worktree.sh` | `worktree_create`, `worktree_get_path`, `worktree_prune`, `worktree_resolve_base_branch` | Worktree location `<dir>/<repo>/<name with / as ->`, creation from the main branch, refusal when the local main branch is not in sync with origin |
 | `github.sh` | `github_ensure_authenticated`, `github_get_runs` | Reads workflow runs with `gh`; only `workflow-status` uses it |
@@ -213,7 +213,7 @@ Tests live in `tests/<area>/<case>.sh`, one area per command or library:
 | `git-pr` | `dry-run.sh`, `title.sh` | `pr` dry run, refusal of the main branch and of a red check; title lint |
 | `git-promote` | `ff.sh`, `baseline.sh` | fast-forward, dry run and refusals; baseline mode with `--confirm` |
 | `git-release` | `dry-run.sh`, `multi.sh` | the dry run end to end, several components and a single root component |
-| `git-remote` | `run.sh` | the three URL forms, a missing remote, the identity values |
+| `git-remote` | `run.sh` | the three URL forms, the github.com check, a missing remote, the identity values |
 | `git-rules` | `build.sh`, `sync.sh`, `foreign.sh` | the ruleset JSON for each stage and for the main branch setting; sync against stub `docker`, `gh`, `curl`; foreign rulesets and classic protection |
 | `git-shims` | `run.sh`, `push.sh` | installation, stale shims, `--check`, worktrees, `core.hooksPath`; a push in the tool image with the hook disabled |
 | `git-split` | `dry-run.sh`, `apply.sh` | the dry run and the apply against bare child repositories inside the monorepo's git directory |

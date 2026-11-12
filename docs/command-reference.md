@@ -28,7 +28,7 @@ Settings come from the environment. The `.env` file of the project root is loade
 |---|---|---|---|
 | `GIT_WORKFLOW_MAIN_BRANCH` | start, pr, worktree, branch-cleanup, workflow-setup, workflow-status, release, promote, split | Main branch | `master` |
 | `GIT_WORKFLOW_RELEASE_BRANCH` | promote, rules-sync, workflow-setup, workflow-status, branch-cleanup | Release branch | `master` |
-| `GIT_WORKFLOW_LEGACY_BRANCHES` | rules-sync | Comma separated patterns of legacy branches | unset |
+| `GIT_WORKFLOW_LEGACY_BRANCHES` | rules-sync, branch-cleanup | Comma separated patterns of legacy branches | unset |
 | `GIT_WORKFLOW_STAGE` | rules-sync | `development` or `production` | `development` |
 | `GIT_WORKFLOW_APP_ID` | rules-sync `--apply` | Numeric id of the GitHub App | required for apply |
 | `GIT_WORKFLOW_WORKTREE_DIR` | worktree | Absolute base directory of worktrees | `$HOME/worktrees` |
@@ -170,7 +170,7 @@ It never writes and never pushes.
 
 ### branch-cleanup
 
-Groups the local and remote branches as `merged`, `stale` or `active`, and deletes the merged ones after the confirmation. A squash-merged branch counts as merged. Protected names (the main and release branches, `main`, `master`, `develop`, `development`, `staging`, `production`, `release-please--*` and `backport/*`) are skipped.
+Groups the local and remote branches as `merged`, `stale` or `active`, and deletes the merged ones after the confirmation. A squash-merged branch counts as merged. Protected names (the main and release branches, the patterns of `GIT_WORKFLOW_LEGACY_BRANCHES`, `main`, `master`, `develop`, `development`, `staging`, `production`, `release-please--*` and `backport/*`) are skipped.
 
 ```text
 bash app git branch-cleanup [--dry-run] [--force] [--local-only | --remote-only]
@@ -183,7 +183,7 @@ bash app git branch-cleanup [--dry-run] [--force] [--local-only | --remote-only]
 | `-l, --local-only` | Analyse local branches only. |
 | `-r, --remote-only` | Analyse remote branches only. |
 
-Reads `GIT_WORKFLOW_MAIN_BRANCH`, `GIT_WORKFLOW_RELEASE_BRANCH`, `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS`, and the gh login (for the merged pull request lookup and for the deletion of remote branches). Runs `git fetch --prune origin` first. Needs Docker for the lookup and the remote deletion.
+Reads `GIT_WORKFLOW_MAIN_BRANCH`, `GIT_WORKFLOW_RELEASE_BRANCH`, `GIT_WORKFLOW_LEGACY_BRANCHES`, `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS`, and the gh login (for the merged pull request lookup and for the deletion of remote branches). Runs `git fetch --prune origin` first. Needs Docker for the lookup and the remote deletion.
 
 Exit codes: 0, 1 (not a git repository).
 
@@ -193,7 +193,7 @@ bash app git branch-cleanup --dry-run
 
 Expected output: lines `merged: feat/add-login`, `stale: old/thing`, `active: ...`, with the `origin/` prefix for remote branches, then the line `Use --dry-run to preview, --force to skip confirmation`. Without a terminal and without `--force` it prints `Not interactive - use --force to skip the confirmation`, deletes nothing and exits 0.
 
-A branch is deleted only when git proves that every commit of it is applied to the main branch; with `-D` for a local branch and a push of the deletion for a remote one. A branch that only a merged pull request names is kept with the line `kept <branch>`, and so are the checked-out branch and the protected names. Without a GitHub remote or a login the remote branches are kept and the line `kept the remote branches` says why. After the confirmation or with `--force` each branch gets one line: `deleted <branch>`, `kept <branch>` or `failed <branch>`.
+A branch is deleted only when git proves that every commit of it is applied to the main branch; with `-D` for a local branch and a push of the deletion for a remote one. A branch that only a merged pull request names is kept with the line `kept <branch>`, and so are the checked-out branch, the protected names and a branch at the same commit as the main branch. Remote branches are deleted only when `origin` is on github.com and a login exists; the command fetches `origin` first and pushes each deletion with `--force-with-lease` on the tip it proved merged, so a branch that received a commit meanwhile is kept. Otherwise the remote branches are kept and the line `kept the remote branches` says why. After the confirmation or with `--force` each branch gets one line: `deleted <branch>`, `kept <branch>` or `failed <branch>`.
 
 ### worktree
 
