@@ -372,7 +372,7 @@ It never moves a child tag that exists at another commit, which is skipped with 
 
 ### stage
 
-Reports the stage of the live `master` ruleset, or switches it. The live ruleset is the source of truth: no setting stores the stage. The ruleset is compared with its development and production form from `bin/config/rulesets.yaml`, ignoring the bypass actors.
+Reports the stage of the live `master` ruleset, or switches it. The live ruleset is the source of truth: no setting stores the stage. The ruleset is compared with its development and production form from `bin/config/rulesets.yaml`, ignoring the bypass actors and the default parameters GitHub adds to a rule (for example `dismissal_restriction` and `required_reviewers`).
 
 ```text
 bash ${BU_ROOT}/app git stage [<stage>] [--apply]
@@ -419,7 +419,7 @@ bash ${BU_ROOT}/app git rules-sync --dry-run --stage production
 
 Expected output: one line per ruleset with its action.
 
-It never touches or deletes a ruleset that the file does not name. A ruleset or a classic branch protection that still covers a managed branch is named in the output and left alone. See [rulesets-and-ci.md](rulesets-and-ci.md).
+A live ruleset counts as unchanged when it holds everything the file names; parameters GitHub adds by default do not make an update. It never touches or deletes a ruleset that the file does not name. A ruleset or a classic branch protection that still covers a managed branch is named in the output and left alone. See [rulesets-and-ci.md](rulesets-and-ci.md).
 
 ## Setup commands
 

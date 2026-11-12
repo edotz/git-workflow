@@ -249,6 +249,17 @@ run_stage "$APP"
 expect_out "a changed live ruleset is reported as drift" "live stage: drift"
 
 new_state
+seed "$APP" production
+master_file="$(printf '%s\n' "${STUB_DIR}"/rulesets/*.json | head -n 1)"
+jq -c '(.rules[] | select(.type == "pull_request") | .parameters) += {dismissal_restriction: {enabled: false, allowed_actors: []}, required_reviewers: []}
+  | (.rules[] | select(.type == "required_status_checks") | .parameters) += {do_not_enforce_on_create: false}' "$master_file" >"${master_file}.new"
+mv "${master_file}.new" "$master_file"
+run_stage "$APP"
+expect_out "default parameters added by GitHub do not make a drift" "live stage: production"
+run_stage "$APP" production
+expect_out "the stage is unchanged with those parameters" "unchanged: already production"
+
+new_state
 seed "$APP" development
 touch "${STUB_DIR}/fail-write"
 run_stage "$APP" production --apply

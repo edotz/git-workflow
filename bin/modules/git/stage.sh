@@ -29,9 +29,10 @@ _STAGE_LIVE=""
 # Private Helpers
 # ============================================
 
-# Read the live master ruleset and name its stage: the stage whose ruleset it equals in name, target, enforcement,
-# conditions and rules, drift when it equals none of them, none when the repository has no master ruleset. The bypass
-# actors stay out of the comparison: they do not depend on the stage.
+# Read the live master ruleset and name its stage: the stage whose ruleset it holds in name, target, enforcement,
+# conditions and rules, drift when it holds none of them, none when the repository has no master ruleset. The parameters
+# GitHub adds to a rule by default do not count, and the bypass actors stay out of the comparison: they do not depend on
+# the stage.
 # Args: $1 - owner/name
 # Sets: _STAGE_LIVE
 _stage_read_live() {
@@ -52,10 +53,7 @@ _stage_read_live() {
   _STAGE_LIVE="drift"
   while IFS= read -r stage; do
     built="$(rules_json "$STAGE_RULESET" "$stage")"
-    if json_query "$existing" '
-      def shape: {name, target, enforcement, conditions, rules};
-      shape == ($want | shape)
-    ' -e --argjson want "$built" >/dev/null; then
+    if rules_live_matches "$existing" "$built" true; then
       _STAGE_LIVE="$stage"
       break
     fi
