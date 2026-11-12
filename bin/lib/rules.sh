@@ -1,7 +1,7 @@
 #!/bin/bash
 # Branch Rulesets Library
 # Requires: core.sh, yaml.sh, json.sh
-# Provides: rules_load, rules_json, rules_names: the rulesets of the master, release and legacy branches as plain
+# Provides: rules_load, rules_json, rules_names, rules_stages: the rulesets of the master, release and legacy branches as plain
 #           GitHub ruleset JSON, built from bin/config/rulesets.yaml.
 # State: sets RULES_DOC, the rulesets file as JSON, after rules_load.
 
@@ -69,6 +69,16 @@ rules_load() {
 rules_names() {
   _rules_require_loaded
   json_query "$RULES_DOC" '.rulesets | keys_unsorted[]'
+  return 0
+}
+
+# Print the names of the stages, one per line, in file order.
+# Args: none
+# Returns: names on stdout
+# Example: rules_stages
+rules_stages() {
+  _rules_require_loaded
+  json_query "$RULES_DOC" '.stages[]' -r
   return 0
 }
 

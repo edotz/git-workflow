@@ -180,7 +180,7 @@ Compose reads the same files with `--env-file .env.defaults`, followed by `--env
 
 ## Stages
 
-The stage decides which rules the `master` ruleset carries. It is set by `GIT_WORKFLOW_STAGE` or by `rules-sync --stage`, and defaults to `development`.
+The stage decides which rules the `master` ruleset carries. The live ruleset holds it: `app git stage` reports it and switches it. `GIT_WORKFLOW_STAGE` or `rules-sync --stage` choose the stage a `rules-sync` run builds, and default to `development`.
 
 | Ruleset | development | production |
 |---|---|---|
@@ -188,7 +188,7 @@ The stage decides which rules the `master` ruleset carries. It is set by `GIT_WO
 | `release` | same in both stages | same in both stages |
 | `legacy` | same in both stages | same in both stages |
 
-The stage changes nothing else: no command reads `GIT_WORKFLOW_STAGE` except `rules-sync` and the rules library. The rules of each ruleset are explained in [Rulesets and CI](rulesets-and-ci.md).
+The stage changes nothing else: no command reads `GIT_WORKFLOW_STAGE` except `rules-sync` and the rules library; `stage` takes the stage as an argument. The rules of each ruleset are explained in [Rulesets and CI](rulesets-and-ci.md).
 
 ## commitlint.config.mjs
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Git Commit - stage the paths named and commit them with a conventional message the provider drafts or --message gives
-# Usage: app git commit [--message <text>] [--yes] <paths>
+# Git Commit - commit the paths named, or exactly the staged files without paths, with a conventional message the
+#              provider drafts or --message gives
+# Usage: app git commit [--message <text>] [--yes] [<paths>]
 # Decisions: D18 (the provider drafts, the plugin calls no provider binary), D37 of the plan (no repository hooks: the
 #            message is linted here)
 set -euo pipefail
@@ -54,12 +55,12 @@ _commit_identity() {
   return 0
 }
 
-# Print the message the provider drafts from the staged diff of the paths.
-# Args: the paths
+# Print the message the provider drafts from the staged diff of the paths, or of the whole index without them.
+# Args: -- and the paths, or nothing
 # Returns: the message (stdout)
 _commit_draft() {
   local diff prompt message
-  diff="$(tool_run git diff --cached -- "$@" </dev/null)"
+  diff="$(tool_run git diff --cached "$@" </dev/null)"
   diff="${diff:0:${COMMIT_DIFF_LIMIT}}"
   prompt="Write the commit message for the staged diff below, as one conventional commit: type(scope): subject, in the imperative, lower case, at most 72 characters, no trailing period. Add a body only when the subject does not carry the change. Print the message and nothing else."$'\n\n'"${diff}"
   # The empty model lets the adapter pick its small model; a missing model makes it forward the prompt as a flag.
@@ -98,9 +99,6 @@ main() {
     paths+=("$eaten")
   fi
   paths+=("${CLI_ARGS[@]}")
-  if [[ "${#paths[@]}" -eq 0 ]]; then
-    die_with "$BU_EXIT_USAGE" "commit: name the paths to commit. Usage: app git commit [--message <text>] [--yes] <paths>"
-  fi
 
   git_ensure_repo
   tool_image_ensure
@@ -111,13 +109,19 @@ main() {
 
   register_cleanup _commit_cleanup
   _COMMIT_TREE="$(tool_run git write-tree </dev/null)"
-  tool_run git add -- "${paths[@]}" </dev/null
-  if tool_run git diff --cached --quiet -- "${paths[@]}" </dev/null; then
-    die "commit: nothing to commit in the paths named"
+  local -a only=()
+  if [[ "${#paths[@]}" -gt 0 ]]; then
+    only=(-- "${paths[@]}")
+    tool_run git add -- "${paths[@]}" </dev/null
+    if tool_run git diff --cached --quiet -- "${paths[@]}" </dev/null; then
+      die "commit: nothing to commit in the paths named"
+    fi
+  elif tool_run git diff --cached --quiet </dev/null; then
+    die "commit: nothing staged, stage files or name the paths to commit"
   fi
 
   if [[ -z "$message" ]]; then
-    message="$(_commit_draft "${paths[@]}")"
+    message="$(_commit_draft "${only[@]}")"
   fi
   message="${message#"${message%%[![:space:]]*}"}"
   message="${message%"${message##*[![:space:]]}"}"
@@ -145,7 +149,7 @@ main() {
     fi
   fi
 
-  if ! tool_run git "${_COMMIT_ID[@]}" commit -q -m "$message" -- "${paths[@]}" </dev/null; then
+  if ! tool_run git "${_COMMIT_ID[@]}" commit -q -m "$message" "${only[@]}" </dev/null; then
     die "commit: git refused the commit, the index was restored"
   fi
   _COMMIT_TREE=""

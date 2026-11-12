@@ -1,6 +1,6 @@
 # git-workflow plugin: overview
 
-The `edotz.git-workflow` plugin is the git and GitHub workflow of the edotz repositories. It runs on the developer's machine as `app git <command>` and as the slash commands `/git:start`, `/git:commit`, `/git:check`, `/git:pr`, `/git:release`, `/git:promote`, `/git:split` and `/git:rules-sync` in Claude Code. It is a plugin of the agentic-os framework; the `app` entry point comes from the framework.
+The `edotz.git-workflow` plugin is the git and GitHub workflow of the edotz repositories. It runs on the developer's machine as `app git <command>` and as the slash commands `/git:start`, `/git:commit`, `/git:check`, `/git:pr`, `/git:release`, `/git:promote`, `/git:split`, `/git:stage` and `/git:rules-sync` in Claude Code. It is a plugin of the agentic-os framework; the `app` entry point comes from the framework.
 
 This page explains the model. The other manuals give the steps, the options and the details; the table at the end says which one to read.
 
@@ -90,7 +90,7 @@ The release commit has the subject `chore(<component>): release <tag>`. It holds
 
 ### Stages
 
-The stage is a setting of the rulesets: `GIT_WORKFLOW_STAGE` is `development` (default) or `production`, and `app git rules-sync --stage` applies it to the master ruleset. No other command reads it.
+The stage is a property of the live master ruleset: `development` or `production`. `app git stage` reports it and switches it; `GIT_WORKFLOW_STAGE` (default `development`) and `app git rules-sync --stage` choose the stage a `rules-sync` run builds. No other command reads `GIT_WORKFLOW_STAGE`.
 
 | | development | production |
 |---|---|---|
@@ -121,7 +121,7 @@ The only workflow of a consuming project is `status-checks.yml`. It has one job,
 Developer (shell or Claude Code)
   |
   | app git start feat add-login        branch feat/add-login, checked out
-  | app git commit <paths>              conventional commit, linted before it is made
+  | app git commit [<paths>]            conventional commit of the paths or the staged files, linted before it is made
   | app git check                       commit lint since the last tag, plus declared checks
   | app git pr                          push as the developer, open the pull request
   |                                          |

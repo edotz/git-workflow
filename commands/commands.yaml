@@ -17,13 +17,13 @@ commands:
     namespace: git
     type: tool
     description: "Use when work on a new change starts and it needs its own branch."
-    argument-hint: "<type> <name>"
+    argument-hint: "[<type> <name>]"
 
   - name: commit
     namespace: git
     type: tool
     description: "Use when changes on a feature branch are ready to be committed with a conventional message."
-    argument-hint: "<paths> [--message <text>] [--yes]"
+    argument-hint: "[<paths>] [--message <text>] [--yes]"
 
   - name: pr
     namespace: git
@@ -54,6 +54,12 @@ commands:
     type: tool
     description: "Use when the branch rules of the repository must follow bin/config/rulesets.yaml or the stage changes."
     argument-hint: "[--dry-run|--apply] [--stage <development|production>]"
+
+  - name: stage
+    namespace: git
+    type: tool
+    description: "Use when the project moves between development and production, or the live master ruleset may differ from the stage expected."
+    argument-hint: "[<development|production>] [--apply]"
 
   - name: split
     namespace: git

@@ -147,9 +147,57 @@ check "no provider: says so and asks for --message" grep -q "no provider is avai
 check "no provider: no commit" test "$(head_count)" -eq "$before"
 check "no provider: the index as it was" test "$(index_tree)" = "$tree"
 
-# 9. No paths: usage error.
+# 9. No paths and nothing staged: it says so and commits nothing.
 run "" --message "chore: nothing" --yes
-check "no paths: exit 2" test "$RC" -eq 2
+check "no paths, nothing staged: non-zero exit" test "$RC" -ne 0
+check "no paths, nothing staged: says nothing is staged" grep -q "nothing staged" "$OUT"
+check "no paths, nothing staged: no commit" test "$(head_count)" -eq "$before"
+
+# 9b. No paths: exactly the staged files are committed; an unstaged change and an untracked file stay as they are.
+printf 'g\n' > g.txt
+printf 'h\n' > h.txt
+printf 'changed\n' >> base.txt
+git add g.txt h.txt
+before="$(head_count)"
+run "" --message "feat(core): add the g and h files" --yes
+check "no paths, staged: exit 0" test "$RC" -eq 0
+check "no paths, staged: one new commit" test "$(head_count)" -eq $((before + 1))
+check "no paths, staged: exactly the staged files" test "$(git show --name-only --format= HEAD | sort | tr '\n' ' ')" = "g.txt h.txt "
+check "no paths, staged: the unstaged change stays unstaged" test "$(git diff --name-only)" = "base.txt"
+check "no paths, staged: the untracked file stays untracked" test "$(git ls-files --others --exclude-standard | tr '\n' ' ')" = "d.txt "
+git checkout -q -- base.txt
+
+# 9c. No paths, drafted message, confirmed: the staged diff reached the provider.
+printf 'i\n' > i.txt
+git add i.txt
+export STUB_REPLY="feat(core): add the i file"
+before="$(head_count)"
+run "y"
+check "no paths, drafted: exit 0" test "$RC" -eq 0
+check "no paths, drafted: the reply is the subject" test "$(git log -1 --format=%s)" = "feat(core): add the i file"
+check "no paths, drafted: the staged diff reached the provider" grep -q "+++ b/i.txt" "$STUB_LOG"
+
+# 9c2. No paths, a rename in the index: the old path goes with the new one.
+git mv base.txt renamed.txt
+before="$(head_count)"
+run "" --message "chore: rename the base file" --yes
+check "no paths, rename: exit 0" test "$RC" -eq 0
+check "no paths, rename: one new commit" test "$(head_count)" -eq $((before + 1))
+check "no paths, rename: nothing stays staged" test -z "$(git diff --cached --name-only)"
+git mv renamed.txt base.txt
+git -c core.hooksPath=/dev/null commit -q -m "chore: restore the base file"
+
+# 9d. No paths, declined: the staged file stays staged and nothing is committed.
+printf 'j\n' > j.txt
+git add j.txt
+tree="$(index_tree)"
+before="$(head_count)"
+run "n"
+check "no paths, declined: non-zero exit" test "$RC" -ne 0
+check "no paths, declined: no commit" test "$(head_count)" -eq "$before"
+check "no paths, declined: the file stays staged" test "$(index_tree)" = "$tree"
+git reset -q j.txt
+rm -f j.txt
 
 # 10. Nothing to commit in the paths named.
 run "" --message "chore: nothing" --yes base.txt

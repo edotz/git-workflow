@@ -5,6 +5,12 @@ requires: [git]
 commands:
   - name: "branch-cleanup"
     description: "Identify merged, stale and active branches and delete the merged ones after the confirmation or with --force."
+  - name: "changes"
+    requires: [git, docker]
+    description: "List the changed files of the working tree, one per line as state, a tab and the path: staged, unstaged or untracked."
+    when: "A large change must be split into groups of commits, or to see what a commit without paths would take"
+    examples:
+      - "bash $BU_ROOT/app git changes"
   - name: "check"
     description: "Run the minimum check of one component or of every component: commit lint since the latest tag plus the checks the component declares."
     when: "Before a pull request or a push, and to see which component is red"
@@ -16,15 +22,16 @@ commands:
         description: "Name of the component to check; every component of components.yaml when omitted"
   - name: "commit"
     requires: [git, docker]
-    description: "Stage the paths named and commit them with a conventional message, drafted by the provider unless one is given."
+    description: "Commit the paths named, or the staged files when none is named, with a conventional message drafted by the provider unless one is given."
     when: "Changes on a feature branch are ready to be committed"
     examples:
+      - "bash $BU_ROOT/app git commit"
       - "bash $BU_ROOT/app git commit src/login.js"
       - "bash $BU_ROOT/app git commit --message 'fix(login): keep the session' --yes src/login.js"
     arguments:
       - name: "paths"
-        description: "Files or directories to stage and commit; other staged files stay staged"
-        required: true
+        description: "Files or directories to stage and commit, other staged files stay staged; without paths exactly the staged files are committed"
+        required: false
       - name: "--message"
         description: "Commit message; without it the provider drafts one from the staged diff"
       - name: "--yes"
@@ -118,6 +125,19 @@ commands:
         description: "Push the split head to GIT_WORKFLOW_MAIN_BRANCH of the child and the component tags as vX.Y.Z, with the installation token of the App"
       - name: "--confirm"
         description: "owner/repo of the child, needed to replace a child that does not descend from the split; its old head is kept as legacy/pre-split"
+  - name: "stage"
+    requires: [git, docker, gh, curl]
+    description: "Report the stage the live master ruleset is in, or switch it: without --apply the dry run names the change, with --apply the ruleset follows the stage as the App."
+    when: "The project moves from development to production or back, or the live ruleset may differ from the stage expected"
+    examples:
+      - "bash $BU_ROOT/app git stage"
+      - "bash $BU_ROOT/app git stage production"
+      - "bash $BU_ROOT/app git stage production --apply"
+    arguments:
+      - name: "stage"
+        description: "development or production; the report of the live stage when omitted"
+      - name: "--apply"
+        description: "Switch the master ruleset to the stage with the administration token of the App, through rules-sync, which writes every managed ruleset; needs GIT_WORKFLOW_APP_ID"
   - name: "start"
     requires: [git, docker]
     description: "Create the branch <type>/<name> from the main branch, switch to it and print its name."

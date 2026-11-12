@@ -12,7 +12,7 @@ every step below.
 
 ## Start
 
-- Command: `start <type> <name>`.
+- Command: `start <type> <name>`; asked for in the slash command when both are missing.
 - Type: one of `feat fix docs style refactor perf test build ci chore`.
 - Name: lower case words joined by single hyphens.
 - Read: the last line of the output is the new branch name; the checkout is on it, with no
@@ -24,10 +24,12 @@ every step below.
 
 ## Commit
 
-- Command: `commit --message "<type>(<scope>): <subject>" --yes <paths>`.
-- Group: one commit per logical group of paths; name only the paths of that group.
-- Stage: the command stages the named paths; files staged before stay staged and are not
-  committed.
+- Command: `commit --message "<type>(<scope>): <subject>" --yes [<paths>]`.
+- Group: one commit per logical group of paths; name only the paths of that group. `changes`
+  lists what is open, one line per file as `staged`, `unstaged` or `untracked`, a tab and the path.
+- Stage: with paths the command stages them; files staged before stay staged and are not
+  committed. Without paths it commits exactly the staged files and stops with
+  `nothing staged` when there are none.
 - Header: at most 100 characters, type from the list above, lower case scope, no full stop.
 - Report: the line `commit — <sha>` and the subject; a warning about the footer is no refusal.
 - Stop when the output says the message is refused: nothing was committed and the index is
