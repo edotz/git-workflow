@@ -17,7 +17,7 @@ The loop is strict about commit messages on purpose. A pull request is squash-me
 | Step | Command | Result |
 |---|---|---|
 | 1. Start | `bash ${BU_ROOT}/app git start <type> <name>` | Branch `<type>/<name>` from the main branch, checked out; its name is printed |
-| 2. Commit | `bash ${BU_ROOT}/app git commit <paths>` | One commit of the named paths, with a checked message |
+| 2. Commit | `bash ${BU_ROOT}/app git commit [<paths>]` | One commit of the named paths, or of the staged files without paths, with a checked message |
 | 3. Check | `bash ${BU_ROOT}/app git check [component]` | One line per component: `ok` or `failed` |
 | 4. Pull request | `bash ${BU_ROOT}/app git pr [--dry-run] [--draft]` | Branch pushed, pull request opened |
 | 5. Merge | GitHub, "Squash and merge" | One commit on `master` |
@@ -60,7 +60,7 @@ bash ${BU_ROOT}/app git commit src/login.js
 
 What the command does, in order:
 
-1. Stages the named paths with `git add -- <paths>`. Other files that are already staged stay staged and are not committed.
+1. Stages the named paths with `git add -- <paths>`. Other files that are already staged stay staged and are not committed. Without paths it stages nothing and takes exactly the files that are already staged; to split a large change into groups, stage one group (or name its paths) and commit, then the next. `bash ${BU_ROOT}/app git changes` lists what is still open.
 2. Unless `--message` is given, drafts the message from the staged diff of those paths with the Claude CLI (the provider). The draft is asked for in the form `type(scope): subject`. The diff is cut at 30000 characters.
 3. Prints the message under the header `commit message` and lints it with commitlint. A refused message commits nothing and restores the index.
 4. Asks `Commit with this message? [y/N]`. Only `y` or `yes` commits. Any other answer, including an empty input, cancels.
@@ -97,7 +97,7 @@ Only commits of type `feat`, `fix` and `perf`, and breaking commits, make a rele
 
 | Message | Exit | Fix |
 |---|---|---|
-| `commit: name the paths to commit. Usage: ...` | 2 | Pass at least one path. |
+| `commit: nothing staged, stage files or name the paths to commit` | 1 | No path was named and the index is empty. Stage files with `git add`, or pass paths. |
 | `commit: no provider is available to draft the message, give one with --message` | 2 | Install and log in to the Claude CLI, or pass `--message`. |
 | `commit: nothing to commit in the paths named` | 1 | The paths have no change. Check with `git status`. |
 | `commit: the message is refused by lint-commit, nothing was committed` | 3 | Read the commitlint reason above it and pass a valid `--message`. |
@@ -265,7 +265,8 @@ Each slash command runs the same `app git` command with the arguments you type, 
 
 Rules for the slash commands:
 
-- `/git:commit` needs `--message` and `--yes` in Claude Code. The confirmation reads from standard input, and the shell of a Claude Code session gives none. Without them the commit is declined with `commit: not confirmed, nothing was committed`. Run `bash ${BU_ROOT}/app git commit` in a terminal to get the prompt.
+- `/git:start` and `/git:commit` typed without arguments open a dialog: the type and the name of the branch, and for a commit the choice between the staged files, everything, or groups of files with one commit each. `/git:stage` switches the stage of the master ruleset after a dry run and a question.
+- `/git:commit` with paths needs `--message` and `--yes` in Claude Code. The confirmation reads from standard input, and the shell of a Claude Code session gives none. Without them the commit is declined with `commit: not confirmed, nothing was committed`. Run `bash ${BU_ROOT}/app git commit` in a terminal to get the prompt.
 - Commands run in the directory of the session, on the branch that is checked out there.
 - Slash commands for release, promote, split and rules-sync are listed in [command-reference.md](command-reference.md).
 

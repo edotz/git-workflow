@@ -73,21 +73,21 @@ It never fetches, never reuses an existing branch and never pushes.
 
 ### commit
 
-Stages the named paths and commits them with a conventional message. Without `--message` the Claude CLI drafts the message from the staged diff of those paths. The message is linted with commitlint before the commit, and the commit asks for confirmation unless `--yes` is given together with `--message`.
+Commits the named paths, or exactly the staged files when no path is named, with a conventional message. Without `--message` the Claude CLI drafts the message from the staged diff of those paths, or of the whole index. The message is linted with commitlint before the commit, and the commit asks for confirmation unless `--yes` is given together with `--message`.
 
 ```text
-bash ${BU_ROOT}/app git commit [--message <text>] [--yes] <paths>...
+bash ${BU_ROOT}/app git commit [--message <text>] [--yes] [<paths>...]
 ```
 
 | Option | Meaning |
 |---|---|
-| `<paths>` | Files or directories to stage and commit. Required. |
+| `<paths>` | Files or directories to stage and commit. Without them the commit takes exactly the staged files and leaves unstaged and untracked files alone. |
 | `-m, --message <text>` | The message. No draft is made. |
 | `--yes` | Skip the confirmation. Only together with `--message`. |
 
 Reads the git identity (`user.name`, `user.email`) and `CLAUDE_BIN`, optionally. Needs Docker. The confirmation reads standard input: `y` or `yes` commits, anything else cancels.
 
-Exit codes: 0, 1 (nothing to commit in the paths, not confirmed, the message is empty, git refused the commit), 2 (no paths, no provider and no `--message`), 3 (lint refused the message, git identity not set), 4 (Docker missing).
+Exit codes: 0, 1 (nothing to commit in the paths, nothing staged when no path is named, not confirmed, the message is empty, git refused the commit), 2 (no provider and no `--message`), 3 (lint refused the message, git identity not set), 4 (Docker missing).
 
 ```bash
 bash ${BU_ROOT}/app git commit --message 'fix(login): keep the session' --yes src/login.js
@@ -95,7 +95,19 @@ bash ${BU_ROOT}/app git commit --message 'fix(login): keep the session' --yes sr
 
 Expected output: the header `commit message`, the message, and a line `commit` with the short hash.
 
-It never pushes, never commits a path it was not given, never amends, and never runs the repository hooks for its own commit. Files that were staged before the command stay staged.
+It never pushes, never commits a path it was not given or a file that is not staged, never amends, and never runs the repository hooks for its own commit. With paths, files that were staged before the command stay staged. To split a large change, stage or name one group at a time and run the command once per group; `app git changes` lists what is open.
+
+### changes
+
+Lists the changed files of the working tree, one per line as the state, a tab and the path. The states are `staged`, `unstaged` and `untracked`, printed in that order and sorted by path within each state. A file that is staged and changed again is listed under both, and a rename is listed as its old and its new path, so that a commit of both paths takes the whole rename. The paths are printed as they are, without git's quoting; a path with a newline is not supported. A clean tree prints nothing.
+
+```text
+bash ${BU_ROOT}/app git changes
+```
+
+Takes no options. Needs Docker. Exit codes: 0, 1 (not a git repository), 4 (Docker missing).
+
+It changes nothing. The `/git:commit` dialog reads it to propose groups of files.
 
 ### check
 
@@ -358,6 +370,31 @@ bash ${BU_ROOT}/app git split web --apply
 
 It never moves a child tag that exists at another commit, which is skipped with a warning, and never replaces a child without `--confirm`.
 
+### stage
+
+Reports the stage of the live `master` ruleset, or switches it. The live ruleset is the source of truth: no setting stores the stage. The ruleset is compared with its development and production form from `bin/config/rulesets.yaml`, ignoring the bypass actors.
+
+```text
+bash ${BU_ROOT}/app git stage [<stage>] [--apply]
+```
+
+| Argument | Meaning |
+|---|---|
+| `<stage>` | `development` or `production`. Without it the command only reports. |
+| `-a, --apply` | Switch the master ruleset with `rules-sync --apply --stage <stage>`, then read it again. Needs the stage, `GIT_WORKFLOW_APP_ID` and the token service. |
+
+Output: `live stage: <development|production|drift|none>`, where `drift` means the live ruleset equals neither form and `none` that the repository has no master ruleset. With a stage it adds `unchanged: already <stage>`, `would switch: <live> -> <stage>` (no `--apply`) or `switched: <live> -> <stage>`.
+
+Reads `GIT_WORKFLOW_APP_ID`, `GIT_WORKFLOW_RELEASE_BRANCH`, `GIT_WORKFLOW_LEGACY_BRANCHES`, `TOKEN_SERVICE_URL`, `TOKEN_SERVICE_PORT`; the report uses the gh login of the developer. Needs Docker, gh and `curl`.
+
+Exit codes: 0, 1 (a ruleset cannot be read, the live ruleset is not in the stage after the switch), 2 (unknown stage, `--apply` without a stage), 3 (`GIT_WORKFLOW_APP_ID` missing or not numeric on apply).
+
+```bash
+bash ${BU_ROOT}/app git stage production --apply
+```
+
+The switch runs `rules-sync`, which writes every managed ruleset: `release` and `legacy` are the same in both stages and change only when they differ from the file. It never changes a ruleset when the live stage already is the stage asked for.
+
 ### rules-sync
 
 Creates or updates the branch rulesets of the repository from `bin/config/rulesets.yaml`, as the App.
@@ -370,7 +407,7 @@ bash ${BU_ROOT}/app git rules-sync [--dry-run | --apply] [--stage <development|p
 |---|---|
 | `-n, --dry-run` | Default. Per ruleset: create, update, unchanged or skipped. Change nothing. |
 | `-a, --apply` | Create or update the rulesets. Needs `GIT_WORKFLOW_APP_ID`. |
-| `-s, --stage <stage>` | `development` or `production`. Default `GIT_WORKFLOW_STAGE`, else `development`. |
+| `-s, --stage <stage>` | `development` or `production`. Default `GIT_WORKFLOW_STAGE`, else `development`. `app git stage` reports and switches the stage of the live ruleset. |
 
 Reads `GIT_WORKFLOW_STAGE`, `GIT_WORKFLOW_APP_ID`, `GIT_WORKFLOW_RELEASE_BRANCH`, `GIT_WORKFLOW_LEGACY_BRANCHES`, `TOKEN_SERVICE_URL`, `TOKEN_SERVICE_PORT`. Needs Docker and `curl`.
 
@@ -435,30 +472,40 @@ It never prints or stores the key. The permission sets are in `bin/config/token-
 
 ## Slash commands
 
-The eight git slash commands are defined in `commands/commands.yaml` and dispatch with the same blueprint: each runs `bash ${BU_ROOT}/app git <name> $ARGUMENTS`, reports the output unchanged, and adds nothing. Their options, environment variables and exit codes are those of the `app git` command they run, listed above. The arguments are passed as typed after the slash command.
+The nine git slash commands are defined in `commands/commands.yaml` and dispatch with one blueprint each: with arguments, each runs `bash ${BU_ROOT}/app git <name> $ARGUMENTS`, reports the output unchanged, and adds nothing. Three of them open a dialog with the developer when they are typed without arguments (see the table below). Their options, environment variables and exit codes are those of the `app git` command they run, listed above. The arguments are passed as typed after the slash command.
 
 | Slash command | Runs | Argument hint |
 |---|---|---|
-| `/git:start` | `app git start` | `<type> <name>` |
-| `/git:commit` | `app git commit` | `<paths> [--message <text>] [--yes]` |
+| `/git:start` | `app git start` | `[<type> <name>]` |
+| `/git:commit` | `app git commit` | `[<paths>] [--message <text>] [--yes]` |
 | `/git:check` | `app git check` | `[component]` |
 | `/git:pr` | `app git pr` | `[--dry-run] [--draft]` |
 | `/git:release` | `app git release` | `[--dry-run\|--apply] [--draft] [--pre <channel>]` |
 | `/git:promote` | `app git promote` | `<tag> [--dry-run\|--apply]` |
+| `/git:stage` | `app git stage` | `[<development\|production>] [--apply]` |
 | `/git:rules-sync` | `app git rules-sync` | `[--dry-run\|--apply] [--stage <development\|production>]` |
 | `/git:split` | `app git split` | `[component] --dry-run` or `<component> --apply [--confirm <owner/repo>]` |
 
 Commands run in the directory of the Claude Code session, on the branch that is checked out there.
+
+Typed without all of their arguments, three commands ask first and then run the `app git` command with the answers:
+
+- `/git:start` asks for the type (feat, fix, chore, docs or another of the ten) and the name, proposed from the conversation, for whichever of the two was not typed, then runs `app git start <type> <name>`.
+- `/git:commit` runs `app git changes`. With only staged files it writes one message and commits the index. With more changes it asks whether to commit the staged files, everything as one commit, or to split into groups; for a split it proposes groups of files with a message each, asks once, then runs `app git commit --message <message> --yes <paths>` per group. The message is written in the session because the shell gives the command no standard input.
+- `/git:stage` with no stage reports the live stage. With a stage it shows the dry run, asks, and on a yes runs the command again with `--apply`.
+
+The dialog of `/git:commit` runs unless both `--message` and `--yes` are typed; typed paths are then the scope. `/git:stage` asks only when `--apply` is typed without a stage, and before the switch. With everything typed, nothing is asked.
 
 Each slash command takes the options, settings and exit codes of the `app git` command in the table above; its output is the output of that command.
 
 | Slash command | Example | Never |
 |---|---|---|
 | `/git:start` | `/git:start feat add-login` | Reuses an existing branch. |
-| `/git:commit` | `/git:commit src/login.js --message "feat(login): keep the session after a reload" --yes` | Pushes, or commits paths that were not named. Without `--message` and `--yes` the confirmation gets no answer, and the commit is declined with `commit: not confirmed, nothing was committed`. |
+| `/git:commit` | `/git:commit`, `/git:commit src/login.js --message "feat(login): keep the session after a reload" --yes` | Pushes, or commits paths that were not named. Without `--message` and `--yes` the confirmation gets no answer, and the commit is declined with `commit: not confirmed, nothing was committed`. |
 | `/git:check` | `/git:check web` | Writes to the repository. |
 | `/git:pr` | `/git:pr --dry-run`, `/git:pr --draft` | Uses `gh pr create --fill`. Pushes while the minimum check is red. |
 | `/git:release` | `/git:release --dry-run` | Publishes or tags in a dry run. |
 | `/git:promote` | `/git:promote v1.2.0 --dry-run` | Moves the release branch to the head of `master`. |
+| `/git:stage` | `/git:stage production` | Switches without the dry run and the question, or switches when the live stage already is the stage. |
 | `/git:rules-sync` | `/git:rules-sync --dry-run --stage production` | Touches a ruleset that `rulesets.yaml` does not name. |
 | `/git:split` | `/git:split web --dry-run` | Replaces a child without `--confirm`, or splits more than one child per apply. |
