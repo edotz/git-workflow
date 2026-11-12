@@ -3,9 +3,14 @@
 set -euo pipefail
 
 source "${BU_ROOT}/lib/core.sh"
+source "${BU_LIB}/output.sh"
 
 main() {
   local msg_file="${1:-}"
+  if [[ "$msg_file" == "--help" || "$msg_file" == "-h" ]]; then
+    print_line "Usage: app git lint-commit <commit-msg-file>"
+    return 0
+  fi
   if [[ -z "$msg_file" ]]; then die_with "$BU_EXIT_USAGE" "Usage: app git lint-commit <commit-msg-file>"; fi
   if [[ ! -f "$msg_file" ]]; then die "File not found: ${msg_file}"; fi
 

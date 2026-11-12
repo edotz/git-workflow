@@ -31,11 +31,6 @@ debug.log*
 .claude/session-env/
 .claude/templates/
 
-# --- Git Workflow Control ---
-# Temporary file to bypass lint hooks
-.nolint
-
-
 # node
 node_modules/
 

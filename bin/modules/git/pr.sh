@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Git PR - push the current branch and open the pull request as the developer
 # Usage: app git pr [--dry-run] [--draft]
-# Settings: GIT_WORKFLOW_MAIN_BRANCH (default: master); GH_TOKEN, the token of the developer login, for the push
-# and the pull request (not the App token); a dry run needs no token
+# Settings: GIT_WORKFLOW_MAIN_BRANCH (default: master). The push and the pull request use the token that gh auth token
+# prints for the developer, never the App token; a dry run needs no token
 # Refuses the main branch, a red minimum check and a title that lint-commit refuses (a dry run too). The title is the
 # subject of the only commit of the branch, or the branch name made readable when there are several; the body lists
 # the commit subjects, oldest first.

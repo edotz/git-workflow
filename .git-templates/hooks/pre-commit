@@ -1,4 +1,0 @@
-#!/bin/bash
-# agentic-os-hook: shim of the edotz.git-workflow plugin, copied into a repository by 'git init'; runs the hooks registered for this key
-set -euo pipefail
-exec agentic-os hook trigger pre-commit "$@"

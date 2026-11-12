@@ -99,6 +99,8 @@ else
 fi
 check "default stage is development" "$(unset GIT_WORKFLOW_STAGE; rules_json master)" '.rules == []'
 check "stage from GIT_WORKFLOW_STAGE" "$(GIT_WORKFLOW_STAGE=production rules_json master)" '.rules | length == 3'
+check "master follows GIT_WORKFLOW_MAIN_BRANCH" "$(GIT_WORKFLOW_MAIN_BRANCH=main rules_json master production)" '.conditions.ref_name.include == ["refs/heads/main"]'
+check "master falls back to master when the main branch setting is unset" "$(unset GIT_WORKFLOW_MAIN_BRANCH; rules_json master production)" '.conditions.ref_name.include == ["refs/heads/master"]'
 
 status=0
 (unset GIT_WORKFLOW_LEGACY_BRANCHES; rules_json legacy production >/dev/null 2>&1) || status=$?

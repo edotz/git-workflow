@@ -1,7 +1,7 @@
 #!/bin/bash
 # GitHub API Utility Library
 # Requires: core.sh, gh, git
-# Provides: github_ensure_authenticated, github_get_runs, github_get_file_contents
+# Provides: github_ensure_authenticated, github_get_runs
 
 # Guard against multiple sourcing
 if [[ -n "${BU_STATE_GITHUB:-}" ]]; then return 0; fi
@@ -68,36 +68,6 @@ github_get_runs() {
   else
     logger_error "Failed to fetch workflow runs${repo:+ for $repo}"
     echo "[]"
-    return 1
-  fi
-}
-
-# Get file contents from a GitHub repository
-# Args: $1 - repo (owner/name)
-#       $2 - path (relative file path in repo)
-#       $3 - ref (branch, tag, or commit SHA)
-# Returns: JSON object with name and sha (stdout)
-# Exits: 1 if not authenticated or file not found
-# Requires: gh CLI
-github_get_file_contents() {
-  local repo="${1:-}"
-  local path="${2:-}"
-  local ref="${3:-}"
-
-  if [[ -z "$repo" ]]; then logger_error "Repo required (owner/name)"; return 1; fi
-  if [[ -z "$path" ]]; then logger_error "File path required"; return 1; fi
-  if [[ -z "$ref" ]]; then logger_error "Ref required (branch/tag/SHA)"; return 1; fi
-
-  github_ensure_authenticated || return 1
-
-  local output
-  output=$(gh api "repos/${repo}/contents/${path}?ref=${ref}" --jq '{name: .name, sha: .sha}' 2>/dev/null)
-  local exit_code=$?
-
-  if [[ $exit_code -eq 0 ]] && [[ -n "$output" ]]; then
-    echo "$output"
-  else
-    logger_debug "File not found: ${repo}/${path}@${ref}"
     return 1
   fi
 }

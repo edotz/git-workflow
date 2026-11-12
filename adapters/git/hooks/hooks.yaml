@@ -11,11 +11,6 @@ version: "1.0"
 
 hooks:
 
-  - name: pre-commit
-    targets: [{ event: pre-commit }]
-    blocks: true
-    block-exit: hook
-    payload: false
   - name: commit-msg
     targets: [{ event: commit-msg }]
     blocks: true

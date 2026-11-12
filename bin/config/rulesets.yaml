@@ -4,6 +4,7 @@
 # actor_id APP_ID_PLACEHOLDER is replaced by rules-sync with GIT_WORKFLOW_APP_ID before a ruleset is sent.
 # extends: takes the entry named there as the base; the fields of this entry win.
 # include_from: names an environment setting that holds the comma separated branch patterns of the ruleset.
+# include_default: the branch patterns used when that setting is unset or blank; without it a blank setting is a config failure.
 stages:
   - development
   - production
@@ -12,10 +13,10 @@ rulesets:
   master:
     target: branch
     enforcement: active
+    include_from: GIT_WORKFLOW_MAIN_BRANCH
+    include_default: master
     conditions:
       ref_name:
-        include:
-          - refs/heads/master
         exclude: []
     bypass_actors:
       - actor_id: APP_ID_PLACEHOLDER

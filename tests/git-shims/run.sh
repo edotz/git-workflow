@@ -46,7 +46,7 @@ keys="$(grep -c 'event:' "${root}/adapters/git/hooks/hooks.yaml")"
 
 out="$(run_shims "$repo" || true)"
 ok=yes
-for hook in pre-commit commit-msg pre-push; do
+for hook in commit-msg pre-push; do
   if [[ ! -x "${repo}/.git/hooks/${hook}" ]] || ! cmp -s "${root}/.git-templates/hooks/${hook}" "${repo}/.git/hooks/${hook}"; then ok=no; fi
 done
 case_result "installs one executable shim per mapped hook into .git/hooks (${keys} mapped)" "$ok"
@@ -70,13 +70,13 @@ case_result "a run inside a worktree writes into the common git dir" "$([[ -x "$
 
 git -C "$repo" config core.hooksPath .husky
 mkdir "${repo}/.husky"
-printf '#!/bin/sh\necho foreign\n' > "${repo}/.husky/pre-commit"
+printf '#!/bin/sh\necho foreign\n' > "${repo}/.husky/commit-msg"
 rc=0
 out="$(run_shims "$repo")" || rc=$?
 ok=yes
-if ! grep -q foreign "${repo}/.husky/pre-commit"; then ok=no; fi
-if [[ "$out" != *"pre-commit: conflict"* || "$rc" -ne 3 ]]; then ok=no; fi
-if [[ ! -x "${repo}/.husky/commit-msg" || ! -x "${repo}/.husky/pre-push" ]]; then ok=no; fi
+if ! grep -q foreign "${repo}/.husky/commit-msg"; then ok=no; fi
+if [[ "$out" != *"commit-msg: conflict"* || "$rc" -ne 3 ]]; then ok=no; fi
+if [[ ! -x "${repo}/.husky/pre-push" ]]; then ok=no; fi
 case_result "core.hooksPath is honoured; a foreign hook stays, is reported (exit 3) and the others are installed" "$ok"
 
 mkdir "${work}/plain" "${work}/plain/.agentic-os"
