@@ -172,7 +172,7 @@ A line `token service listening on 8790 for org edotz` shows a start. A line `re
 
 ### Without Docker
 
-`bash app git token-service` runs the same code on the host. It needs Node, the dependencies installed with `npm ci` in the plugin root, and the two variables `TOKEN_SERVICE_APP_ID` and `TOKEN_SERVICE_KEY_PATH` set in the environment. It refuses to start when either is missing, and when the file at the key path has no private key in it.
+`bash ${BU_ROOT}/app git token-service` runs the same code on the host. It needs Node, the dependencies installed with `npm ci` in the plugin root, and the two variables `TOKEN_SERVICE_APP_ID` and `TOKEN_SERVICE_KEY_PATH` set in the environment. It refuses to start when either is missing, and when the file at the key path has no private key in it.
 
 ## Key custody
 

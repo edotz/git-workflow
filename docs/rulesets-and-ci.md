@@ -73,7 +73,7 @@ The repository setting can still list merge commits as an option; the ruleset re
 
 ## rules-sync
 
-`rules-sync` creates or updates the managed rulesets of the repository of the remote `origin`. Its usage is `bash app git rules-sync [--dry-run | --apply] [--stage <stage>]`. Its options are described in [Command reference](command-reference.md).
+`rules-sync` creates or updates the managed rulesets of the repository of the remote `origin`. Its usage is `bash ${BU_ROOT}/app git rules-sync [--dry-run | --apply] [--stage <stage>]`. Its options are described in [Command reference](command-reference.md).
 
 ### Dry run (the default)
 
@@ -86,7 +86,7 @@ The dry run changes nothing. It uses the developer's own `gh` login to read the 
 | `unchanged` | the live ruleset has the same name, target, enforcement, conditions, bypass actors and rules |
 | `skipped` | the setting of the ruleset is unset; the reason follows |
 
-Example output of `bash app git rules-sync --dry-run` for `edotz/git-workflow` in the development stage, written when the live rulesets carried the production rules:
+Example output of `bash ${BU_ROOT}/app git rules-sync --dry-run` for `edotz/git-workflow` in the development stage, written when the live rulesets carried the production rules:
 
 ```text
 [rules-sync edotz/git-workflow (stage development, dry run)]
@@ -100,7 +100,7 @@ Without `GIT_WORKFLOW_APP_ID` the dry run still works. It cannot compare the byp
 
 ### Apply
 
-`bash app git rules-sync --apply --stage production` does the following, in this order:
+`bash ${BU_ROOT}/app git rules-sync --apply --stage production` does the following, in this order:
 
 1. Requires `GIT_WORKFLOW_APP_ID`, and checks that it is digits only. Without it the command stops with exit 3 and writes nothing.
 2. Fetches an installation token of the App with the permission set `administration` (write), from the token service. The token is fetched before the first write. If the service refuses or is down, the command stops and nothing is written.
@@ -178,7 +178,7 @@ A title that fails is never rewritten by the plugin. Change the title on the pul
 2. Copy `commitlint.config.mjs` to the root of the consuming repository. Steps 2 and 3 read it from there; keep it identical to the plugin file.
 3. Keep a `components.yaml` in the root, with the `checks` each component needs. Make each check runnable on a bare Ubuntu runner.
 4. Repository merge settings: squash merge enabled; the squash commit title is the pull request title (`PR_TITLE`). The existing repositories of the organisation use `COMMIT_OR_PR_TITLE`, which is the same for a pull request with one commit.
-5. Run `bash app git rules-sync --dry-run`, then `--apply` with `GIT_WORKFLOW_APP_ID` and the stage you want. The `check` context is required from then on.
+5. Run `bash ${BU_ROOT}/app git rules-sync --dry-run`, then `--apply` with `GIT_WORKFLOW_APP_ID` and the stage you want. The `check` context is required from then on.
 6. Open a pull request. The job `check` runs on it, and its result is the required check of the `master` ruleset.
 
 The workflow needs no secrets. Do not add a secret to it for the title lint or the commit lint.
@@ -200,7 +200,7 @@ Each shim is a file with the marker `# agentic-os-hook:`, and runs `agentic-os h
 
 ### Install and check the shims
 
-`bash app git shims` puts the shim of each mapped hook into the hooks directory of git. That directory is `core.hooksPath` when it is set, and otherwise the common git directory of the repository, so a worktree shares the hooks of its repository.
+`bash ${BU_ROOT}/app git shims` puts the shim of each mapped hook into the hooks directory of git. That directory is `core.hooksPath` when it is set, and otherwise the common git directory of the repository, so a worktree shares the hooks of its repository.
 
 | Situation | Result |
 |---|---|
@@ -208,7 +208,7 @@ Each shim is a file with the marker `# agentic-os-hook:`, and runs `agentic-os h
 | the file is the current shim | reported as `current` |
 | a file exists that does not carry the marker | a conflict; the file stays as it is; exit 3 |
 
-`bash app git shims --check` reports what is missing or stale and changes nothing. It exits 1 when a shim is missing or stale.
+`bash ${BU_ROOT}/app git shims --check` reports what is missing or stale and changes nothing. It exits 1 when a shim is missing or stale.
 
 | Exit code | Meaning |
 |---|---|

@@ -39,6 +39,7 @@
 
 ## Conventions of these manuals
 
-- Commands are written as `bash app git <command>` in examples and `app git <command>` in prose; they run from the root of the consuming project.
+- Commands are written as `bash ${BU_ROOT}/app git <command>` in examples and `app git <command>` in prose. `BU_ROOT` is the `bin/` directory of the agentic-os framework; it is set in a shell that the framework started, and otherwise you set it to that directory.
+- A path such as `bin/config/rulesets.yaml` or `.github/workflows/status-checks.yml` is relative to the root of the plugin; `components.yaml` and `.env` are relative to the root of your project.
 - Docker is a prerequisite: git, `gh`, git-cliff and splitsh-lite run in the plugin's tool image.
 - A rule that the plugin enforces is stated as a rule; a rule that only convention holds is marked as such.

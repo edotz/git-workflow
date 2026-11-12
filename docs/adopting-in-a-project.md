@@ -8,7 +8,7 @@ This manual gives the adoption order that the three migrations of edotz reposito
 
 | Requirement | Why | Check |
 |---|---|---|
-| agentic-os with the plugin listed in the project | The `app git` commands are modules of the plugin. | `.agentic-os/project.yaml` has a `plugins:` entry with `name: edotz.git-workflow` and its `path`; `bash app plugins list` shows it. |
+| agentic-os with the plugin listed in the project | The `app git` commands are modules of the plugin. | `.agentic-os/project.yaml` has a `plugins:` entry with `name: edotz.git-workflow` and its `path`; `bash ${BU_ROOT}/app plugins list` shows it. |
 | Docker running | git, `gh`, git-cliff and splitsh-lite run in the tool image. The image is built on the first tool run and is linux/amd64 only. | `docker version` prints a client and a server. |
 | `gh` logged in | Pull requests are opened with your own credential. The token service issues App tokens only to members of the organisation. | `gh auth status`. The login was observed with the `repo` and `workflow` scopes; `read:org` was not needed. |
 | Active membership of the organisation | The token service refuses a login that is not an active member. | `gh api user/memberships/orgs/edotz --jq .state` prints `active`. |
@@ -34,7 +34,7 @@ Set the roles in the project `.env` before the first `rules-sync`. Do not export
 | `GIT_WORKFLOW_WORKTREE_DIR` | absolute folder for the worktrees of `app git worktree` | `$HOME/worktrees` |
 
 ```bash
-bash app git workflow-setup validate
+bash ${BU_ROOT}/app git workflow-setup validate
 ```
 
 Expected output: `The branch settings are valid`, then one line for `GIT_WORKFLOW_MAIN_BRANCH` and one for `GIT_WORKFLOW_RELEASE_BRANCH`.
@@ -78,7 +78,7 @@ components:
     repo: php-collection
 ```
 
-Verify with `bash app git check`. It prints one result per component and exits 0 when every component is green. An invalid declaration is refused with the errors on screen.
+Verify with `bash ${BU_ROOT}/app git check`. It prints one result per component and exits 0 when every component is green. An invalid declaration is refused with the errors on screen.
 
 ### 2. Add the status check
 
@@ -92,7 +92,7 @@ Step 1 and step 2 can go into one pull request. The php-project migration did so
 
 ### 3. Set the branch roles
 
-Set `GIT_WORKFLOW_RELEASE_BRANCH` and, if an old line exists, `GIT_WORKFLOW_LEGACY_BRANCHES` in `.env` as described above. Run `bash app git workflow-setup validate` again. The rulesets of step 5 take their branch names from these values.
+Set `GIT_WORKFLOW_RELEASE_BRANCH` and, if an old line exists, `GIT_WORKFLOW_LEGACY_BRANCHES` in `.env` as described above. Run `bash ${BU_ROOT}/app git workflow-setup validate` again. The rulesets of step 5 take their branch names from these values.
 
 ### 4. Freeze and clean the legacy lines
 
@@ -108,8 +108,8 @@ The legacy ruleset of step 5 covers the legacy branch once `GIT_WORKFLOW_LEGACY_
 Run the dry run first, then apply. Use the stage you want for `master`; `production` requires pull requests.
 
 ```bash
-bash app git rules-sync --dry-run --stage production
-bash app git rules-sync --apply --stage production
+bash ${BU_ROOT}/app git rules-sync --dry-run --stage production
+bash ${BU_ROOT}/app git rules-sync --apply --stage production
 ```
 
 Expected dry run: `create` for `master` and for the release branch; `skipped` for `legacy` when `GIT_WORKFLOW_LEGACY_BRANCHES` is unset. Run this after the pull request of step 2 has run once, so that the `check` context exists.
@@ -170,7 +170,7 @@ The tag is pushed with your own git credential. Use `.` in the `git log` path fo
 Verify with the dry run. A baselined component is listed only when a commit after its tag counts:
 
 ```bash
-bash app git release --dry-run
+bash ${BU_ROOT}/app git release --dry-run
 ```
 
 Expected: `Nothing to release: no component changed since its latest tag` when nothing counts, or a proposal for the commits after the tag.
@@ -180,8 +180,8 @@ Expected: `Nothing to release: no component changed since its latest tag` when n
 The shims are the hook files of the plugin. They go into the directory git runs hooks from: `core.hooksPath` when set, otherwise the common git directory, so worktrees share them.
 
 ```bash
-bash app git shims
-bash app git shims --check
+bash ${BU_ROOT}/app git shims
+bash ${BU_ROOT}/app git shims --check
 ```
 
 Expected after the install: each shim reported `current`; `--check` exits 0. A foreign hook file stays where it is and is reported as a conflict (exit 3); move it aside yourself, then run again.
@@ -189,8 +189,8 @@ Expected after the install: each shim reported `current`; `--check` exits 0. A f
 Installing the shims does not turn the pre-push guard on. Check and enable it:
 
 ```bash
-bash app hooks status
-bash app hooks enable pre-push minimum-check
+bash ${BU_ROOT}/app hooks status
+bash ${BU_ROOT}/app hooks enable pre-push minimum-check
 ```
 
 With the guard on, a push of a commit that is not conventional stops with `commit lint failed` and sends nothing. The sandbox pilot verified this.
@@ -198,7 +198,7 @@ With the guard on, a push of a commit that is not conventional stops with `commi
 ### 9. First release
 
 ```bash
-bash app git release --dry-run
+bash ${BU_ROOT}/app git release --dry-run
 ```
 
 The dry run prints, per component, the next version, the tag, the files and the notes. Nothing changes.
@@ -206,20 +206,20 @@ The dry run prints, per component, the next version, the tag, the files and the 
 When the proposal is right, run on the main branch with a clean working tree:
 
 ```bash
-bash app git release --apply
+bash ${BU_ROOT}/app git release --apply
 ```
 
 Apply makes the release commit `chore(<component>): release <tag>`, the tag, the push and the GitHub Release, all as the App. It refuses a run off the main branch, a dirty tree and a red minimum check. With more than one component the GitHub Release is created with `--latest=false`, so the latest release stays the newest stable one. Use `--pre <channel>` for a pre-release, for example `--pre rc`; `--draft` leaves the Release unpublished.
 
-For a split component, send the new release to its child after the release, with `bash app git split <component> --apply` (step 11).
+For a split component, send the new release to its child after the release, with `bash ${BU_ROOT}/app git split <component> --apply` (step 11).
 
 ### 10. Move the release branch once
 
 The release branch (for example `2.x`) still holds the old line. Its head is not an ancestor of the release commit, so the first move is a baseline, and a fast-forward is refused.
 
 ```bash
-bash app git promote <release-tag> --dry-run
-bash app git promote <release-tag> --apply --confirm edotz/<repository>
+bash ${BU_ROOT}/app git promote <release-tag> --dry-run
+bash ${BU_ROOT}/app git promote <release-tag> --apply --confirm edotz/<repository>
 ```
 
 The dry run names the divergence. The apply tags the old head `legacy/pre-promote`, then force-pushes the release branch with a lease on that head. Run the baseline once, with `--confirm`.
@@ -227,8 +227,8 @@ The dry run names the divergence. The apply tags the old head `legacy/pre-promot
 After the baseline, every promote is a fast-forward and needs no `--confirm`:
 
 ```bash
-bash app git promote <release-tag> --dry-run
-bash app git promote <release-tag> --apply
+bash ${BU_ROOT}/app git promote <release-tag> --dry-run
+bash ${BU_ROOT}/app git promote <release-tag> --apply
 ```
 
 If the release branch does not exist yet, promote creates it at the commit of the tag. The notes for the nodejs-project do not record a promote of its `1.x`; check with the dry run.
@@ -242,15 +242,15 @@ Each component with `split: yes` goes to its own child repository. Do this for e
 3. Dry run. Without a component the dry run covers every split component:
 
    ```bash
-   bash app git split <component> --dry-run
+   bash ${BU_ROOT}/app git split <component> --dry-run
    ```
 
    The dry run prints the split head, the ancestry to the child head and the tree difference. A child that is not a descendant of the split is reported with a warning that it needs a baseline.
 4. Apply. A related child gets a fast-forward. An unrelated child needs `--confirm` once:
 
    ```bash
-   bash app git split <component> --apply
-   bash app git split <component> --apply --confirm edotz/<child>
+   bash ${BU_ROOT}/app git split <component> --apply
+   bash ${BU_ROOT}/app git split <component> --apply --confirm edotz/<child>
    ```
 
    The confirm baseline keeps the old head of the child as `legacy/pre-split` and replaces the child's `master` with a lease on that head. The old head is kept; nothing is deleted.
@@ -293,29 +293,29 @@ The apply pushes the split head and the tags of one component only, and only to 
 
 | Check | Command | Expected |
 |---|---|---|
-| Branch settings valid | `bash app git workflow-setup validate` | `The branch settings are valid` and the two branch names |
+| Branch settings valid | `bash ${BU_ROOT}/app git workflow-setup validate` | `The branch settings are valid` and the two branch names |
 | No shell override of a setting | `env \| grep GIT_WORKFLOW_` | empty, or values equal to `.env` |
-| Plugin listed | `bash app plugins list` | a row `edotz.git-workflow` with its path |
+| Plugin listed | `bash ${BU_ROOT}/app plugins list` | a row `edotz.git-workflow` with its path |
 | Docker running | `docker version` | client and server versions |
 | Token service up | `curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8790/token` | `404` |
 | Membership active | `gh api user/memberships/orgs/edotz --jq .state` | `active` |
-| Components green | `bash app git check` | one result per component; exit 0 |
-| Shims current | `bash app git shims --check` | each shim `current`; exit 0 |
-| Pre-push guard on | `bash app hooks status` | `pre-push` `minimum-check` enabled |
-| Rulesets match | `bash app git rules-sync --dry-run --stage production` | no `foreign ruleset` and no `classic protection covers` line |
+| Components green | `bash ${BU_ROOT}/app git check` | one result per component; exit 0 |
+| Shims current | `bash ${BU_ROOT}/app git shims --check` | each shim `current`; exit 0 |
+| Pre-push guard on | `bash ${BU_ROOT}/app hooks status` | `pre-push` `minimum-check` enabled |
+| Rulesets match | `bash ${BU_ROOT}/app git rules-sync --dry-run --stage production` | no `foreign ruleset` and no `classic protection covers` line |
 | Classic protection gone | `gh api repos/edotz/<repository>/branches/<branch>/protection` | `Branch not protected` (HTTP 404), for each branch |
 | Old workflows gone | `ls .github/workflows` | only `status-checks.yml` |
-| Baselines hold | `bash app git release --dry-run` | no proposal for a baselined component unless a counted commit follows its tag |
+| Baselines hold | `bash ${BU_ROOT}/app git release --dry-run` | no proposal for a baselined component unless a counted commit follows its tag |
 | Legacy tags present | `git ls-remote --tags origin 'legacy/*'` | the freeze, pre-promote and pre-split tags you created |
-| Release branch follows | `bash app git promote <release-tag> --dry-run` | names the commit of the tag and no divergence |
-| Child at split head | `bash app git split <component> --dry-run` | the child at the split head; the apply does nothing |
+| Release branch follows | `bash ${BU_ROOT}/app git promote <release-tag> --dry-run` | names the commit of the tag and no divergence |
+| Child at split head | `bash ${BU_ROOT}/app git split <component> --dry-run` | the child at the split head; the apply does nothing |
 
 ## What is useful in a consuming project
 
 ### Workflow status
 
 ```bash
-bash app git workflow-status
+bash ${BU_ROOT}/app git workflow-status
 ```
 
 Prints JSON: the commits not yet released, per component the latest release tag and the commits since it, the position of the release branch against that tag (on, behind or absent), and the recent workflow runs. The runs are empty without a `gh` login or without network.
@@ -323,7 +323,7 @@ Prints JSON: the commits not yet released, per component the latest release tag 
 ### Branch cleanup
 
 ```bash
-bash app git branch-cleanup --dry-run
+bash ${BU_ROOT}/app git branch-cleanup --dry-run
 ```
 
 Lists merged, stale and safe-to-delete branches. A squash-merged branch counts as merged: its tree is compared with the base, and a merged pull request with the branch as head counts too, using your `gh` login. Stale means older than `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` (default 30). Flags: `--local-only`, `--remote-only`, `--dry-run`, `--force`. Without `--force` it asks before it deletes.
@@ -331,7 +331,7 @@ Lists merged, stale and safe-to-delete branches. A squash-merged branch counts a
 ### Starting a change
 
 ```bash
-bash app git start feat add-login
+bash ${BU_ROOT}/app git start feat add-login
 ```
 
 `start` creates the branch `<type>/<name>` from the main branch, switches the checkout to it and prints its name. The type is one of the commit types (`feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`). The branch has no upstream.
@@ -361,12 +361,12 @@ A project that enables the plugin gets them as `.claude/commands/git/<name>.md` 
 2. A single repository becoming a monorepo: all tags take the prefix `<component>/`. The existing component continues from its latest unprefixed `vX.Y.Z` tag. Old tags stay where they are.
 3. If the new component has a released version, place its baseline tag (step 7).
 4. If it is a split component, install the App on its child, create the child's `master` as default, and run its first split baseline (step 11).
-5. Verify with `bash app git check` and `bash app git release --dry-run`.
+5. Verify with `bash ${BU_ROOT}/app git check` and `bash ${BU_ROOT}/app git release --dry-run`.
 
 ### Change the release branch
 
-1. Set `GIT_WORKFLOW_RELEASE_BRANCH` in `.env`, and run `bash app git workflow-setup validate`.
-2. Run `bash app git rules-sync --dry-run --stage production`, then `--apply`. The `release` ruleset follows the new name.
+1. Set `GIT_WORKFLOW_RELEASE_BRANCH` in `.env`, and run `bash ${BU_ROOT}/app git workflow-setup validate`.
+2. Run `bash ${BU_ROOT}/app git rules-sync --dry-run --stage production`, then `--apply`. The `release` ruleset follows the new name.
 3. Promote the release tag to the new branch. It is created at the commit of the tag when absent; a diverged branch needs the baseline (step 10).
 4. Put the old branch into `GIT_WORKFLOW_LEGACY_BRANCHES` to keep it under the legacy ruleset.
 
@@ -375,7 +375,7 @@ A project that enables the plugin gets them as `.claude/commands/git/<name>.md` 
 No command retires the plugin. The steps below are manual. Ask the developer before each destructive one.
 
 1. Stop the release, promote, split and rules-sync runs.
-2. Remove the `edotz.git-workflow` entry from the `plugins:` list in `.agentic-os/project.yaml`, then run `bash app plugins sync`.
+2. Remove the `edotz.git-workflow` entry from the `plugins:` list in `.agentic-os/project.yaml`, then run `bash ${BU_ROOT}/app plugins sync`.
 3. Delete the shim files in the git hooks directory that carry the line `# agentic-os-hook:`.
 4. Delete the `master`, release and legacy rulesets in the repository settings. No command deletes them. Delete them before the `status-checks.yml` workflow goes; otherwise pull requests wait for a `check` that never reports.
 5. Remove `status-checks.yml`, `components.yaml` and `commitlint.config.mjs` in a pull request.
