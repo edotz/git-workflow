@@ -267,7 +267,7 @@ Rules for the slash commands:
 
 - `/git:start` and `/git:commit` typed without arguments open a dialog: the type and the name of the branch, and for a commit the choice between the staged files, everything, or groups of files with one commit each. `/git:stage` switches the stage of the master ruleset after a dry run and a question.
 - `/git:commit` with paths needs `--message` and `--yes` in Claude Code. The confirmation reads from standard input, and the shell of a Claude Code session gives none. Without them the commit is declined with `commit: not confirmed, nothing was committed`. Run `bash ${BU_ROOT}/app git commit` in a terminal to get the prompt.
-- Commands run in the directory of the session, on the branch that is checked out there.
+- Commands run in the project root (`PROJECT_ROOT`), on the branch that is checked out there, also when the session sits in a subdirectory.
 - Slash commands for release, promote, split and rules-sync are listed in [command-reference.md](command-reference.md).
 
 ## Rules

@@ -486,7 +486,7 @@ The nine git slash commands are defined in `commands/commands.yaml` and dispatch
 | `/git:rules-sync` | `app git rules-sync` | `[--dry-run\|--apply] [--stage <development\|production>]` |
 | `/git:split` | `app git split` | `[component] --dry-run` or `<component> --apply [--confirm <owner/repo>]` |
 
-Commands run in the directory of the Claude Code session, on the branch that is checked out there.
+Commands run on the branch that is checked out in the project root (`PROJECT_ROOT`), whichever directory of the project they are started in. `commit` reads a relative path from the directory it was started in.
 
 Typed without all of their arguments, three commands ask first and then run the `app git` command with the answers:
 

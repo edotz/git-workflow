@@ -65,6 +65,7 @@ print_worktree_list() {
 main() {
   cli_parse "$@"
 
+  cd "$PROJECT_ROOT"
   git_ensure_repo || die "Not a git repository"
 
   local start_name

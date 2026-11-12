@@ -7,6 +7,8 @@
 # Output: one line per case, ok or FAIL
 # Exit codes: 0 all cases hold, 1 a case failed
 set -euo pipefail
+# The framework takes an exported PROJECT_ROOT before the working directory; the throwaway repository is the working directory.
+unset PROJECT_ROOT AOS_ROOT SESSION_DIR AOS_TIER_CHAIN
 
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 export PLUGIN_ROOT="$root"
@@ -14,6 +16,8 @@ export PLUGIN_LIB="${PLUGIN_ROOT}/bin/lib"
 cd "$root"
 
 source "${BU_ROOT}/lib/core.sh"
+# Sourcing core.sh exports PROJECT_ROOT of this directory; the commands under test must find their own throwaway repository.
+unset PROJECT_ROOT AOS_ROOT SESSION_DIR AOS_TIER_CHAIN
 source "${PLUGIN_LIB}/tool.sh"
 
 shims="${root}/bin/modules/git/shims.sh"

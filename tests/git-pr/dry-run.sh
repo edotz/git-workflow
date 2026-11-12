@@ -3,6 +3,8 @@
 # red check. Nothing leaves the machine: the dry run and the refusals end before the push.
 # Usage: bash tests/git-pr/dry-run.sh   (BU_ROOT must point at the framework bin directory)
 set -euo pipefail
+# The framework takes an exported PROJECT_ROOT before the working directory; the throwaway repository is the working directory.
+unset PROJECT_ROOT AOS_ROOT SESSION_DIR AOS_TIER_CHAIN
 
 TEST_DIR="${BASH_SOURCE[0]%/*}"
 PLUGIN_ROOT="$(cd "${TEST_DIR}/../.." && pwd -P)"

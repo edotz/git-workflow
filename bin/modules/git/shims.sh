@@ -28,6 +28,7 @@ readonly SHIM_MARKER="agentic-os-hook"
 
 main() {
   cli_parse "$@"
+  cd "$PROJECT_ROOT"
 
   local hooks_dir mapping check="${CLI_FLAGS[check]:-}"
   hooks_dir=$(git_hooks_dir) || die_with "$BU_EXIT_NOT_FOUND" "shims: not inside a git repository"

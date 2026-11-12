@@ -3,6 +3,8 @@
 # Usage: bash tests/git-commit/run.sh
 # Needs: git, docker (the commit runs in the tool image), node_modules of the plugin (commitlint)
 set -euo pipefail
+# The framework takes an exported PROJECT_ROOT before the working directory; the throwaway repository is the working directory.
+unset PROJECT_ROOT AOS_ROOT SESSION_DIR AOS_TIER_CHAIN
 
 TEST_DIR="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
 PLUGIN_ROOT="$(cd "${TEST_DIR}/../.." && pwd)"
@@ -203,6 +205,16 @@ rm -f j.txt
 run "" --message "chore: nothing" --yes base.txt
 check "nothing to commit: non-zero exit" test "$RC" -ne 0
 check "nothing to commit: no commit" test "$(head_count)" -eq "$before"
+
+# 10b. Started in a subdirectory: a relative path is relative to where the command was started, the commit is made at the root.
+mkdir -p sub
+printf 'k\n' > sub/k.txt
+before="$(head_count)"
+RC=0
+(cd "${REPO}/sub" && PROJECT_ROOT="$REPO" bash "$COMMIT" --message "feat(core): add the k file" --yes k.txt > "$OUT" 2>&1) || RC=$?
+check "subdirectory: exit 0" test "$RC" -eq 0
+check "subdirectory: one new commit" test "$(head_count)" -eq $((before + 1))
+check "subdirectory: the path relative to the start directory" test "$(git show --name-only --format= HEAD)" = "sub/k.txt"
 
 # 11. A reply wrapped in a code fence: the fence is dropped and the message is committed.
 printf 'seven\n' > e.txt
