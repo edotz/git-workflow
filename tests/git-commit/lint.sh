@@ -61,4 +61,8 @@ RC=0
 OUT="$(bash "$lint" 2>&1)" || RC=$?
 case_result "no file is a usage error" "$([[ "$RC" -eq 2 && "$OUT" == *"Usage"* ]] && echo yes || echo no)"
 
+RC=0
+OUT="$(bash "$lint" --help 2>&1)" || RC=$?
+case_result "--help prints the usage and is no missing file" "$([[ "$RC" -eq 0 && "$OUT" == *"Usage"* && "$OUT" != *"not found"* ]] && echo yes || echo no)"
+
 exit "$failed"
