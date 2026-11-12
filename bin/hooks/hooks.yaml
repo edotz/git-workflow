@@ -5,9 +5,6 @@ version: "1.0"
 
 hooks:
 
-  - name: pre-commit
-    type: guard
-    description: Git is about to create a commit.
   - name: commit-msg
     type: guard
     description: Git validates a commit message; receives the message file.
