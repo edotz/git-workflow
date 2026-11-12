@@ -11,8 +11,9 @@ What the plugin provides today (`plugin.yaml`: `provides: [modules, hooks, comma
 - The `git` command domain (`bin/modules/git/`): the daily loop `start`, `commit`, `pr` and `check`; `rules-sync`,
   `release`, `promote` and `split`; `worktree`, `branch-cleanup`, `lint-commit`, `shims`, `token-service`,
   `workflow-setup` and `workflow-status` (which also reports the recent workflow runs).
-- The git hook host: the registry of the keys `pre-commit`, `commit-msg` and `pre-push` (`bin/hooks/hooks.yaml`) and
-  how git fires them (`adapters/git/hooks/hooks.yaml`), plus the hook `commit-msg/conventional`.
+- The git hook host: the registry of the keys `commit-msg` and `pre-push` (`bin/hooks/hooks.yaml`) and
+  how git fires them (`adapters/git/hooks/hooks.yaml`), plus the hooks `commit-msg/conventional` and
+  `pre-push/minimum-check`. The key `pre-commit` and its shim belong to agentic-os, not to the plugin.
 - Conventional commit validation: `git lint-commit` runs commitlint with the config `commitlint.config.mjs`. The
   plugin owns the config and the `@commitlint/*` packages (`package.json`); a consuming project keeps neither.
 - The libraries of the workflow in `bin/lib/` (`github.sh`, `worktree.sh` and the release-flow libraries `check`,

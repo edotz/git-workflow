@@ -1,7 +1,8 @@
 ## Now
-- m6-retire-old: all P6 tasks but T6.19 to T6.21 done; next a task for the squash subject limit, then the first releases and promote baseline per repo, then close the plan
+- m6-retire-old: only T6.19 is pending (typo3-cms first release and promote baseline after the migration feat merges); next apply the development stage to the live ruleset, then close the P6 gate and the plan
 
 ## Log
+- 2026-11-12 plugin (a24bcf21): merged PRs 8 to 16 (squash suffix lint, manuals, start in the checkout, branch-cleanup deletion, loopback token service, git-workflow skill), prepared the typo3-cms and php-project migration branches and the sdv composer.dev setup, found the live ruleset drift (D87, D88)
 - 2026-11-11 plugin (a24bcf21): baselined the ten nodejs-project children and closed their old release PRs, retired the classic protection code, moved git-workflow to rulesets, made version_next count from a range with the feat, fix, perf and breaking filter (D85, D86); PRs 5 to 7 merged
 - 2026-11-11 plugin (a24bcf21): migrated typo3-cms (branch roles, 2.x/1.x) and php-project (children baselined, old release train removed), nodejs-project to pnpm and components, added promote baseline, PR title lint, split skip and the split token set (D79 to D84)
 - 2026-11-10 plugin (a24bcf21): registered /git:split (T5.4, D77, D78), piloted the monorepo in the sandbox (T5.5) and fixed the push hooks in the tool image, migrated typo3-cms up to its rulesets and merged PRs, cleaned up its branches and protection
@@ -17,5 +18,4 @@
 - 2026-11-04 plugin (a24bcf21): built the token, version and check libraries, release, promote and node lint, ran the sandbox pilot (v0.1.0, v0.2.0), settled findings, set m1 to m3 done, detailed P4
 - 2026-11-03 plugin (a24bcf21): finished P2 (pins, image, tool.sh), chose the token service hosting, detailed P3, built the token service as a node module and the component library, added the Biome lint task T3.9
 - 2026-11-03 plugin (a24bcf21): checked the GitHub App and tool claims, settled the token service and the component declaration (P1 done), detailed the tool image phase
-- 2026-11-02 plugin (a24bcf21): wired the git pre-commit through the plugin, decided the git-workflow-plugin concept, added the roadmap and B-1, fixed the project context
 

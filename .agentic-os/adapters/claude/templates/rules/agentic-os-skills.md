@@ -16,3 +16,6 @@ The project's own skills: registration, provider config and blueprints, authored
 
 ## Constraints
 - Compiled artifacts are build output: never hand-edited.
+
+## Manifest check
+- `jq empty .agentic-os/skills/skills.json` exits 0 after a compile.

@@ -1,27 +1,31 @@
-# Handoff plugin (2026-11-11, second close)
+# Handoff plugin (2026-11-12, third close)
 
 ## State
-- PLAN-plugin B-1: every task of P1 to P6 is done except the developer tasks T6.19 to T6.21. PRs 5, 6 and 7 of edotz/git-workflow are merged; master is at 4d90824; nothing is uncommitted but .claude/output-styles/ (not ours).
-- Built and verified this session: nodejs-project (ten children baselined with legacy/pre-split, notes migrate-nodejs-pnpm.md and migrate-nodejs-project.md, four old release-please PRs closed and six release-please branches deleted in the children); classic protection code, run-status and the heredoc templates retired, workflow-status has a runs field (T6.7); project context in the new wording (T6.8); git-workflow itself has rulesets master and release (1.x), squash on, classic protection gone (T6.13); components.yaml of the plugin and the pushed baseline tag v0.1.0 (T6.18); version_next counts the commits after the latest tag and only feat, fix, perf and breaking (T6.17, bin/config/cliff.toml, tests/git-version/range.sh).
+- PRs 8 to 16 of edotz/git-workflow are merged, master is at d3054db: squash suffix title lint, 12 manuals in docs/, `app git start` creates the branch in the checkout, branch-cleanup deletes merged branches (lease, github.com only), token service binds loopback, master ruleset follows GIT_WORKFLOW_MAIN_BRANCH, lint-commit --help, plan ledger, the git-workflow skill (plugin tier, three references).
+- PLAN-plugin: T6.22 done, D87 (suffix), D88 (T6.20 and T6.21 dropped, continuation plan later). Only T6.19 is pending.
+- Unpushed: local branch docs/pre-commit-belongs-to-agentic-os (c9304e6); the push to master was rejected by the ruleset.
+- Uncommitted here: settings.local.json and .claude/output-styles/ (not ours).
+- Vendor repos typo3-cms and php-project: branch feat/php-8-4-migration, hooks commit-msg and pre-push enabled (hooks.json uncommitted), shims reinstalled, no migration commit yet.
+- sdv.bewerber, untracked: bin/composer-dev, docker-compose.vendor-dev.yml, docs/261112-edotz-vendor-repos-during-the-migration.md.
 
-## Open (first one is next)
-1. START: add a task through /aos:plan for the squash subject: GitHub appends " (#N)", so a title of 96 or more characters passes the title lint and fails the commit lint on master (PR 5 became 101 characters); lint title plus the suffix in pr.sh and status-checks.yml.
-2. T6.19 to T6.21 (developer): first release per repo, then app git promote <tag> baseline of the release branch (typo3-cms 2.x, php-project 2.x, nodejs-project 1.x, D81). Each waits for a feat, fix, perf or breaking commit after its baseline. Check first whether the changes of the closed release PRs (utilities 2.0.0 with a breaking change) are in the baselined versions; the monorepo history holds no commit with their messages.
-3. After them: gate of P6, milestone m6-retire-old to done, plan status done.
-4. Leftovers: branch-cleanup still protects release-please-- and backport/ branches; github_get_file_contents has no caller; git-cliff runs three docker starts per component (--bump --context could merge two).
+## Open
+1. START: the live master ruleset of edotz/git-workflow is production-form, so direct pushes fail in stage development. Run `rules-sync --apply` with stage development (token service, production key) or land the docs branch by PR.
+2. Rebuild and restart the token service image (loopback bind of PR 12).
+3. T6.19 typo3-cms first release and promote baseline of 2.x after the migration feat merges; then the P6 gate, m6-retire-old done, plan status done.
+4. Continuation plan: first releases of php-project and nodejs-project (D88).
+5. Leftovers: drift warning for stage versus live ruleset, branch-cleanup still protects release-please-- and backport/, worktree --start accepts an existing branch, git-cliff three docker starts per component.
 
-## Decided, do not reopen
-- D85 new tasks go into P6, not a P7: they finish the migration (D81). D86 only feat, fix, perf and breaking commits release: a ci or chore commit in a package no longer bumps a patch.
-- Daily loop: a branch in the main checkout (git switch -c from master, then git branch --unset-upstream), not a worktree per change.
-- Children follow the monorepo; D79 to D84 stand.
+## Decided
+- D86, D87, D88 stand. The migration releases as `feat`, minor: it keeps the 2.x line and sdv ^2.0.
+- The pre-commit shim and mapping belong to agentic-os, not the plugin; PR 13 stays.
+- One branch via /git:start, logical commits via /git:commit; no worktrees; findings are fixed by hand, no backlog items.
+- The skill ships in the plugin tier, trigger by description only, agent playbooks in references, commands as `bash ${BU_ROOT}/app`; manual names must not collide with framework docs.
 
 ## Traps
-- The shell exports GIT_WORKFLOW_RELEASE_BRANCH=0.x over the .env, so branch-cleanup --force would delete 1.x; find the export before using it.
-- origin is an SSH URL and the session has no key: fetch and push by https with -c credential.helper='!gh auth git-credential' (app git pr does this itself).
-- app git pr derives the PR title from the branch name; name the branch like the subject. Never gh pr create --fill.
-- Classifier denies background loops and destructive applies unless the allow rule in .agentic-os/adapters/claude/templates/settings.local.json is live; reading .env is denied.
-- git-cliff takes --include-path with several values: put the range before it; the config goes over stdin (tool_run mounts the repo only).
-- Commit headers over 100 characters are refused by lint-commit; plan amend --dry-run writes.
+- GIT_WORKFLOW_RELEASE_BRANCH=1.x is exported in the shell over the .env.
+- origin is SSH without a key: push by https with the gh credential helper.
+- `app git start` needs Docker; when it fails nothing is created, never cherry-pick onto master.
+- Subagents inherit memory, so a pressure baseline is contaminated; the classifier denies reading .env.
 
 ## Read first
-Memory: MEMORY.md, project-nodejs-project-migration-state, project-php-project-migration-state, project-typo3-cms-migration-state, reference-production-app, project-token-service-hosting. PLAN-plugin, notes migrate-nodejs-project.md and app-production.md.
+Memory: MEMORY.md, project-git-workflow-live-ruleset-stage-drift, project-sdv-bewerber-driver, reference-production-app, project-token-service-hosting, feedback-daily-loop-branch-not-worktree. PLAN-plugin, docs/README.md.
