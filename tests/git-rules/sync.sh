@@ -305,6 +305,23 @@ status=0
 if [[ "$production_body" == "$development_body" ]]; then status=1; fi
 verdict "stage production and stage development send different master rulesets" "$status"
 
+# GitHub stores default parameters the file does not name; they are no change.
+new_state
+EXTRA_ENV=("${BRANCHES[@]}")
+run_sync "$APP" --apply --stage production
+master_file="$(printf '%s\n' "${STUB_DIR}"/rulesets/*.json | head -n 1)"
+jq -c '(.rules[] | select(.type == "pull_request") | .parameters) += {dismissal_restriction: {enabled: false, allowed_actors: []}, required_reviewers: []}
+  | (.rules[] | select(.type == "required_status_checks") | .parameters) += {do_not_enforce_on_create: false}' "$master_file" >"${master_file}.new"
+mv "${master_file}.new" "$master_file"
+run_sync "$APP" --apply --stage production
+expect_line "a live ruleset with server defaults is unchanged" master unchanged
+count_writes
+expect_equal "server defaults cause no write" "$COUNT" 3
+jq -c '(.rules[] | select(.type == "required_status_checks") | .parameters.required_status_checks) = [{context: "other"}]' "$master_file" >"${master_file}.new"
+mv "${master_file}.new" "$master_file"
+run_sync "$APP" --dry-run --stage production
+expect_line "a changed required check is still an update" master update
+
 new_state
 EXTRA_ENV=(GIT_WORKFLOW_STAGE=production)
 run_sync "$APP" --apply

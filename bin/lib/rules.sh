@@ -2,7 +2,8 @@
 # Branch Rulesets Library
 # Requires: core.sh, yaml.sh, json.sh
 # Provides: rules_load, rules_json, rules_names, rules_stages: the rulesets of the master, release and legacy branches as plain
-#           GitHub ruleset JSON, built from bin/config/rulesets.yaml.
+#           GitHub ruleset JSON, built from bin/config/rulesets.yaml; rules_live_matches: whether a live ruleset holds one
+#           of them.
 # State: sets RULES_DOC, the rulesets file as JSON, after rules_load.
 
 # Guard against multiple sourcing
@@ -130,6 +131,34 @@ rules_json() {
        conditions: {ref_name: $ref}, bypass_actors: $m.bypass_actors, rules: $rules}
   ' -c --arg n "$name" --arg s "$stage" --arg p "$patterns"
   return 0
+}
+
+# Tell whether a live ruleset holds a wanted one: the same name, target, enforcement, conditions, bypass actors and rules.
+# GitHub adds default parameters to the rules it stores (for example dismissal_restriction and required_reviewers), so an
+# object of the live ruleset may carry more keys than the wanted one; a key the wanted one names must be equal, and a
+# list must have the same length and the same order.
+# Args:
+#   $1 - live ruleset JSON, as the Rulesets API returns it
+#   $2 - wanted ruleset JSON, as rules_json builds it
+#   $3 - true leaves the bypass actors out of the comparison (the App id is unknown), default false
+# Returns: 0 when the live ruleset holds the wanted one, 1 otherwise
+# Example: rules_live_matches "$live" "$(rules_json master production)"
+rules_live_matches() {
+  local live="${1:-}" want="${2:-}" loose="${3:-false}"
+  json_query "$live" '
+    def covers($w):
+      . as $l
+      | if ($w | type) == "object" then
+          ($l | type) == "object"
+          and all($w | keys[]; . as $k | ($l | has($k)) and ($l[$k] | covers($w[$k])))
+        elif ($w | type) == "array" then
+          ($l | type) == "array" and ($l | length) == ($w | length)
+          and all(range(0; $w | length); . as $i | $l[$i] | covers($w[$i]))
+        else . == $w end;
+    def shape: {name, target, enforcement, conditions, bypass_actors, rules}
+      | if $loose then del(.bypass_actors) else . end;
+    shape | covers($want | shape)
+  ' -e --argjson want "$want" --argjson loose "$loose" >/dev/null
 }
 
 return 0

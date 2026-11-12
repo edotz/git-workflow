@@ -70,7 +70,7 @@ _rules_sync_read_ids() {
 }
 
 # Decide what a ruleset needs: create when the repository has none of that name, unchanged when the live ruleset
-# holds the same name, target, enforcement, conditions, bypass actors and rules, update otherwise.
+# holds the same name, target, enforcement, conditions, bypass actors and rules (rules_live_matches), update otherwise.
 # Args: $1 - owner/name  $2 - ruleset name
 # Uses: _RULES_SYNC_BODY, _RULES_SYNC_IDS, _RULES_SYNC_LOOSE (true leaves the bypass actors out of the comparison: the App id is unknown)
 # Sets: _RULES_SYNC_OUTCOME (create, update or unchanged)
@@ -83,11 +83,7 @@ _rules_sync_outcome() {
   fi
   existing="$(tool_run gh api "repos/${slug}/rulesets/${id}" </dev/null)" \
     || die "rules-sync: cannot read the ruleset ${name} (${id}) of ${slug}"
-  if json_query "$existing" '
-    def shape: {name, target, enforcement, conditions, bypass_actors, rules}
-      | if $loose then del(.bypass_actors) else . end;
-    shape == ($want | shape)
-  ' -e --argjson want "$_RULES_SYNC_BODY" --argjson loose "$_RULES_SYNC_LOOSE" >/dev/null; then
+  if rules_live_matches "$existing" "$_RULES_SYNC_BODY" "$_RULES_SYNC_LOOSE"; then
     _RULES_SYNC_OUTCOME="unchanged"
   else
     _RULES_SYNC_OUTCOME="update"
