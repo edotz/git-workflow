@@ -289,7 +289,7 @@ Choose the kind of setting first:
 
 | Kind | Where it is read | Where it is declared |
 |---|---|---|
-| Workflow setting for a project (branch names, stage, App ID, worktree directory) | Environment: `GIT_WORKFLOW_*`, read directly, with a default in the code. The framework loads the project's `.env` at bootstrap; the environment wins. | Document in [Configuration](configuration.md) |
+| Workflow setting for a project (branch names, stage, App ID, worktree directory) | Environment: `GIT_WORKFLOW_*`, read directly, with a default in the code. The framework loads the project's `.env` at bootstrap; the environment wins. | Document in [Configuration](git-workflow-configuration.md) |
 | Plugin setting with a default, overridable per project | `${PLUGIN_EDOTZ_GIT_WORKFLOW_<NAME>:-<default>}`, as `branch-cleanup.sh` reads `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS` | A key in `bin/config/env.defaults`. Every key starts with `PLUGIN_EDOTZ_GIT_WORKFLOW_` and must not redefine a framework key. |
 | Tool version or checksum | `.env.defaults` (pins) | The key in `.env.defaults`, the name in `TOOL_PIN_KEYS` in `bin/lib/tool.sh`, the `ARG` in `.docker/Dockerfile`, the `args` entry in `docker-compose.yaml` |
 | Ruleset | `bin/config/rulesets.yaml` | Edit the entry; `app git rules-sync --dry-run` shows the change |

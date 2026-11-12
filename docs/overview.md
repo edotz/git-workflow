@@ -72,7 +72,7 @@ components:
 - `version: none` marks a component that is not versioned.
 - `split: yes` sends the component to the child repository named by `owner`, `repo` and `host`.
 
-Every field and rule is in [Configuration](configuration.md).
+Every field and rule is in [Configuration](git-workflow-configuration.md).
 
 ### Versions and tags
 
@@ -170,7 +170,7 @@ Developer (shell or Claude Code)
 | Look up the options, arguments and exit codes of a command | [Command reference](command-reference.md) |
 | Understand versions, a release, a pre-release, promote or baseline mode | [Release and promote](release-and-promote.md) |
 | Work with a monorepo, its child repositories, baselines or legacy tags | [Monorepo and split](monorepo-and-split.md) |
-| Write `components.yaml`, set environment variables, choose a stage | [Configuration](configuration.md) |
+| Write `components.yaml`, set environment variables, choose a stage | [Configuration](git-workflow-configuration.md) |
 | Understand rulesets, `rules-sync`, the CI workflow, hooks and shims | [Rulesets and CI](rulesets-and-ci.md) |
 | Understand the GitHub App, the token service and its permission sets | [GitHub App and token service](github-app-and-token-service.md) |
 | Adopt the plugin in a project or migrate from release-please | [Adopting in a project](adopting-in-a-project.md) |

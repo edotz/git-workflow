@@ -8,7 +8,7 @@
 |---|---|---|
 | New to the plugin | [Overview](overview.md) | [Daily loop](daily-loop.md) |
 | A developer working in a project that uses it | [Daily loop](daily-loop.md) | [Command reference](command-reference.md), [Troubleshooting](troubleshooting.md) |
-| Moving a repository onto the plugin | [Adopting the plugin in a project](adopting-in-a-project.md) | [Configuration](configuration.md), [Rulesets and CI](rulesets-and-ci.md) |
+| Moving a repository onto the plugin | [Adopting the plugin in a project](adopting-in-a-project.md) | [Configuration](git-workflow-configuration.md), [Rulesets and CI](rulesets-and-ci.md) |
 | Releasing | [Release and promote](release-and-promote.md) | [Monorepo and split](monorepo-and-split.md) for components with child repositories |
 | Looking after the GitHub App and token service | [GitHub App and token service](github-app-and-token-service.md) | [Rulesets and CI](rulesets-and-ci.md) |
 | Maintaining or extending the plugin | [Architecture](architecture.md) | [Command reference](command-reference.md) |
@@ -22,7 +22,7 @@
 | [Command reference](command-reference.md) | Every `app git` command and slash command: synopsis, options, environment, exit codes |
 | [Release and promote](release-and-promote.md) | How a version is decided, what a release does, pre-releases, promote and its baseline mode |
 | [Monorepo and split](monorepo-and-split.md) | Components of a monorepo, split to child repositories, baselines and legacy tags |
-| [Configuration](configuration.md) | `components.yaml`, environment variables, stages, commitlint, cliff, token sets |
+| [Configuration](git-workflow-configuration.md) | `components.yaml`, environment variables, stages, commitlint, cliff, token sets |
 | [Rulesets and CI](rulesets-and-ci.md) | Branch rulesets, `rules-sync`, `status-checks.yml`, hooks and shims |
 | [GitHub App and token service](github-app-and-token-service.md) | The App, permission sets, how tokens are issued, hosting, key custody, security |
 | [Adopting the plugin in a project](adopting-in-a-project.md) | Prerequisites, the step by step adoption, three worked cases, a checklist |

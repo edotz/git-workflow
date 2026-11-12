@@ -275,7 +275,7 @@ Do not work around the empty proposal by editing `version_files` or by adding a 
 
 ## Promote
 
-`app git promote <tag>` moves the release branch to the commit of a release tag. The release branch is `GIT_WORKFLOW_RELEASE_BRANCH` (see [Configuration](configuration.md)). If it equals the main branch, the command prints `nothing to promote` and stops.
+`app git promote <tag>` moves the release branch to the commit of a release tag. The release branch is `GIT_WORKFLOW_RELEASE_BRANCH` (see [Configuration](git-workflow-configuration.md)). If it equals the main branch, the command prints `nothing to promote` and stops.
 
 ```bash
 bash app git promote <tag> --dry-run

@@ -134,7 +134,7 @@ The output also names each failing commit (`commit lint failed: <subject>`) and 
 | `commit lint failed: <subject>` | 1 | Reword that commit. Use `git commit --amend` for the last commit, and an interactive rebase in your terminal for an older one. Then run the check again. |
 | `check command failed: <command>` | 1 | Run the command from the repository root and fix what it reports. |
 | `check: component 'x' is not declared in components.yaml` | 4 | Name a component declared in `components.yaml`. |
-| `components.yaml` is not valid | 3 | Fix the file. See [configuration.md](configuration.md). |
+| `components.yaml` is not valid | 3 | Fix the file. See [git-workflow-configuration.md](git-workflow-configuration.md). |
 
 The check reads the history and writes nothing. It is also the pre-push guard: `git push` runs it for all components first (see [Hooks](#hooks-that-guard-the-loop)).
 

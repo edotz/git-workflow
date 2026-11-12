@@ -47,7 +47,7 @@ The order follows the migrations. Where a step has a reason that is not obvious,
 
 ### 1. Declare the components
 
-Write `components.yaml` at the repository root. The fields and their rules are in [configuration.md](configuration.md). The short form for the rules that matter here:
+Write `components.yaml` at the repository root. The fields and their rules are in [git-workflow-configuration.md](git-workflow-configuration.md). The short form for the rules that matter here:
 
 - `paths` lists the directories a component owns. `["."]` is the whole repository and is allowed only for one component.
 - `version: none` makes a component with no tag and no release. It needs an empty `version_files`.

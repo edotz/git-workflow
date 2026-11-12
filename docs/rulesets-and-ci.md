@@ -236,7 +236,7 @@ Two points follow from the table. The local checks run on the commits you have, 
 
 ## Related
 
-- [Configuration](configuration.md): `rulesets.yaml` as data, the stage setting, `commitlint.config.mjs` and its limits.
+- [Configuration](git-workflow-configuration.md): `rulesets.yaml` as data, the stage setting, `commitlint.config.mjs` and its limits.
 - [Command reference](command-reference.md): the options of `rules-sync`, `shims`, `check` and `pr`.
 - [Release and promote](release-and-promote.md): the release and promote paths that the `release` ruleset protects.
 - [GitHub App and token service](github-app-and-token-service.md): the App, its permission sets and how the token is issued.
