@@ -38,7 +38,6 @@ The service asks GitHub for a token with exactly the permissions of one set in `
 |---|---|---|---|
 | `contents` | `contents: write` | `release --apply` (release commit, tag, GitHub Release); `promote --apply` (moves the release branch) | a push of a commit and a tag needs write |
 | `split` | `contents: write`, `workflows: write` | `split --apply` (pushes to a child repository) | the child receives the component's history, which may hold changes to `.github/workflows` |
-| `pull-requests` | `pull_requests: write` | no command | defined for pull request work; the pull request command uses the developer's login instead |
 | `administration` | `administration: write` | `rules-sync --apply` | creating and updating rulesets needs administration write; read only is refused with 403 |
 
 The App also holds `metadata: read`, which GitHub gives every App.
@@ -139,7 +138,7 @@ The service runs as the container `token-service` of `docker-compose.yaml` in th
 | Restart policy | `no`: the container does not start again after a reboot of the machine or a Docker restart |
 | Logs | JSON file driver, five files of 5 MB each |
 
-The service listens on all addresses inside the container. Only the loopback publish makes it reachable from the machine, so no other machine on the network can reach it.
+The service listens on all addresses inside the container (`TOKEN_SERVICE_HOST=0.0.0.0`). Only the loopback publish makes it reachable from the machine, so no other machine on the network can reach it. Started on the host with `app git token-service`, it listens on `127.0.0.1` unless `TOKEN_SERVICE_HOST` says otherwise.
 
 ### Start and stop
 

@@ -28,12 +28,13 @@ Settings come from the environment. The `.env` file of the project root is loade
 |---|---|---|---|
 | `GIT_WORKFLOW_MAIN_BRANCH` | start, pr, worktree, branch-cleanup, workflow-setup, workflow-status, release, promote, split | Main branch | `master` |
 | `GIT_WORKFLOW_RELEASE_BRANCH` | promote, rules-sync, workflow-setup, workflow-status, branch-cleanup | Release branch | `master` |
-| `GIT_WORKFLOW_LEGACY_BRANCHES` | rules-sync | Comma separated patterns of legacy branches | unset |
+| `GIT_WORKFLOW_LEGACY_BRANCHES` | rules-sync, branch-cleanup | Comma separated patterns of legacy branches | unset |
 | `GIT_WORKFLOW_STAGE` | rules-sync | `development` or `production` | `development` |
 | `GIT_WORKFLOW_APP_ID` | rules-sync `--apply` | Numeric id of the GitHub App | required for apply |
 | `GIT_WORKFLOW_WORKTREE_DIR` | worktree | Absolute base directory of worktrees | `$HOME/worktrees` |
 | `TOKEN_SERVICE_URL` | release, promote, split, rules-sync | URL of the token service | `http://127.0.0.1:<port>` |
 | `TOKEN_SERVICE_PORT` | release, promote, split, rules-sync, token-service | Port of the token service | `8790` |
+| `TOKEN_SERVICE_HOST` | token-service | Address the token service listens on | `127.0.0.1` |
 | `TOKEN_SERVICE_APP_ID` | token-service | Id of the App | required |
 | `TOKEN_SERVICE_KEY_PATH` | token-service | Path of the App key file | required |
 | `TOKEN_SERVICE_ORG` | token-service | Organisation the service issues tokens for | from `bin/config/token-service.json` |
@@ -169,7 +170,7 @@ It never writes and never pushes.
 
 ### branch-cleanup
 
-Groups the local and remote branches as `merged`, `stale` or `active`. A squash-merged branch counts as merged. Protected names (the main and release branches, `main`, `master`, `develop`, `development`, `staging`, `production`) are skipped.
+Groups the local and remote branches as `merged`, `stale` or `active`, and deletes the merged ones after the confirmation. A squash-merged branch counts as merged. Protected names (the main and release branches, the patterns of `GIT_WORKFLOW_LEGACY_BRANCHES`, `main`, `master`, `develop`, `development`, `staging`, `production`, `release-please--*` and `backport/*`) are skipped.
 
 ```text
 bash app git branch-cleanup [--dry-run] [--force] [--local-only | --remote-only]
@@ -177,12 +178,12 @@ bash app git branch-cleanup [--dry-run] [--force] [--local-only | --remote-only]
 
 | Option | Meaning |
 |---|---|
-| `-d, --dry-run` | Preview. Same report, then exit. |
-| `-f, --force` | Skip the confirmation prompt. |
+| `-d, --dry-run` | Print the report and delete nothing. |
+| `-f, --force` | Skip the confirmation and delete the merged branches. |
 | `-l, --local-only` | Analyse local branches only. |
 | `-r, --remote-only` | Analyse remote branches only. |
 
-Reads `GIT_WORKFLOW_MAIN_BRANCH`, `GIT_WORKFLOW_RELEASE_BRANCH`, `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS`, and the gh login (optional, for the merged pull request lookup). Runs `git fetch --prune origin` first.
+Reads `GIT_WORKFLOW_MAIN_BRANCH`, `GIT_WORKFLOW_RELEASE_BRANCH`, `GIT_WORKFLOW_LEGACY_BRANCHES`, `PLUGIN_EDOTZ_GIT_WORKFLOW_STALE_DAYS`, and the gh login (for the merged pull request lookup and for the deletion of remote branches). Runs `git fetch --prune origin` first. Needs Docker for the lookup and the remote deletion.
 
 Exit codes: 0, 1 (not a git repository).
 
@@ -190,9 +191,9 @@ Exit codes: 0, 1 (not a git repository).
 bash app git branch-cleanup --dry-run
 ```
 
-Expected output: lines `merged: feat/add-login`, `stale: old/thing`, `active: ...`, with the `origin/` prefix for remote branches, then the line `Use --dry-run to preview, --force to skip confirmation`. Without a terminal and without `--force` it prints `Not interactive - use --force to skip the confirmation` and exits 0.
+Expected output: lines `merged: feat/add-login`, `stale: old/thing`, `active: ...`, with the `origin/` prefix for remote branches, then the line `Use --dry-run to preview, --force to skip confirmation`. Without a terminal and without `--force` it prints `Not interactive - use --force to skip the confirmation`, deletes nothing and exits 0.
 
-It never deletes a local or a remote branch, not even with `--force`. With `--force` it prints a JSON report of the three groups after the confirmation step. Removing branches is done with git; see [daily-loop.md](daily-loop.md#6-after-the-merge).
+A branch is deleted only when git proves that every commit of it is applied to the main branch; with `-D` for a local branch and a push of the deletion for a remote one. A branch that only a merged pull request names is kept with the line `kept <branch>`, and so are the checked-out branch, the protected names and a branch at the same commit as the main branch. Remote branches are deleted only when `origin` is on github.com and a login exists; the command fetches `origin` first and pushes each deletion with `--force-with-lease` on the tip it proved merged, so a branch that received a commit meanwhile is kept. Otherwise the remote branches are kept and the line `kept the remote branches` says why. After the confirmation or with `--force` each branch gets one line: `deleted <branch>`, `kept <branch>` or `failed <branch>`.
 
 ### worktree
 
@@ -231,6 +232,7 @@ bash app git lint-commit <commit-msg-file>
 | Argument | Meaning |
 |---|---|
 | `commit-msg-file` | File that holds the message. Required. |
+| `-h, --help` | Print the usage and exit 0. |
 
 Needs commitlint in the plugin root (`npm install`). Needs no Docker.
 
@@ -421,6 +423,7 @@ TOKEN_SERVICE_APP_ID=<app-id> TOKEN_SERVICE_KEY_PATH=<path-to-key> bash app git 
 |---|---|
 | `TOKEN_SERVICE_APP_ID` | Id of the App. Required. |
 | `TOKEN_SERVICE_KEY_PATH` | Path of the App's private key file. Required. The key is read from this path and is never copied into an image. |
+| `TOKEN_SERVICE_HOST` | Address to listen on. Default `127.0.0.1`, so only the machine itself reaches the service. The container sets `0.0.0.0` and publishes its port on `127.0.0.1` only. |
 | `TOKEN_SERVICE_PORT` | Port to listen on. Default `8790`. |
 | `TOKEN_SERVICE_ORG` | Organisation. Default from `bin/config/token-service.json`. |
 
