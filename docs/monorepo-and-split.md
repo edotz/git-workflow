@@ -220,7 +220,7 @@ The dry run needs no App token. It reads the child with the developer's `gh` log
 | Default branch | the monorepo's `GIT_WORKFLOW_MAIN_BRANCH` |
 | Branch content | the split tree of the component's first path: the component's files at the root, its version file with the version the release wrote, its `CHANGELOG.md` and `README.md` |
 | Tags | `vX.Y.Z` for each release of the component, on split commits; plus `legacy/pre-split` after a baseline |
-| GitHub Releases | none. The split creates none; the releases are in the monorepo under `<component>/vX.Y.Z` |
+| GitHub Releases | none. The split creates none, and the monorepo makes none either: a repository of several components releases by tag only, and Composer and npm read the tags of the children |
 | Edits | none. The child is write-only: it receives the split and nothing else |
 
 A commit made in the child is not in the split history. The next apply sees a child that does not descend from the split, refuses it without `--confirm`, and with `--confirm` replaces the branch. The child commit is kept only as `legacy/pre-split`. So any change to a child belongs in the monorepo, in the component's paths.

@@ -36,7 +36,7 @@ The service asks GitHub for a token with exactly the permissions of one set in `
 
 | Set | Permission granted | Used by | Why this level |
 |---|---|---|---|
-| `contents` | `contents: write` | `release --apply` (release commit, tag, GitHub Release); `promote --apply` (moves the release branch) | a push of a commit and a tag needs write |
+| `contents` | `contents: write` | `release --apply` (release commit, tag, GitHub Release of a repository with one component); `promote --apply` (moves the release branch) | a push of a commit and a tag needs write |
 | `split` | `contents: write`, `workflows: write` | `split --apply` (pushes to a child repository) | the child receives the component's history, which may hold changes to `.github/workflows` |
 | `administration` | `administration: write` | `rules-sync --apply` | creating and updating rulesets needs administration write; read only is refused with 403 |
 

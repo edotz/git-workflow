@@ -209,7 +209,7 @@ When the proposal is right, run on the main branch with a clean working tree:
 bash ${BU_ROOT}/app git release --apply
 ```
 
-Apply makes the release commit `chore(<component>): release <tag>`, the tag, the push and the GitHub Release, all as the App. It refuses a run off the main branch, a dirty tree and a red minimum check. With more than one component the GitHub Release is created with `--latest=false`, so the latest release stays the newest stable one. Use `--pre <channel>` for a pre-release, for example `--pre rc`; `--draft` leaves the Release unpublished.
+Apply makes the release commit `chore(<component>): release <tag>`, the tag, the push and, in a repository of one component, the GitHub Release, all as the App. It refuses a run off the main branch, a dirty tree and a red minimum check. With more than one component no GitHub Release is made: the tags are enough, because the children are what Composer and npm read. Use `--pre <channel>` for a pre-release, for example `--pre rc`; `--draft` leaves the Release of a single component unpublished.
 
 For a split component, send the new release to its child after the release, with `bash ${BU_ROOT}/app git split <component> --apply` (step 11).
 

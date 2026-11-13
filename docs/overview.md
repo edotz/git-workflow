@@ -15,7 +15,7 @@ The plugin replaces that with one local, deterministic process:
 | release-please opened release pull requests | `app git release` makes one release commit and its tag on master, locally, after a dry run |
 | backport workflow opened backport pull requests | the release branch follows a release tag by fast forward (`app git promote`) |
 | merge-split-repo, sync-to-monorepo workflows | `app git split` pushes a component to its child repository |
-| post-release workflow | the GitHub Release is created by `app git release` |
+| post-release workflow | the GitHub Release is created by `app git release` in a repository of one component |
 | commit-lint, php-cs-fixer workflows | the commit lint runs locally in a commit-msg hook and in the single CI workflow |
 | personal token did every write | a GitHub App makes the releases, promotes, splits and ruleset changes, with short-lived tokens |
 
@@ -109,7 +109,7 @@ The release branch and the legacy branches have their own rulesets in both stage
 | Pull request title lint | Yes: `app git pr` lints the title before it pushes | Yes: the title of the pull request |
 | Declared checks of `components.yaml` | Yes: `app git check`, the pre-push shim, `app git pr`, `app git release` | Yes: `status-checks.yml` runs them on each pull request |
 | Opening the pull request | Yes: `app git pr`, as the developer | No |
-| Release commit, tag, push, GitHub Release | Yes: `app git release --apply`, as the App | No |
+| Release commit, tag, push, GitHub Release (one component only) | Yes: `app git release --apply`, as the App | No |
 | Promote, split, rulesets | Yes: `app git promote`, `split`, `rules-sync`, as the App | No |
 | Squash merge | No: on GitHub, by the developer | No |
 
