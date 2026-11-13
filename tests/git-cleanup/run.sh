@@ -61,7 +61,7 @@ git -C "$repo" -c merge.ff=true merge -q --squash fix/merged-squash >/dev/null
 git -C "$repo" commit -q -m "fix: squash"
 
 # A merged branch that is protected by its name, and one that is checked out.
-git -C "$repo" branch --no-track backport/merged master
+git -C "$repo" branch --no-track develop master
 git -C "$repo" branch --no-track fix/current-merged master
 
 # A legacy branch that master has, one commit behind it, and a branch just cut at the tip of master.
@@ -88,7 +88,7 @@ has_branch() {
 }
 
 all_present=yes
-for b in fix/merged-ff fix/merged-squash backport/merged fix/current-merged fix/unmerged; do
+for b in fix/merged-ff fix/merged-squash develop fix/current-merged fix/unmerged; do
   if ! has_branch "$b"; then all_present=no; fi
 done
 case_result "the fixture holds the five local branches" "$all_present"
@@ -96,7 +96,7 @@ case_result "the fixture holds the five local branches" "$all_present"
 rc=0
 out="$(run_cleanup --dry-run --local-only)" || rc=$?
 all_present=yes
-for b in fix/merged-ff fix/merged-squash backport/merged fix/current-merged fix/unmerged; do
+for b in fix/merged-ff fix/merged-squash develop fix/current-merged fix/unmerged; do
   if ! has_branch "$b"; then all_present=no; fi
 done
 ok=no
@@ -128,7 +128,7 @@ if has_branch fix/current-merged && [[ "$out" == *"kept fix/current-merged"* ]];
 case_result "the checked out merged branch is kept and named" "$ok"
 
 ok=no
-if has_branch backport/merged && has_branch fix/unmerged && has_branch master; then ok=yes; fi
+if has_branch develop && has_branch fix/unmerged && has_branch master; then ok=yes; fi
 case_result "a protected name, an unmerged branch and the main branch are kept" "$ok"
 
 ok=no

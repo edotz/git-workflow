@@ -25,4 +25,5 @@ Plugin-local bash libraries sourced by the git modules through PLUGIN_ROOT: gith
 - A change is done when shellcheck is clean (developer's answer).
 - worktree_create requires the local base branch to equal `origin/<base>` unless origin cannot be resolved; it prints only the path on stdout, git's own output is discarded.
 - rules_json takes its branch patterns from the environment; an unset or blank GIT_WORKFLOW_RELEASE_BRANCH or GIT_WORKFLOW_LEGACY_BRANCHES is a config failure (exit 3), and the App id stays APP_ID_PLACEHOLDER until rules-sync sets it.
+- rules_load reads bin/config/rulesets.yaml; rules_names and rules_stages print the names of the rulesets and of the stages; rules_live_matches returns 0 when a live ruleset holds everything the wanted one names, because GitHub adds server default parameters to the rules it returns.
 - token.sh sets GH_TOKEN without exporting it and writes it to no file, log line or argument.

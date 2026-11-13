@@ -70,11 +70,6 @@ is_protected() {
     fi
   done
 
-  # Special patterns
-  if [[ "$branch" == "release-please--"* ]] || [[ "$branch" == "backport/"* ]]; then
-    return 0
-  fi
-  
   return 1
 }
 
