@@ -289,7 +289,7 @@ These commands are described at reference level. The process is in [release-and-
 
 ### release
 
-Releases every component whose commits since its latest stable tag make a release. Dry run prints the plan; apply makes the release commit `chore(<component>): release <tag>`, the tag, the push, and the GitHub Release.
+Releases every component whose commits since its latest stable tag make a release. Dry run prints the plan; apply makes the release commit `chore(<component>): release <tag>`, the tag, the push, and, in a repository of one component, the GitHub Release. A repository of several components makes no GitHub Release: its tags are enough.
 
 ```text
 bash ${BU_ROOT}/app git release (--dry-run | --apply) [--draft] [--pre <channel>]
@@ -298,8 +298,8 @@ bash ${BU_ROOT}/app git release (--dry-run | --apply) [--draft] [--pre <channel>
 | Option | Meaning |
 |---|---|
 | `-n, --dry-run` | Per component: the next version, the tag, the files and the notes. Change nothing. |
-| `-a, --apply` | Make the release commit, the tag, push them, and create the GitHub Release. |
-| `-d, --draft` | Leave the GitHub Release unpublished. |
+| `-a, --apply` | Make the release commit, the tag, push them, and, in a repository of one component, create the GitHub Release. |
+| `-d, --draft` | Leave the GitHub Release unpublished. No effect in a repository of several components. |
 | `-p, --pre <channel>` | Make a pre-release of this channel, lower case letters, for example `rc`. |
 
 Reads `GIT_WORKFLOW_MAIN_BRANCH`, `TOKEN_SERVICE_URL`, `TOKEN_SERVICE_PORT`. Needs Docker. Apply needs the token service running and the git identity set.

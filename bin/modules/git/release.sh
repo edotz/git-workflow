@@ -21,8 +21,8 @@ cli_set_spec \
   version     "${MODULE_VERSION:-1.0.0}"
 
 cli_add_flag   "dry-run" "n" "Print per component the next version, the tag, the files and the notes; change nothing"
-cli_add_flag   "apply"   "a" "Make the release commit, the tag, the push and the GitHub Release as the App"
-cli_add_flag   "draft"   "d" "Leave the GitHub Release unpublished for a person to publish"
+cli_add_flag   "apply"   "a" "Make the release commit, the tag, the push and, in a repository of one component, the GitHub Release as the App"
+cli_add_flag   "draft"   "d" "Leave the GitHub Release unpublished for a person to publish (no effect in a repository of several components)"
 cli_add_option "pre"     "p" "Make a pre-release of this channel (lower case letters, for example rc)" ""
 
 readonly RELEASE_README_START='<!-- release:start -->'
@@ -33,8 +33,8 @@ RELEASE_NAMES=()
 RELEASE_PREFIXES=()
 RELEASE_VERSIONS=()
 RELEASE_TAGS=()
-# Components whose release commit is HEAD already: name, prefix and tag; apply makes sure the tag is pushed and
-# the GitHub Release exists.
+# Components whose release commit is HEAD already: name, prefix and tag; apply makes sure the tag is pushed and,
+# in a repository of one component, the GitHub Release exists.
 PENDING_NAMES=()
 PENDING_PREFIXES=()
 PENDING_TAGS=()
@@ -45,6 +45,9 @@ _RELEASE_HOME=""
 _RELEASE_README_CHANGED="no"
 _RELEASE_SLUG=""
 _RELEASE_URL=""
+# yes when components.yaml declares several components: such a repository makes no GitHub Release, its children
+# are what Composer and npm read, and the tag is enough.
+_RELEASE_SEVERAL="no"
 _RELEASE_ID=()
 # No repository hooks: the shims of a clone call agentic-os, which the tool image lacks, and the checks ran on the host.
 _RELEASE_AUTH=(-c "core.hooksPath=/dev/null" -c "credential.helper=" -c "credential.helper=!gh auth git-credential")
@@ -233,7 +236,11 @@ _release_show() {
   done
   for i in "${!PENDING_NAMES[@]}"; do
     print_header "release ${PENDING_NAMES[$i]}"
-    print_item info "pending" "${PENDING_TAGS[$i]} is HEAD: apply makes sure the tag is pushed and the GitHub Release exists"
+    if [[ "$_RELEASE_SEVERAL" == "yes" ]]; then
+      print_item info "pending" "${PENDING_TAGS[$i]} is HEAD: apply makes sure the tag is pushed"
+    else
+      print_item info "pending" "${PENDING_TAGS[$i]} is HEAD: apply makes sure the tag is pushed and the GitHub Release exists"
+    fi
   done
   return 0
 }
@@ -312,11 +319,15 @@ _release_push() {
   return 0
 }
 
-# Create the GitHub Release of one tag when it does not exist yet.
+# Create the GitHub Release of one tag when it does not exist yet; a repository of several components makes none.
 # The notes are those of the tag, read after the tag exists (mode latest).
-# Args: $1 name  $2 prefix  $3 tag  $4 mode (latest)  $5 draft (yes or no)  $6 several (yes or no)
+# Args: $1 name  $2 prefix  $3 tag  $4 mode (latest)  $5 draft (yes or no)
 _release_publish() {
-  local name="$1" prefix="$2" tag="$3" mode="$4" draft="$5" several="$6" version
+  local name="$1" prefix="$2" tag="$3" mode="$4" draft="$5" version
+  if [[ "$_RELEASE_SEVERAL" == "yes" ]]; then
+    print_item info "GitHub Release" "${tag} skipped: a repository of several components makes none"
+    return 0
+  fi
   version="${tag#"${prefix}"v}"
   if tool_run gh release view "$tag" --repo "$_RELEASE_SLUG" </dev/null >/dev/null 2>&1; then
     print_item ok "GitHub Release" "${tag} exists"
@@ -330,9 +341,6 @@ _release_publish() {
   if [[ "$draft" == "yes" ]]; then
     args+=(--draft)
   fi
-  if [[ "$several" == "yes" ]]; then
-    args+=(--latest=false)
-  fi
   printf '%s\n' "$_RELEASE_NOTES" | tool_run "${args[@]}" >/dev/null
   print_item ok "GitHub Release" "${tag} created"
   return 0
@@ -343,17 +351,13 @@ _release_publish() {
 # is on HEAD, which the next apply finds as pending.
 # Args: $1 - main branch  $2 - draft (yes or no)
 _release_apply() {
-  local main_branch="$1" draft="$2" current i several="no" count
+  local main_branch="$1" draft="$2" current i
   current="$(git_get_current_branch)"
   if [[ "$current" != "$main_branch" ]]; then
     die "release: apply runs on ${main_branch}, the current branch is ${current}"
   fi
   if ! git_is_workdir_clean; then
     die "release: the working tree has uncommitted changes, nothing was changed"
-  fi
-  count="$(component_names | wc -l)"
-  if [[ "$count" -gt 1 ]]; then
-    several="yes"
   fi
 
   _release_remote
@@ -363,11 +367,11 @@ _release_apply() {
   for i in "${!RELEASE_NAMES[@]}"; do
     _release_commit "$i"
     _release_push "$main_branch" "${RELEASE_TAGS[$i]}"
-    _release_publish "${RELEASE_NAMES[$i]}" "${RELEASE_PREFIXES[$i]}" "${RELEASE_TAGS[$i]}" latest "$draft" "$several"
+    _release_publish "${RELEASE_NAMES[$i]}" "${RELEASE_PREFIXES[$i]}" "${RELEASE_TAGS[$i]}" latest "$draft"
   done
   for i in "${!PENDING_NAMES[@]}"; do
     _release_push "$main_branch" "${PENDING_TAGS[$i]}"
-    _release_publish "${PENDING_NAMES[$i]}" "${PENDING_PREFIXES[$i]}" "${PENDING_TAGS[$i]}" latest "$draft" "$several"
+    _release_publish "${PENDING_NAMES[$i]}" "${PENDING_PREFIXES[$i]}" "${PENDING_TAGS[$i]}" latest "$draft"
   done
   token_drop
   return 0
@@ -394,6 +398,13 @@ main() {
   cd "$PROJECT_ROOT"
   tool_image_ensure
   component_load "${PROJECT_ROOT}/components.yaml"
+  local declared
+  local -a declared_names
+  declared="$(component_names)" || return $?
+  mapfile -t declared_names <<< "$declared"
+  if [[ "${#declared_names[@]}" -gt 1 ]]; then
+    _RELEASE_SEVERAL="yes"
+  fi
 
   _release_plan "$channel"
   if [[ "${#RELEASE_NAMES[@]}" -eq 0 && "${#PENDING_NAMES[@]}" -eq 0 ]]; then

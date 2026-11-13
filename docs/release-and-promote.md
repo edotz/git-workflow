@@ -11,7 +11,7 @@ This manual covers how the plugin decides a version, how `app git release` makes
    bash ${BU_ROOT}/app git release --dry-run
    ```
 
-3. Apply it. This makes the release commit, the tag, the push and the GitHub Release:
+3. Apply it. This makes the release commit, the tag, the push and, in a repository of one component, the GitHub Release:
 
    ```bash
    bash ${BU_ROOT}/app git release --apply
@@ -131,8 +131,8 @@ The apply runs per component, in the order of `components.yaml`. A component is 
    4. Commit the files as `chore(<name>): release <tag>`, with the hooks of the repository switched off. If the commit fails, the files are restored.
    5. Create the tag `<tag>` on the release commit.
    6. Push `HEAD` to the main branch and the tag to `origin`, as the App.
-   7. Create the GitHub Release of the tag, when it does not exist. Its notes are generated from the tag, not from the dry run.
-5. For each pending component: push the tag and create its GitHub Release when missing.
+   7. Create the GitHub Release of the tag, when it does not exist and the repository has one component. Its notes are generated from the tag, not from the dry run. A repository of several components makes none and prints `skipped`.
+5. For each pending component: push the tag and, in a repository of one component, create its GitHub Release when missing.
 6. Drop the token.
 
 Commit subjects the release writes, with the names of the example repositories:
@@ -153,7 +153,7 @@ The GitHub Release is created with the tag as title. A pre-release version creat
 | `--dry-run` | print the proposal, change nothing |
 | `--apply` | make the release, as described above |
 | `--pre <channel>` | release a pre-release of this channel (lower case letters) |
-| `--draft` | create the GitHub Release as a draft for a person to publish. The tag is still pushed. Not covered by the tests |
+| `--draft` | create the GitHub Release as a draft for a person to publish. The tag is still pushed. No effect in a repository of several components. Not covered by the tests |
 
 ### Tokens and where things go
 
@@ -166,14 +166,14 @@ The push goes to `origin` on github.com over HTTPS. The release commit is pushed
 
 ### The pending case
 
-A component is pending when its tag is on `HEAD` already. This happens after a baseline tag placed on the head of `master`, and after an apply that was interrupted after its commit and tag but before the push or the GitHub Release.
+A component is pending when its tag is on `HEAD` already. This happens after a baseline tag placed on the head of `master`, and after an apply that was interrupted after its commit and tag but before the push or, in a repository of one component, the GitHub Release.
 
 ```text
 [release object]
    pending — v1.0.0 is HEAD: apply makes sure the tag is pushed and the GitHub Release exists
 ```
 
-The apply of a pending component pushes the tag and creates the GitHub Release when it is missing. It makes no new commit and no new version. When both exist, the apply prints that the GitHub Release exists and finishes.
+The apply of a pending component pushes the tag and creates the GitHub Release when it is missing. It makes no new commit and no new version. When both exist, the apply prints that the GitHub Release exists and finishes. A repository of several components prints `apply makes sure the tag is pushed` and makes no GitHub Release.
 
 With `--pre`, a tag of any kind on `HEAD` makes the component pending, so a pre-release on `HEAD` does not stop the final release from being proposed. Without `--pre`, only a stable tag on `HEAD` makes it pending.
 
@@ -181,7 +181,7 @@ After an interrupted apply, run the apply again. The pilot of the plugin stopped
 
 ### Multi-component releases
 
-Each component that changed gets its own release commit, tag and GitHub Release, one after the other, in the order of `components.yaml`. If two components changed in one commit, both are released. Their release commits follow each other on `master`.
+Each component that changed gets its own release commit and tag, and in a repository of one component its GitHub Release, one after the other, in the order of `components.yaml`. If two components changed in one commit, both are released. Their release commits follow each other on `master`.
 
 The minimum check runs for every component to release before anything is written. One red component refuses the whole release and nothing is changed.
 
@@ -244,7 +244,7 @@ Apply:
 bash ${BU_ROOT}/app git release --apply
 ```
 
-Result on `master`: `chore(api): release api/v1.1.0`, then `chore(web): release web/v2.0.1`, each with its tag and its GitHub Release. Both releases are created with `--latest=false`.
+Result on `master`: `chore(api): release api/v1.1.0`, then `chore(web): release web/v2.0.1`, each with its tag. No GitHub Release is made: a repository of several components has none, and the child repositories carry the tags that Composer or npm read.
 
 Then, when the repository has a release branch, promote the release that should go live. The release branch is one branch for the repository, so promote one tag at a time, the newest first:
 
@@ -267,7 +267,7 @@ Look at the cause in this order:
 |---|---|---|
 | Only `chore`, `ci`, `docs`, `test`, `style`, `refactor` or `build` commits in the component's paths since the latest tag | `git log <tag>..HEAD -- <path>` shows commits, none of them a `feat`, `fix`, `perf` or breaking commit | nothing. These commits release nothing by design. Do not relabel merged commits; the next `feat` or `fix` releases them together |
 | A `feat` or `fix` in another component's path | the component's own paths have no releasable commit | nothing; the other component releases |
-| The baseline tag sits on `HEAD` | the dry run prints `pending` instead, not nothing | run the apply: it pushes the tag and creates the GitHub Release |
+| The baseline tag sits on `HEAD` | the dry run prints `pending` instead, not nothing | run the apply: it pushes the tag and, in a repository of one component, creates the GitHub Release |
 | A baseline tag sits on an earlier commit than the component's last change | the commits after the tag are counted, so work already released may be proposed again | move the baseline tag to the last commit that touches the component, before the first release is made |
 | A non-conventional subject since the latest tag | the minimum check is red and the dry run fails with `minimum check is red` | the check lints every commit since the latest tag, so a new commit does not clear it. See [Troubleshooting](troubleshooting.md) |
 

@@ -24,9 +24,9 @@ The dry run changes nothing and exits 0 when it can plan.
 | `pending — <tag> is HEAD` | the tag is on `HEAD` already | ask what the tag is, see below |
 
 - A pending tag after a migration is a baseline tag: it marks a version released before the
-  plugin, and the apply would only push the tag and create its GitHub Release.
-- A pending tag after an interrupted apply needs the apply: it pushes the tag and creates the
-  GitHub Release, with no new commit.
+  plugin, and the apply would only push the tag and, in a repository of one component, create its GitHub Release.
+- A pending tag after an interrupted apply needs the apply: it pushes the tag and, in a repository
+  of one component, creates the GitHub Release, with no new commit.
 - Ask the developer which case it is before the apply.
 
 ## Apply a release
@@ -36,8 +36,8 @@ The dry run changes nothing and exits 0 when it can plan.
 - Refused with exit 3: `user.name` or `user.email` is unset, or a version file is refused.
 - Needs: Docker and the token service.
 - Effect, per component: the version files and `CHANGELOG.md`, the release commit
-  `chore(<component>): release <tag>` on the main branch, the tag and the GitHub Release, all as
-  the App.
+  `chore(<component>): release <tag>` on the main branch, the tag and, in a repository of one component,
+  the GitHub Release, all as the App. A repository of several components makes no GitHub Release.
 - Variants: `--pre <channel>` with a lower case channel such as `rc`; `--draft` leaves the GitHub
   Release unpublished.
 - A wrong release is corrected by a new release.

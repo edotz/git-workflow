@@ -228,7 +228,7 @@ Only these types change what a user of the component gets, so only these types b
 
 | Set | Permissions | Used by | Notes |
 |---|---|---|---|
-| `contents` | `contents: write` | `release --apply`, `promote --apply` | Pushes the release commit and tag, creates the GitHub Release, moves the release branch. |
+| `contents` | `contents: write` | `release --apply`, `promote --apply` | Pushes the release commit and tag, creates the GitHub Release of a repository with one component, moves the release branch. |
 | `split` | `contents: write`, `workflows: write` | `split --apply` | Pushes the split head and the component tags to a child repository. The child repository receives workflow files with the component history, so only this set carries `workflows: write`; see [GitHub App and token service](github-app-and-token-service.md#permission-sets). |
 | `administration` | `administration: write` | `rules-sync --apply` | Creates and updates rulesets. |
 

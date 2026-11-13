@@ -65,7 +65,7 @@ One line per script in `bin/modules/git/`. The name is the `app git` command; th
 | `lint-commit.sh` | `lint-commit` | Runs the commitlint binary of `node_modules` on one commit message file with `commitlint.config.mjs` |
 | `check.sh` | `check` | Runs `check_minimum` for every component or one named; prints `<name>: ok` or `<name>: failed`; writes nothing |
 | `pr.sh` | `pr` | Refuses the main branch and a red minimum check, lints the title, then pushes and opens the pull request with `gh` as the developer |
-| `release.sh` | `release` | Plans the components to release (`version_next`), checks them, prints the dry run or applies: release commit, tag, push, GitHub Release as the App |
+| `release.sh` | `release` | Plans the components to release (`version_next`), checks them, prints the dry run or applies: release commit, tag, push, GitHub Release (one component only) as the App |
 | `promote.sh` | `promote` | Moves the release branch to the commit of a release tag: fast forward, or baseline mode with `--confirm`; the App pushes |
 | `split.sh` | `split` | Dry run: child head, ancestry and tree difference per split component. Apply: one child per run, branch and component tags pushed as the App |
 | `rules-sync.sh` | `rules-sync` | Builds each ruleset with `rules_json` and creates or updates it through the rulesets API; the dry run reads only; reports foreign rulesets and classic protection that cover a managed branch |

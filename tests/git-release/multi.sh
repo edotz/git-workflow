@@ -152,6 +152,26 @@ if [[ -z "$(git -C "$multi" status --porcelain)" && -z "$(git -C "$single" statu
 fi
 case_result "the tree is clean afterwards and HEAD, the tags and the files are unchanged" "$ok"
 
+# A tag on HEAD is a pending release. A repository of several components makes no GitHub Release, so its apply only
+# pushes the tag; a repository of one component also makes sure the GitHub Release exists.
+git -C "$multi" tag api/v1.2.0
+rc=0
+out="$(run_release "$multi")" || rc=$?
+ok=no
+if [[ "$rc" -eq 0 && "$out" == *"api/v1.2.0 is HEAD: apply makes sure the tag is pushed"* && "$out" != *"GitHub Release"* ]]; then
+  ok=yes
+fi
+case_result "a pending tag of a repository of several components names the push only" "$ok"
+
+git -C "$single" tag v1.1.0
+rc=0
+out="$(run_release "$single")" || rc=$?
+ok=no
+if [[ "$rc" -eq 0 && "$out" == *"v1.1.0 is HEAD: apply makes sure the tag is pushed and the GitHub Release exists"* ]]; then
+  ok=yes
+fi
+case_result "a pending tag of a repository of one component names the GitHub Release too" "$ok"
+
 if [[ "$failed" -ne 0 ]]; then
   exit 1
 fi
