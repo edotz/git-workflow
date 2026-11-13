@@ -74,6 +74,7 @@ next() {
     source "${PLUGIN_LIB}/version.sh"
     component_load "${PROJECT_ROOT}/components.yaml"
     version_next "$@"
+    printf "%s\n" "$VERSION_NEXT"
   ' next "$@" 2>/dev/null)" || RC=$?
 }
 
@@ -212,5 +213,33 @@ notes a a/v1.0.0 latest 1.0.0
 ok=no
 if [[ "$RC" -eq 0 && "$OUT" == *"First and only"* ]]; then ok=yes; fi
 case_result "the notes of the first tag, which has no previous tag, hold the commits before its release commit" "$ok"
+
+# version_latest_tag starts the tool image once per question and keeps the answer until version_cache_reset.
+real_docker="$(command -v docker)"
+shim="${work}/shim"
+mkdir -p "$shim"
+printf '#!/usr/bin/env bash\nif [[ "${1:-}" == run ]]; then echo run >> "%s/runs"; fi\nexec "%s" "$@"\n' "$work" "$real_docker" > "${shim}/docker"
+chmod +x "${shim}/docker"
+fresh
+: > "${work}/runs"
+OUT="$(cd "$repo" && env -u GH_TOKEN PATH="${shim}:${PATH}" PROJECT_ROOT="$repo" PLUGIN_ROOT="$PLUGIN_ROOT" PLUGIN_LIB="$PLUGIN_LIB" bash -c '
+  set -euo pipefail
+  source "${BU_ROOT}/lib/core.sh"
+  source "${PLUGIN_LIB}/version.sh"
+  component_load "${PROJECT_ROOT}/components.yaml"
+  version_latest_tag a stable
+  first="$VERSION_LATEST_TAG"
+  version_latest_tag a stable
+  git -C "$PROJECT_ROOT" commit -q --allow-empty -m "fix(a): later"
+  git -C "$PROJECT_ROOT" tag a/v1.0.1
+  version_latest_tag a stable
+  stale="$VERSION_LATEST_TAG"
+  version_cache_reset
+  version_latest_tag a stable
+  printf "%s %s %s\n" "$first" "$stale" "$VERSION_LATEST_TAG"
+' cache 2>/dev/null)" || OUT="failed"
+ok=no
+if [[ "$OUT" == "a/v1.0.0 a/v1.0.0 a/v1.0.1" && "$(wc -l < "${work}/runs")" -eq 2 ]]; then ok=yes; fi
+case_result "the latest tag is asked once, kept until the cache is reset, and read again after it" "$ok"
 
 exit "$failed"
