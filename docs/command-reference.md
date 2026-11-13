@@ -99,7 +99,7 @@ It never pushes, never commits a path it was not given or a file that is not sta
 
 ### changes
 
-Lists the changed files of the working tree, one per line as the state, a tab and the path. The states are `staged`, `unstaged` and `untracked`, printed in that order and sorted by path within each state. A file that is staged and changed again is listed under both, and a rename is listed as its old and its new path, so that a commit of both paths takes the whole rename. The paths are printed as they are, without git's quoting; a path with a newline is not supported. A clean tree prints nothing.
+Lists the changed files of the working tree, one per line as the state, a tab and the path. The states are `staged`, `unstaged` and `untracked`, printed in that order and sorted by path within each state. A file that is staged and changed again is listed under both, and a rename is listed as its old and its new path, so that a commit of both paths takes the whole rename. The paths are printed as they are, without git's quoting; a path with a newline stops the command with an error that names the path. A clean tree prints nothing.
 
 ```text
 bash ${BU_ROOT}/app git changes
@@ -383,7 +383,7 @@ bash ${BU_ROOT}/app git stage [<stage>] [--apply]
 | `<stage>` | `development` or `production`. Without it the command only reports. |
 | `-a, --apply` | Switch the master ruleset with `rules-sync --apply --stage <stage>`, then read it again. Needs the stage, `GIT_WORKFLOW_APP_ID` and the token service. |
 
-Output: `live stage: <development|production|drift|none>`, where `drift` means the live ruleset equals neither form and `none` that the repository has no master ruleset. With a stage it adds `unchanged: already <stage>`, `would switch: <live> -> <stage>` (no `--apply`) or `switched: <live> -> <stage>`.
+Output: `live stage: <development|production|drift|none>`, where `drift` means the live ruleset equals neither form and `none` that the repository has no master ruleset. With a stage it adds `unchanged: already <stage>`, `would switch: <live> -> <stage>` (no `--apply`) or `switched: <live> -> <stage>`. Before that it prints a warning for each other ruleset (`release`, `legacy`) that is missing or differs from `bin/config/rulesets.yaml`; the switch leaves them as they are, and `rules-sync --apply` aligns them.
 
 Reads `GIT_WORKFLOW_APP_ID`, `GIT_WORKFLOW_RELEASE_BRANCH`, `GIT_WORKFLOW_LEGACY_BRANCHES`, `TOKEN_SERVICE_URL`, `TOKEN_SERVICE_PORT`; the report uses the gh login of the developer. Needs Docker, gh and `curl`.
 

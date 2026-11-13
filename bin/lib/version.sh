@@ -132,38 +132,34 @@ version_notes_args() {
   return 0
 }
 
-# Count the commits of a component in a range that make a release: git-cliff prints an empty range as the version
-# 0.1.0, so "no change" has to be read from the commits, not from the version.
-# Args:
-#   $1 - component name
-#   $2 - range, empty for the whole history
-# Sets: _VERSION_COUNTED
-_version_counted() {
-  local name="$1" range="$2" out
-  _version_scope "$name" "$range" || return $?
-  out=$(version_cliff "${_VERSION_ARGS[@]}" --context) || die_with "$BU_EXIT_CONFIG" "version: git-cliff failed for the component ${name}"
-  _VERSION_COUNTED=$(json_query "$out" '[.[].commits[]] | length' -r) || die_with "$BU_EXIT_CONFIG" "version: git-cliff gave no commits list for the component ${name}"
-  return 0
-}
-
-# Ask git-cliff for the bumped version of a component over a range. The printed version carries the tag prefix, which
-# is removed.
+# Count the commits of a component in a range that make a release and ask git-cliff for the bumped version, in one run:
+# git-cliff prints an empty range as the version 0.1.0, so "no change" has to be read from the commits, not from the
+# version. The version of the newest release of the context is the bumped one; it carries the tag prefix, which is
+# removed.
 # Args:
 #   $1 - component name
 #   $2 - tag pattern (regular expression)
 #   $3 - tag prefix of the component, possibly empty
 #   $4 - range, empty for the whole history
-# Sets: _VERSION_BUMPED
-_version_bump() {
-  local name="$1" pattern="$2" prefix="$3" range="$4" out
+# Sets: _VERSION_COUNTED, and _VERSION_BUMPED when the count is above 0
+_version_evaluate() {
+  local name="$1" pattern="$2" prefix="$3" range="$4" out result version
   _version_scope "$name" "$range" || return $?
-  out=$(version_cliff "${_VERSION_ARGS[@]}" --bumped-version --tag-pattern "$pattern") \
+  out=$(version_cliff "${_VERSION_ARGS[@]}" --bump --context --tag-pattern "$pattern") \
     || die_with "$BU_EXIT_CONFIG" "version: git-cliff failed for the component ${name}"
-  out="${out#"${prefix}"v}"
-  if ! version_valid "$out"; then
-    die_with "$BU_EXIT_CONFIG" "version: git-cliff gave no version for the component ${name}: '${out}'"
+  result=$(json_query "$out" '[([.[].commits[]] | length), (.[0].version // "")] | @tsv' -r) \
+    || die_with "$BU_EXIT_CONFIG" "version: git-cliff gave no commits list for the component ${name}"
+  _VERSION_COUNTED="${result%%$'\t'*}"
+  _VERSION_BUMPED=""
+  if [[ "$_VERSION_COUNTED" -eq 0 ]]; then
+    return 0
   fi
-  _VERSION_BUMPED="$out"
+  version="${result#*$'\t'}"
+  version="${version#"${prefix}"v}"
+  if ! version_valid "$version"; then
+    die_with "$BU_EXIT_CONFIG" "version: git-cliff gave no version for the component ${name}: '${version}'"
+  fi
+  _VERSION_BUMPED="$version"
   return 0
 }
 
@@ -252,12 +248,11 @@ version_next() {
   if [[ -n "$stable" ]]; then
     range="${stable}..HEAD"
   fi
-  _version_counted "$name" "$range" || return $?
+  _version_evaluate "$name" "^${prefix}v[0-9]+\\.[0-9]+\\.[0-9]+\$" "$prefix" "$range" || return $?
   if [[ "$_VERSION_COUNTED" -eq 0 ]]; then
     logger_info "version_next: no feat, fix, perf or breaking commit of the component ${name} since ${stable:-the start}"
     return 1
   fi
-  _version_bump "$name" "^${prefix}v[0-9]+\\.[0-9]+\\.[0-9]+\$" "$prefix" "$range" || return $?
   local base="$_VERSION_BUMPED"
 
   if [[ -z "$channel" ]]; then
@@ -273,12 +268,11 @@ version_next() {
   fi
 
   range="${latest}..HEAD"
-  _version_counted "$name" "$range" || return $?
+  _version_evaluate "$name" "^${prefix}v" "$prefix" "$range" || return $?
   if [[ "$_VERSION_COUNTED" -eq 0 ]]; then
     logger_info "version_next: no feat, fix, perf or breaking commit of the component ${name} since ${latest}"
     return 1
   fi
-  _version_bump "$name" "^${prefix}v" "$prefix" "$range" || return $?
   local counted="$_VERSION_BUMPED"
   local shape_re="^[0-9]+\\.[0-9]+\\.[0-9]+-${channel}\\.[0-9]+\$"
   if [[ ! "$counted" =~ $shape_re ]]; then

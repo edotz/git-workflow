@@ -4,7 +4,8 @@
 # Settings: GIT_WORKFLOW_APP_ID (bypass actor, required for --apply), TOKEN_SERVICE_URL, TOKEN_SERVICE_PORT
 # Decisions: the live ruleset is the source of truth of the stage; no setting stores it. The switch is rules-sync --apply
 #            with the stage, and the ruleset is read again afterwards.
-# Output: "live stage: <stage|drift|none>", then for a stage "unchanged", "would switch" or "switched"
+# Output: "live stage: <stage|drift|none>", a warning for each other ruleset that is missing or differs from
+#         rulesets.yaml, then for a stage "unchanged", "would switch" or "switched"
 set -euo pipefail
 
 source "${BU_ROOT}/lib/core.sh"
@@ -24,6 +25,7 @@ cli_add_flag "apply" "a" "Switch the master ruleset to the stage as the App"
 readonly STAGE_RULESET="master"
 
 _STAGE_LIVE=""
+_STAGE_LIST=""
 
 # ============================================
 # Private Helpers
@@ -42,6 +44,7 @@ _stage_read_live() {
   if ! json_validate "$list"; then
     die "stage: the rulesets of ${slug} came back as no JSON"
   fi
+  _STAGE_LIST="$list"
   id="$(json_query "$list" '[.[] | select(.name == $n)][0].id // empty' -r --arg n "$STAGE_RULESET")"
   if [[ -z "$id" ]]; then
     _STAGE_LIVE="none"
@@ -58,6 +61,34 @@ _stage_read_live() {
       break
     fi
   done < <(rules_stages)
+  return 0
+}
+
+# Warn for each ruleset besides master that is missing or differs from bin/config/rulesets.yaml. The stage does not
+# change them, so the switch leaves them as they are; rules-sync aligns them. A ruleset whose branch setting is blank is
+# left out, as rules-sync leaves it out.
+# Args: $1 - owner/name
+_stage_warn_others() {
+  local slug="$1" name built rc id existing
+  while IFS= read -r name; do
+    if [[ "$name" == "$STAGE_RULESET" ]]; then continue; fi
+    rc=0
+    built="$(rules_json "$name" 2>&1)" || rc=$?
+    if [[ "$rc" -eq "$BU_EXIT_CONFIG" ]]; then continue; fi
+    if [[ "$rc" -ne 0 ]]; then
+      die_with "$rc" "stage: ${built#Error: }"
+    fi
+    id="$(json_query "$_STAGE_LIST" '[.[] | select(.name == $n)][0].id // empty' -r --arg n "$name")"
+    if [[ -z "$id" ]]; then
+      print_item warning "$name" "missing, rules-sync --apply creates it"
+      continue
+    fi
+    existing="$(tool_run gh api "repos/${slug}/rulesets/${id}" </dev/null)" \
+      || die "stage: cannot read the ruleset ${name} (${id}) of ${slug}"
+    if ! rules_live_matches "$existing" "$built" true; then
+      print_item warning "$name" "differs from rulesets.yaml, rules-sync --apply aligns it"
+    fi
+  done < <(rules_names)
   return 0
 }
 
@@ -108,6 +139,7 @@ main() {
 
   print_header "stage ${slug}"
   print_line "live stage: ${before}"
+  _stage_warn_others "$slug"
   if [[ -z "$stage" ]]; then
     return 0
   fi

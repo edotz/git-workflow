@@ -91,6 +91,11 @@ case_result "a path with a space is listed as it is" "$([[ "$OUT" == *$'untracke
 case_result "a path with a double quote is listed unquoted" "$([[ "$OUT" == *$'untracked\tquote"name.txt'* ]] && echo yes || echo no)"
 rm -f "${repo}/with space.txt" "${repo}/quote\"name.txt"
 
+printf 'x\n' > "${repo}/line"$'\n'"break.txt"
+run_changes "$repo"
+case_result "a path with a newline stops the command and names the path" "$([[ "$RC" -ne 0 && "$OUT" == *'line<LF>break.txt'* ]] && echo yes || echo no)"
+rm -f "${repo}/line"$'\n'"break.txt"
+
 rm "${repo}/keep.txt"
 run_changes "$repo"
 case_result "a deleted file is listed as unstaged" "$([[ "$OUT" == $'unstaged\tkeep.txt' ]] && echo yes || echo no)"

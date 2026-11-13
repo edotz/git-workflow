@@ -1,6 +1,6 @@
 #!/bin/bash
 # Git Worktree Utility Library
-# Requires: core.sh, json.sh, paths.sh, git.sh, git
+# Requires: core.sh, json.sh, paths.sh, git.sh, branch.sh, git
 # Provides: Git worktree operations for isolated feature development
 # Worktrees live in <GIT_WORKFLOW_WORKTREE_DIR or $HOME/worktrees>/<repo-name>/<name with / as ->.
 
@@ -13,6 +13,7 @@ source "${BU_LIB:-${BASH_SOURCE[0]%/*}}/core.sh"
 source "${BU_LIB}/json.sh"
 source "${BU_LIB}/paths.sh"
 source "${BU_LIB}/git.sh"
+source "${BASH_SOURCE[0]%/*}/branch.sh"
 
 # Require git command
 require_command "git" "Install git: apt-get install git"
@@ -132,14 +133,15 @@ worktree_create() {
     die "Local $base_branch is not in sync with origin/$base_branch. Run: git fetch origin && git merge origin/$base_branch"
   fi
 
+  branch_refuse_existing "$name"
+
   logger_info "Creating worktree: $name"
   logger_debug "Path: $path"
 
   mkdir -p "${path%/*}"
 
-  git worktree add "$path" -b "$name" "$base_branch" >/dev/null 2>&1 || \
-    git worktree add "$path" "$name" >/dev/null 2>&1 || \
-    die "Failed to create worktree for branch: $name"
+  git worktree add "$path" -b "$name" "$base_branch" >/dev/null 2>&1 \
+    || die "Failed to create worktree for branch: $name"
 
   logger_success "Worktree created: $path"
   echo "$path"
