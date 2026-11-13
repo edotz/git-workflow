@@ -187,7 +187,8 @@ _release_plan() {
       PENDING_TAGS+=("$tagged")
       continue
     fi
-    if version="$(version_next "$name" "$channel")"; then
+    if version_next "$name" "$channel"; then
+      version="$VERSION_NEXT"
       RELEASE_NAMES+=("$name")
       RELEASE_PREFIXES+=("$prefix")
       RELEASE_VERSIONS+=("$version")
@@ -307,6 +308,7 @@ _release_commit() {
     die "release: the release commit failed, the files of the release were restored"
   fi
   tool_run git tag "$tag" </dev/null
+  version_cache_reset
   print_item ok "release commit" "chore(${name}): release ${tag}"
   return 0
 }

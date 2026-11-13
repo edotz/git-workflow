@@ -21,6 +21,9 @@ source "${BASH_SOURCE[0]%/*}/component.sh"
 
 _VERSION_BUMPED=""
 _VERSION_COUNTED=0
+VERSION_NEXT=""
+VERSION_LATEST_TAG=""
+declare -A _VERSION_TAG_CACHE=()
 VERSION_NOTES_ARGS=()
 _VERSION_READ=""
 _VERSION_PHP_OUT=""
@@ -41,23 +44,37 @@ version_cliff() {
   tool_run sh -c 'cat > "$HOME/cliff.toml" && exec git-cliff --config "$HOME/cliff.toml" "$@"' sh "$@" < "$config"
 }
 
-# Print the latest tag of a component that is reachable from a commit; nothing when it has none.
+# Set VERSION_LATEST_TAG to the latest tag of a component that is reachable from a commit; empty when it has none.
+# Every lookup starts the tool image, so the answer is kept per component, kind and commit until version_cache_reset.
 # Args:
 #   $1 - component name
 #   $2 - which tags: stable (X.Y.Z only, the default) or any (pre-releases too)
 #   $3 - commit, optional (default HEAD)
-# Returns: the tag on stdout, empty without a tag; always status 0
+# Sets: VERSION_LATEST_TAG, empty without a tag; always status 0
 # Example: version_latest_tag web stable
 version_latest_tag() {
-  local name="${1:-}" which="${2:-stable}" rev="${3:-HEAD}" prefix tag=""
+  local name="${1:-}" which="${2:-stable}" rev="${3:-HEAD}" prefix tag="" key
   [[ -n "$name" ]] || die_with "$BU_EXIT_USAGE" "version_latest_tag: component required"
+  key="${name}|${which}|${rev}"
+  if [[ -n "${_VERSION_TAG_CACHE[$key]+set}" ]]; then
+    VERSION_LATEST_TAG="${_VERSION_TAG_CACHE[$key]}"
+    return 0
+  fi
   prefix="$(component_tag_prefix "$name")" || return $?
   if [[ "$which" == "stable" ]]; then
     tag=$(tool_run git describe --tags --abbrev=0 --match "${prefix}v[0-9]*.[0-9]*.[0-9]*" --exclude "${prefix}v*-*" "$rev" </dev/null 2>/dev/null) || tag=""
   else
     tag=$(tool_run git describe --tags --abbrev=0 --match "${prefix}v*" "$rev" </dev/null 2>/dev/null) || tag=""
   fi
-  printf '%s\n' "$tag"  # out:return
+  _VERSION_TAG_CACHE[$key]="$tag"
+  VERSION_LATEST_TAG="$tag"
+  return 0
+}
+
+# Forget the tags version_latest_tag kept. A caller that commits or tags calls it, because HEAD and the tags have moved.
+# Example: version_cache_reset
+version_cache_reset() {
+  _VERSION_TAG_CACHE=()
   return 0
 }
 
@@ -111,7 +128,8 @@ version_notes_args() {
   fi
   local -a head=()
   if [[ "$mode" == "new" ]]; then
-    previous="$(version_latest_tag "$name" "$which")" || return $?
+    version_latest_tag "$name" "$which" || return $?
+    previous="$VERSION_LATEST_TAG"
     if [[ -n "$previous" ]]; then
       head+=("${previous}..HEAD")
     fi
@@ -119,7 +137,8 @@ version_notes_args() {
   else
     sha="$(tool_run git rev-parse --verify --quiet "refs/tags/${tag}^{commit}" </dev/null)" \
       || die_with "$BU_EXIT_NOT_FOUND" "version_notes_args: the tag ${tag} does not exist"
-    previous="$(version_latest_tag "$name" "$which" "${sha}^")" || return $?
+    version_latest_tag "$name" "$which" "${sha}^" || return $?
+    previous="$VERSION_LATEST_TAG"
     if [[ -n "$previous" ]]; then
       head+=("${previous}..${tag}")
     else
@@ -215,7 +234,8 @@ _version_php_render() {
 # Version Functions
 # ============================================
 
-# Print the next version of a component, X.Y.Z or X.Y.Z-<channel>.N.
+# Set VERSION_NEXT to the next version of a component, X.Y.Z or X.Y.Z-<channel>.N. The caller reads it in its own shell
+# and not through a command substitution, so that the tags kept by version_latest_tag stay for the next call.
 # The base version is what git-cliff returns for the commits after the latest stable tag of the component, one
 # --include-path per directory of component_paths; where the tag sits does not matter, and only feat, fix, perf and
 # breaking commits count (D86). Without a channel it is the version. With a channel: when the latest tag of the
@@ -224,8 +244,8 @@ _version_php_render() {
 # Args:
 #   $1 - component name
 #   $2 - channel, optional: lower case letters (alpha, beta, rc)
-# Returns: the version on stdout; status 1 and no output when no commit of the component that counts is newer than its
-#          latest tag
+# Sets: VERSION_NEXT; status 1 and no change of it when no commit of the component that counts is newer than its
+#       latest tag
 # Exits: 2 on a missing or invalid argument, 3 for a component without versions, a failing git-cliff, a git-cliff
 #        result without a version and a pre-release of the wrong shape; never 1, so a caller tells an error from
 #        the status 1 of no change
@@ -244,7 +264,8 @@ version_next() {
   prefix="$(component_tag_prefix "$name")" || return $?
 
   local stable range=""
-  stable="$(version_latest_tag "$name" stable)" || return $?
+  version_latest_tag "$name" stable || return $?
+  stable="$VERSION_LATEST_TAG"
   if [[ -n "$stable" ]]; then
     range="${stable}..HEAD"
   fi
@@ -256,14 +277,15 @@ version_next() {
   local base="$_VERSION_BUMPED"
 
   if [[ -z "$channel" ]]; then
-    printf '%s\n' "$base"  # out:return
+    VERSION_NEXT="$base"
     return 0
   fi
 
   local latest="" line_re="^${prefix}v${base//./\\.}-${channel}\\.[0-9]+\$"
-  latest="$(version_latest_tag "$name" any)" || return $?
+  version_latest_tag "$name" any || return $?
+  latest="$VERSION_LATEST_TAG"
   if [[ ! "$latest" =~ $line_re ]]; then
-    printf '%s\n' "${base}-${channel}.1"  # out:return
+    VERSION_NEXT="${base}-${channel}.1"
     return 0
   fi
 
@@ -278,7 +300,7 @@ version_next() {
   if [[ ! "$counted" =~ $shape_re ]]; then
     die_with "$BU_EXIT_CONFIG" "version_next: expected X.Y.Z-${channel}.N from git-cliff, got '${counted}' (base ${base}, latest tag ${latest})"
   fi
-  printf '%s\n' "$counted"  # out:return
+  VERSION_NEXT="$counted"
   return 0
 }
 
