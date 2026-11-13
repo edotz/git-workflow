@@ -8,7 +8,7 @@ paths:
 Shell command modules of the plugin: git (the daily loop start, commit, pr and check; rules-sync; release, promote, split, worktree, workflow status and setup, branch cleanup, commit lint, shims, token service) and ide (vscode profiles and project setup).
 
 ## Purpose and conventions
-- Two module domains, git (15 commands) and ide (3 commands), each listed in a module.yaml; the module.yaml layout is a framework requirement (developer's answer).
+- Two module domains, git (17 commands) and ide (3 commands), each listed in a module.yaml; the module.yaml layout is a framework requirement (developer's answer).
 - Commands run as `bash $BU_ROOT/app <domain> <command>` (bin/modules/ide/module.yaml).
 - Module scripts run under `set -euo pipefail`.
 - Plugin setting keys in bin/config/env.defaults start with `PLUGIN_EDOTZ_GIT_WORKFLOW_`. The branch settings are the exception: `GIT_WORKFLOW_MAIN_BRANCH` and `GIT_WORKFLOW_RELEASE_BRANCH` are defined in the project-root `.env`, which the framework loads (the process environment wins); scripts read them from the environment with `master` as the fallback in code (D49).
@@ -33,4 +33,4 @@ Shell command modules of the plugin: git (the daily loop start, commit, pr and c
 ## Constraints
 - A change is done when shellcheck is clean (developer's answer).
 - branch-cleanup counts a branch as merged when git cherry finds no unapplied commit, also as one squashed commit on the merge base, or when a merged pull request has it as head (gh through tool_run).
-- branch-cleanup never deletes the main and release branches, main, master, develop, development, staging, production, `release-please--*` and `backport/*` (developer's answer, branch-cleanup.sh:is_protected).
+- branch-cleanup never deletes the main and release branches, main, master, develop, development, staging and production (developer's answer, branch-cleanup.sh:is_protected).
