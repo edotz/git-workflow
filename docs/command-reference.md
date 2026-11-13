@@ -182,7 +182,7 @@ It never writes and never pushes.
 
 ### branch-cleanup
 
-Groups the local and remote branches as `merged`, `stale` or `active`, and deletes the merged ones after the confirmation. A squash-merged branch counts as merged. Protected names (the main and release branches, the patterns of `GIT_WORKFLOW_LEGACY_BRANCHES`, `main`, `master`, `develop`, `development`, `staging`, `production`, `release-please--*` and `backport/*`) are skipped.
+Groups the local and remote branches as `merged`, `stale` or `active`, and deletes the merged ones after the confirmation. A squash-merged branch counts as merged. Protected names (the main and release branches, the patterns of `GIT_WORKFLOW_LEGACY_BRANCHES`, `main`, `master`, `develop`, `development`, `staging`, `production`) are skipped.
 
 ```text
 bash ${BU_ROOT}/app git branch-cleanup [--dry-run] [--force] [--local-only | --remote-only]

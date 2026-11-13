@@ -303,6 +303,5 @@ A new pin key must be added to `TOOL_PIN_KEYS`. The image hash covers exactly th
 Found while reading the code for this manual. Each one is a fact about the code today, not a plan.
 
 1. **`plugin.yaml` names the `claude` adapter** without an `adapters/claude/` directory in this plugin (see [Slash commands](#slash-commands)).
-2. **`branch-cleanup` still protects `release-please--*` and `backport/*`.** Both names belong to the retired old approach; the protection does no harm, and the patterns can go when no repository holds such a branch any more.
-3. **`worktree --start` accepts an existing branch.** Unlike `start`, it checks the existing branch out in the new worktree instead of refusing it.
-4. **The `ide` domain** has no manual in this set. Its three scripts are described above only.
+2. **`worktree --start` accepts an existing branch.** Unlike `start`, it checks the existing branch out in the new worktree instead of refusing it.
+3. **The `ide` domain** has no manual in this set. Its three scripts are described above only.
