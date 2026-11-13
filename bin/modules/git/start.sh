@@ -9,7 +9,6 @@ source "${BU_ROOT}/lib/core.sh"
 source "${BU_LIB}/cli.sh"
 source "${BU_LIB}/git.sh"
 source "${BU_LIB}/output.sh"
-source "${PLUGIN_LIB}/tool.sh"
 source "${PLUGIN_LIB}/branch.sh"
 
 cli_set_spec \
@@ -20,34 +19,6 @@ cli_set_spec \
 # The types of commitlint.config.mjs (type-enum)
 readonly START_TYPES=(feat fix docs style refactor perf test build ci chore)
 readonly START_NAME_RE='^[a-z0-9]+(-[a-z0-9]+)*$'
-
-# ============================================
-# Private Helpers
-# ============================================
-
-# Refuse a branch that exists locally or on origin.
-# The remote side reads the remote-tracking ref of the last fetch, as branch_create does for the main branch; the tool
-# image has no credentials and no route to a local remote, and no library function fetches.
-# Args: $1 - branch
-_start_refuse_existing() {
-  local branch="$1" status=0
-
-  tool_run git rev-parse --verify --quiet "refs/heads/${branch}" </dev/null >/dev/null || status=$?
-  if [[ "$status" -eq 0 ]]; then
-    die_with "${BU_EXIT_FAILURE}" "Branch exists locally: ${branch}"
-  elif [[ "$status" -ne 1 ]]; then
-    die_with "${BU_EXIT_FAILURE}" "Cannot read the refs of the repository (status ${status})"
-  fi
-
-  status=0
-  tool_run git rev-parse --verify --quiet "refs/remotes/origin/${branch}" </dev/null >/dev/null || status=$?
-  if [[ "$status" -eq 0 ]]; then
-    die_with "${BU_EXIT_FAILURE}" "Branch exists on origin: ${branch}"
-  elif [[ "$status" -ne 1 ]]; then
-    die_with "${BU_EXIT_FAILURE}" "Cannot read the refs of the repository (status ${status})"
-  fi
-  return 0
-}
 
 # ============================================
 # Main Function
@@ -79,7 +50,7 @@ main() {
   fi
 
   local branch="${type}/${name}"
-  _start_refuse_existing "$branch"
+  branch_refuse_existing "$branch"
 
   branch_create "$branch"
   print_line "$branch"

@@ -219,6 +219,7 @@ Tests live in `tests/<area>/<case>.sh`, one area per command or library:
 | `git-split` | `dry-run.sh`, `apply.sh` | the dry run and the apply against bare child repositories inside the monorepo's git directory |
 | `git-start` | `run.sh` | the branch in the current checkout, no upstream, carried changes, the refusals |
 | `git-status` | `runs.sh` | the `runs` field of `workflow-status` with a stubbed `gh` |
+| `git-worktree` | `run.sh` | the worktree of a new branch, the refusals of an existing branch and an existing worktree |
 | `git-version` | `range.sh` | `version_next` and `version_notes_args` on throwaway repositories |
 | `token-service` | `bind.sh`, `check.sh` | the address the service listens on; `check.sh` runs it against the sandbox App: a narrowed token, the refusals, a log without tokens |
 
@@ -254,7 +255,7 @@ The classification below comes from reading the code of each file and the module
 |---|---|
 | Host tools only (git, jq, bash) | `git-remote/run.sh`, `git-shims/run.sh`, `git-rules/build.sh` |
 | Host tools and the plugin's `node_modules` (commitlint, shellcheck): run `npm install` in the plugin root first | `git-check/run.sh`, `git-commit/lint.sh`, `git-pr/title.sh`, `git-pr/dry-run.sh` |
-| Docker and the tool image (the module calls `tool_run` or `tool_image_ensure`) | `git-commit/run.sh`, `git-promote/ff.sh`, `git-promote/baseline.sh`, `git-release/dry-run.sh`, `git-release/multi.sh`, `git-shims/push.sh`, `git-split/dry-run.sh`, `git-split/apply.sh`, `git-start/run.sh`, `git-status/runs.sh`, `git-version/range.sh` |
+| Docker and the tool image (the module calls `tool_run` or `tool_image_ensure`) | `git-commit/run.sh`, `git-promote/ff.sh`, `git-promote/baseline.sh`, `git-release/dry-run.sh`, `git-release/multi.sh`, `git-shims/push.sh`, `git-split/dry-run.sh`, `git-split/apply.sh`, `git-start/run.sh`, `git-status/runs.sh`, `git-version/range.sh`, `git-worktree/run.sh` |
 | Docker stubbed on `PATH`, no real Docker | `git-rules/sync.sh`, `git-rules/foreign.sh` |
 | Docker Compose, the sandbox GitHub App and its private key file (`APP_KEY_PATH`), network | `token-service/check.sh` |
 
