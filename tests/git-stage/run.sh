@@ -208,6 +208,8 @@ new_state
 run_stage "$APP"
 expect_equal "report without a master ruleset exits 0" "$RC" 0
 expect_out "report without a master ruleset says none" "live stage: none"
+expect_out "report warns about the missing release ruleset" "release — missing, rules-sync --apply creates it"
+expect_not_out "report leaves out legacy, whose branch setting is blank" "legacy"
 
 seed "$APP" development
 run_stage "$APP"
@@ -258,6 +260,17 @@ run_stage "$APP"
 expect_out "default parameters added by GitHub do not make a drift" "live stage: production"
 run_stage "$APP" production
 expect_out "the stage is unchanged with those parameters" "unchanged: already production"
+expect_not_out "a synced release ruleset is not warned about" "differs from rulesets.yaml"
+
+release_file=""
+for ruleset_file in "${STUB_DIR}"/rulesets/*.json; do
+  if [[ "$(jq -r '.name' "$ruleset_file")" == "release" ]]; then release_file="$ruleset_file"; fi
+done
+jq -c '.enforcement = "disabled"' "$release_file" >"${release_file}.new"
+mv "${release_file}.new" "$release_file"
+run_stage "$APP" production
+expect_out "a drifted release ruleset is warned about" "release — differs from rulesets.yaml, rules-sync --apply aligns it"
+expect_out "the drift of release leaves the stage of master alone" "unchanged: already production"
 
 new_state
 seed "$APP" development
