@@ -4,8 +4,8 @@
 # Output: staged, unstaged and untracked lines in that order, each state sorted by path; a file that is staged and
 #         changed again is listed under both states; a rename is listed as its old path and its new path, so that a
 #         commit of both paths takes the whole rename; a clean tree prints nothing
-# Decisions: git lists the paths NUL separated (-z), so a path is never quoted; a path with a newline breaks the line
-#            format and is not supported
+# Decisions: git lists the paths NUL separated (-z), so a path is never quoted; a path with a newline would break the line
+#            format, so the command stops with an error that names the path
 set -euo pipefail
 
 source "${BU_ROOT}/lib/core.sh"
@@ -36,11 +36,14 @@ _changes_cleanup() {
 # git or docker ends the command instead of leaving an empty list.
 # Args: $1 - state  $2.. - the git command and its arguments, without -z
 _changes_list() {
-  local state="$1" path
+  local state="$1" path nl=$'\n'
   shift
   tool_run git -c core.quotepath=off "$@" -z </dev/null > "$_CHANGES_TMP" \
     || die "changes: git could not list the ${state} files"
   while IFS= read -r -d '' path; do
+    if [[ "$path" == *"$nl"* ]]; then
+      die "changes: a ${state} path holds a newline and cannot be listed one per line: ${path//"$nl"/<LF>}"
+    fi
     printf '%s\t%s\n' "$state" "$path" # out:return
   done < <(sort -z "$_CHANGES_TMP")
   return 0
