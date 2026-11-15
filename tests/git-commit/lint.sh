@@ -65,4 +65,8 @@ RC=0
 OUT="$(bash "$lint" --help 2>&1)" || RC=$?
 case_result "--help prints the usage and is no missing file" "$([[ "$RC" -eq 0 && "$OUT" == *"Usage"* && "$OUT" != *"not found"* ]] && echo yes || echo no)"
 
+RC=0
+OUT="$(bash "$lint" --rules 2>&1)" || RC=$?
+case_result "--rules prints the types and the header limit of the config" "$([[ "$RC" -eq 0 && "$OUT" == *"types: feat fix"* && "$OUT" == *"at most 100 characters"* ]] && echo yes || echo no)"
+
 exit "$failed"

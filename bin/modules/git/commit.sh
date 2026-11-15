@@ -62,7 +62,7 @@ _commit_draft() {
   local diff prompt message
   diff="$(tool_run git diff --cached "$@" </dev/null)"
   diff="${diff:0:${COMMIT_DIFF_LIMIT}}"
-  prompt="Write the commit message for the staged diff below, as one conventional commit: type(scope): subject, in the imperative, lower case, at most 72 characters, no trailing period. Add a body only when the subject does not carry the change. Print the message and nothing else."$'\n\n'"${diff}"
+  prompt="Write the commit message for the staged diff below, as one short conventional commit line: type(scope): subject, in the imperative, lower case, at most 72 characters, no trailing period, no body. Print the message and nothing else."$'\n\n'"${diff}"
   # The empty model lets the adapter pick its small model; a missing model makes it forward the prompt as a flag.
   message="$(provider_run_prompt "$prompt" "")" || die "commit: the provider gave no message, give one with --message"
   echo "$message" # out:return

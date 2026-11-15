@@ -61,8 +61,8 @@ bash ${BU_ROOT}/app git commit src/login.js
 What the command does, in order:
 
 1. Stages the named paths with `git add -- <paths>`. Other files that are already staged stay staged and are not committed. Without paths it stages nothing and takes exactly the files that are already staged; to split a large change into groups, stage one group (or name its paths) and commit, then the next. `bash ${BU_ROOT}/app git changes` lists what is still open.
-2. Unless `--message` is given, drafts the message from the staged diff of those paths with the Claude CLI (the provider). The draft is asked for in the form `type(scope): subject`. The diff is cut at 30000 characters.
-3. Prints the message under the header `commit message` and lints it with commitlint. A refused message commits nothing and restores the index.
+2. Unless `--message` is given, drafts the message from the staged diff of those paths with the Claude CLI (the provider). The draft is asked for as one short line `type(scope): subject`, at most 72 characters, no body. The diff is cut at 30000 characters.
+3. Prints the message under the header `commit message` and lints it with commitlint. A refused message commits nothing and restores the index; in Claude Code, `/git:commit` then shortens the message and runs it again, at most twice.
 4. Asks `Commit with this message? [y/N]`. Only `y` or `yes` commits. Any other answer, including an empty input, cancels.
 5. Commits with your git identity. Repository hooks are switched off for this commit, because the message was just linted.
 

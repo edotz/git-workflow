@@ -239,11 +239,13 @@ Validates a commit message file against `commitlint.config.mjs`. The hooks call 
 
 ```text
 bash ${BU_ROOT}/app git lint-commit <commit-msg-file>
+bash ${BU_ROOT}/app git lint-commit --rules
 ```
 
 | Argument | Meaning |
 |---|---|
-| `commit-msg-file` | File that holds the message. Required. |
+| `commit-msg-file` | File that holds the message. Required unless `--rules` is given. |
+| `--rules` | Print the allowed types and the header limit of the config and exit 0. `/git:commit` reads it before it writes a message. |
 | `-h, --help` | Print the usage and exit 0. |
 
 Needs commitlint in the plugin root (`npm install`). Needs no Docker.
