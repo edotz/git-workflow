@@ -1,0 +1,9 @@
+version: "1.0"
+agents:
+  - name: planner
+    skills:
+      - plan-drafting
+      - working-mode-choice
+      - git-workflow
+      
+  
