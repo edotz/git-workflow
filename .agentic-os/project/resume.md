@@ -1,31 +1,32 @@
-# Handoff plugin (2026-11-12, third close)
+# Handoff plugin (2026-11-13, sixth close)
 
 ## State
-- PRs 8 to 16 of edotz/git-workflow are merged, master is at d3054db: squash suffix title lint, 12 manuals in docs/, `app git start` creates the branch in the checkout, branch-cleanup deletes merged branches (lease, github.com only), token service binds loopback, master ruleset follows GIT_WORKFLOW_MAIN_BRANCH, lint-commit --help, plan ledger, the git-workflow skill (plugin tier, three references).
-- PLAN-plugin: T6.22 done, D87 (suffix), D88 (T6.20 and T6.21 dropped, continuation plan later). Only T6.19 is pending.
-- Unpushed: local branch docs/pre-commit-belongs-to-agentic-os (c9304e6); the push to master was rejected by the ruleset.
-- Uncommitted here: settings.local.json and .claude/output-styles/ (not ours).
-- Vendor repos typo3-cms and php-project: branch feat/php-8-4-migration, hooks commit-msg and pre-push enabled (hooks.json uncommitted), shims reinstalled, no migration commit yet.
-- sdv.bewerber, untracked: bin/composer-dev, docker-compose.vendor-dev.yml, docs/261112-edotz-vendor-repos-during-the-migration.md.
+- PLAN-plugin is done. PRs 21 to 24 are merged: no GitHub Release in a repository of several components; scope templates; stage warns about a drifted release or legacy ruleset, worktree --start refuses an existing branch (branch_refuse_existing), changes stops on a newline path; version_next counts and bumps in one git-cliff run and version_latest_tag keeps its answer until version_cache_reset. Master is e239deb, local branches deleted, token service stopped.
+- Migration released: typo3-cms v3.0.0 and the eight php-project components 3.0.0, 3.x created by promote, children split twice. Rulesets of both repos: release 3.x, legacy 1.x,2.x. edotz.cli adopted, no release.
+- Uncommitted here: .agentic-os/project memory, resume, roadmap, PLAN-plugin.json and .md. sdv.bewerber: docs/261112-edotz-vendor-repos-during-the-migration.md updated, uncommitted there.
 
 ## Open
-1. START: the live master ruleset of edotz/git-workflow is production-form, so direct pushes fail in stage development. Run `rules-sync --apply` with stage development (token service, production key) or land the docs branch by PR.
-2. Rebuild and restart the token service image (loopback bind of PR 12).
-3. T6.19 typo3-cms first release and promote baseline of 2.x after the migration feat merges; then the P6 gate, m6-retire-old done, plan status done.
-4. Continuation plan: first releases of php-project and nodejs-project (D88).
-5. Leftovers: drift warning for stage versus live ruleset, branch-cleanup still protects release-please-- and backport/, worktree --start accepts an existing branch, git-cliff three docker starts per component.
+1. START: sdv.bewerber: constraints to ^3.0, vcs entries, composer update; bin/composer-dev line 32 writes ^2.0; D9 of PLAN-migration-02 names 2.x (amend with /aos:plan there).
+2. Questions for the developer: what typo3-cms 2.x holds (published v2.0.x need TYPO3 13.4 and PHP 8.2); whether cli and nodejs-project follow the 3.x scheme.
+3. Continuation plan: first release of nodejs-project (D88); cli only if the migration changes it.
+4. Compile the framework so .claude/rules shows the refreshed templates; commit the .agentic-os/project files on a chore branch (master takes no direct push).
+5. Left: the form command type belongs to edotz.claude-code; APP_KEY_PATH in the token-service test stays.
 
 ## Decided
-- D86, D87, D88 stand. The migration releases as `feat`, minor: it keeps the 2.x line and sdv ^2.0.
-- The pre-commit shim and mapping belong to agentic-os, not the plugin; PR 13 stays.
-- One branch via /git:start, logical commits via /git:commit; no worktrees; findings are fixed by hand, no backlog items.
-- The skill ships in the plugin tier, trigger by description only, agent playbooks in references, commands as `bash ${BU_ROOT}/app`; manual names must not collide with framework docs.
+- The migration ships as major releases; 1.x and 2.x legacy, 3.x release branch; promote creates 3.x, 2.x is never moved (D89, project-major-release-branch-roles).
+- Only a repository of one component makes a GitHub Release; Composer reads the tags of the children.
+- worktree.sh and branch.sh keep host git: they work on the developer's checkout and git worktree add cannot run in the tool image (the worktree sits outside the mount). Not a defect.
+- The apply notes are not reused for the GitHub Release: git-cliff writes the file or prints, so reuse would parse CHANGELOG.md for no saving.
+- stage only warns about release and legacy; the apply still switches master only.
+- A task is never superseded: the schema has dropped.
 
 ## Traps
-- GIT_WORKFLOW_RELEASE_BRANCH=1.x is exported in the shell over the .env.
-- origin is SSH without a key: push by https with the gh credential helper.
-- `app git start` needs Docker; when it fails nothing is created, never cherry-pick onto master.
-- Subagents inherit memory, so a pressure baseline is contaminated; the classifier denies reading .env.
+- This agent shell exports BU_BOOTSTRAPPED, PROJECT_ROOT and GIT_WORKFLOW_*: a module run in a throwaway repo works on the real one, and app git in another repo skips its .env. Use env -u PROJECT_ROOT, unset them per repo.
+- A cache set inside $( ) is lost: version_next and version_latest_tag set VERSION_NEXT and VERSION_LATEST_TAG.
+- die expands a backslash-n in its message: print a newline as <LF>.
+- Two tags on one commit: git describe picks the older; a test needs a new commit before the second tag.
+- After a pull by URL origin/master is stale: fetch '+refs/heads/master:refs/remotes/origin/master'. origin is SSH without a key: push and pull by https with the gh credential.
+- app git pr takes the title of the commit; a squash merge keeps only the subject for git-cliff.
 
 ## Read first
-Memory: MEMORY.md, project-git-workflow-live-ruleset-stage-drift, project-sdv-bewerber-driver, reference-production-app, project-token-service-hosting, feedback-daily-loop-branch-not-worktree. PLAN-plugin, docs/README.md.
+Memory: MEMORY.md, project-plugin-open-leftovers, project-major-release-branch-roles, project-sdv-bewerber-driver, reference-production-app, project-token-service-hosting, feedback-pr-title-via-git-pr. The sdv.bewerber doc above.

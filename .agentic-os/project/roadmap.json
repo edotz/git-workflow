@@ -41,7 +41,7 @@
           "id": "m6-retire-old",
           "name": "Retire the old approach",
           "gate": "No old workflow remains in a consuming project, and the project context carries the new wording.",
-          "status": "active"
+          "status": "done"
         }
       ]
     }

@@ -20,7 +20,7 @@ Five notes in the concept's notes directory, one of them recording the sandbox: 
 - P3 Release core: 11 tasks
 - P4 Daily loop and guards: 18 tasks
 - P5 Monorepo: 5 tasks
-- P6 Retire the old approach: 20 tasks
+- P6 Retire the old approach: 19 tasks
 
 ### Cost
 
@@ -43,7 +43,7 @@ Several GitHub behaviours the release rests on are unverified and may be refuted
 Each marked line of the white paper has a row with a result and evidence, each refuted claim names the decision it puts in doubt, and the developer can read the token service contract and the component declaration as settled. The milestone m1-foundations gate can then be called met.
 
 **Track:** deliberative  **Items:** B-1
-**Status:** active  **Mode:** subagents
+**Status:** done  **Mode:** subagents
 
 ## P1 Foundations: checked claims, token service, component declaration (detailed)
 
@@ -495,7 +495,7 @@ Remove the old CI except status-checks.yml, replace the classic protection code,
 | Give the split apply a token set with the workflows permission | T6.16 | inline | T6.14 | done |
 | Count a release from the commits after the latest tag and only for feat, fix, perf and breaking changes | T6.17 | inline | - | done |
 | Declare the plugin repository itself as a component so that the pull request and push commands work in it | T6.18 | inline | - | done |
-| First release of typo3-cms and the one-time move of its release branch with promote baseline | T6.19 | developer | T6.17, T6.9, T6.3 | pending |
+| First release of typo3-cms and the one-time move of its release branch with promote baseline | T6.19 | developer | T6.17, T6.9, T6.3 | dropped |
 | First release of php-project and the one-time move of its release branch with promote baseline | T6.20 | developer | T6.17, T6.9, T6.5 | dropped |
 | First release of nodejs-project and the one-time move of its release branch with promote baseline | T6.21 | developer | T6.17, T6.9, T6.6 | dropped |
 | Lint the pull request title with the squash suffix in pr.sh and status-checks.yml | T6.22 | inline | T6.15 | done |
@@ -751,6 +751,7 @@ Gate: (for r in edotz.typo3-cms edotz.php-project edotz.nodejs-project; do d=$HO
 - D86 [decided] Which commits make app git release propose a release of a component? -> Only feat, fix, perf and breaking commits; chore, ci, docs, test, style, refactor and build commits in a component path do not release. (Spike in the tool image: with the default configuration of git-cliff any commit in the component path bumps at least a patch, so a ci commit in a package proposes a patch release; release-please did not release for those types.; owner, 2026-11-11, durable)
 - D87 [decided] How does the title lint account for the " (#N)" that a squash merge appends to the subject? -> status-checks.yml lints the title plus " (#<pull request number>)", exactly what lands on the main branch; pr.sh does not know the number before the pull request exists and lints the title plus the fixed reserve " (#9999)" (8 characters), offline, so a title of 93 or more characters is refused before the push. (GitHub appends " (#N)" to the squash subject, so a title of 96 or more characters passes the title lint and fails the commit lint on master (PR 5 became 101 characters against the header limit of 100); the fixed reserve keeps the dry run free of a token and a network read and errs on the safe side.; owner, 2026-11-12, durable)
 - D88 [decided] How do T6.20 and T6.21 leave P6, now that the first releases of php-project and nodejs-project wait for the first real changes of the sdv.bewerber migration? -> T6.20 and T6.21 are dropped; their first releases and the promote baselines of the release branches 2.x (php-project) and 1.x (nodejs-project) become tasks of a continuation plan that follows PLAN-plugin and is planned once the first real change exists (for php-project the PHP >=8.4 <8.5 constraint, D6 of the typo3-13-4-migration concept). T6.19 stays: typo3-cms has its releasable fix commit and the developer runs its release after the first migration tasks. (The baseline tags of php-project and nodejs-project sit on HEAD and no commit after them is a feat, fix, perf or breaking one, so app git release proposes nothing and promote refuses a tag that is no release commit (D81); an artificial commit or a relaxed promote was not chosen. Keeping the tasks would hold the P6 gate and the plan status done until the sdv migration has produced those changes.; owner, 2026-11-12, durable)
+- D89 [decided] What becomes of T6.19, the first release of typo3-cms with the baseline promote of 2.x, now that the migration ships as major releases? -> T6.19 is dropped. The migration shipped as major releases (typo3-cms v3.0.0, the eight php-project components 3.0.0) and promote created the absent release branch 3.x at the release tag without a baseline; 1.x and 2.x stay as legacy lines with the tags legacy/1.x-freeze and legacy/2.x-freeze, so the one-time move of 2.x with promote baseline (D81) is not made. D89 replaces only the sentence of D88 that says T6.19 stays; the drop of T6.20 and T6.21 in D88 stands. (The verify of T6.19 asks for the tag legacy/pre-promote and a 2.x that sits on a release commit; with 2.x kept as a legacy line and 3.x as the release branch neither can hold, and its note section would describe a move that never happened.; owner, 2026-11-13, durable)
 
 ## Revisions
 
@@ -804,3 +805,4 @@ Gate: (for r in edotz.typo3-cms edotz.php-project edotz.nodejs-project; do d=$HO
 - 2026-11-11 Reword the verify of T6.18: no npm ci or npm install in components.yaml instead of no mention of node_modules, because the check prefers the local shellcheck through the PATH and needs no install on the runner (affects T6.18) -- The verify as written rejected a check that works on the runner and on the machine of a developer; approved by the developer (owner)
 - 2026-11-12 Record D87 (the title lint counts the squash suffix: exact number in CI, fixed reserve in pr.sh) and add T6.22 to lint the pull request title with the suffix in pr.sh and status-checks.yml (affects P6, T6.22, D87) -- GitHub appends ' (#N)' to the squash subject, so a title of 96 or more characters passes the title lint and fails the commit lint on master (PR 5 became 101 characters); the developer chose the fixed 4-digit reserve in pr.sh and approved the amendment on 2026-11-12 (claude)
 - 2026-11-12 Record D88 and drop T6.20 and T6.21: the first releases and promote baselines of php-project and nodejs-project move to a continuation plan that follows PLAN-plugin (affects P6, T6.20, T6.21, D88) -- Their baseline tags sit on HEAD and no feat, fix, perf or breaking commit follows, so release proposes nothing and promote refuses a baseline tag (D81); the first real change comes with the sdv.bewerber migration; the developer chose to drop them and continue in a later plan and approved the amendment on 2026-11-12 (claude)
+- 2026-11-13 Drop T6.19 and record D89: the migration ships as major releases and promote creates 3.x without a baseline, so the baseline promote of 2.x is not made (affects P6, T6.19, D89, D88) -- The migration shipped as typo3-cms v3.0.0 and php-project 3.0.0; 1.x and 2.x stay legacy lines and 3.x is the release branch, so the verify of T6.19 (legacy/pre-promote, 2.x on a release commit) can never hold; the developer asked to set T6.19 superseded, which the schema holds as dropped (claude)

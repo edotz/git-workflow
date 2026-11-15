@@ -1,0 +1,541 @@
+{
+  "schema": "plan/2",
+  "id": "PLAN-plugin-02",
+  "goal": "The token service container starts by itself when a Claude session opens through the module command app git token-start, and app git token-stop stops it, so release, promote, split and rules-sync find a service at the default address.",
+  "track": "deliberative",
+  "items": [
+    "B-3"
+  ],
+  "status": "active",
+  "mode": "subagents",
+  "abstract": {
+    "summary": "Two new commands of the git module, token-start and token-stop, bring the token-service container of docker-compose.yaml up and stop it from the plugin root. A thin session-start hook calls token-start and stays silent. The hook is switched on in the hook registry, and the command reference, the architecture table and the token service manual describe the three. A test with a stubbed docker proves the start, the stop and the silent skips.",
+    "outcome": "Opening a session on a machine with Docker running and the App ID and the key file set in the .env of the plugin root leaves the token-service container running on 127.0.0.1 port 8790. Without Docker or without those settings the session opens with no output and no error. app git token-stop stops the container by hand.",
+    "cost": "3 author runs (two bash-author runs for the commands and the test, one hook-author run for the hook), each followed by one review, plus one inline edit of the registry and three manuals.",
+    "risks": "The container holds an App key for as long as it runs and nothing stops it at session end; the developer stops it with token-stop. One App runs at a time and a running container of the other App is kept as it is. The write scopes of the tasks are not checked against the declared scopes before the write.",
+    "success": "With the container removed and Docker running, a new session shows docker ps with token-service up and a POST to http://127.0.0.1:8790/token answers 401. app git token-stop leaves the container stopped. With Docker stopped the session opens with no message."
+  },
+  "review_focus": [
+    {
+      "task": "T1.1",
+      "focus": "A container of the other App is already running: up -d keeps it, so the session gets the wrong App without any sign."
+    },
+    {
+      "task": "T1.1",
+      "focus": "token-start and token-stop print no App ID, key path or key content in any branch, including a failing docker compose call."
+    },
+    {
+      "task": "T1.2",
+      "focus": "The hook discards the output and the exit code of token-start and exits 0 on every path, and a slow docker compose up does not delay the opening of the session beyond a bounded time."
+    }
+  ],
+  "phases": [
+    {
+      "id": "P1",
+      "title": "Token service starts with the session",
+      "state": "detailed",
+      "gate": {
+        "run": "bash tests/token-service/start-stop.sh && bash ${BU_ROOT}/app lint hooks"
+      },
+      "tasks": [
+        {
+          "id": "T1.1",
+          "title": "Write the module commands token-start and token-stop",
+          "depends": [],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/shims.sh",
+              "why": "The form of a small git module command with a --check style flag, the spec header and the exit codes."
+            },
+            {
+              "ref": "docker-compose.yaml",
+              "why": "The service token-service, its variables TOKEN_SERVICE_APP_ID and TOKEN_SERVICE_KEY_FILE and the loopback port."
+            },
+            {
+              "ref": "docs/github-app-and-token-service.md",
+              "why": "The start and stop commands with --env-file .env.defaults --env-file .env."
+            },
+            {
+              "ref": "bin/modules/git/module.yaml",
+              "why": "The registration of a command with requires, description, examples and arguments."
+            },
+            {
+              "ref": "D1",
+              "why": "Every project with the plugin starts the service, so the commands resolve the plugin root from PLUGIN_ROOT, not from the working directory."
+            },
+            {
+              "ref": "D5",
+              "why": "The App comes from the .env of the plugin root and a running container is kept."
+            },
+            {
+              "ref": "D7",
+              "why": "No --build; compose builds only a missing image."
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/modules",
+              "paths": [
+                "bin/modules/git/token-start.sh",
+                "bin/modules/git/token-stop.sh",
+                "bin/modules/git/module.yaml"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "bash -n bin/modules/git/token-start.sh && bash -n bin/modules/git/token-stop.sh && node_modules/.bin/shellcheck bin/modules/git/token-start.sh bin/modules/git/token-stop.sh && bash ${BU_ROOT}/app git token-start --help >/dev/null && bash ${BU_ROOT}/app git token-stop --help >/dev/null",
+            "from": "environment fact: both scripts parse, are shellcheck clean and answer --help through the registered commands"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "token-start takes no argument. It runs docker compose --project-directory \"$PLUGIN_ROOT\" --env-file \"$PLUGIN_ROOT/.env.defaults\" --env-file \"$PLUGIN_ROOT/.env\" up -d token-service, without --build and from any working directory. It sets TOKEN_SERVICE_UID and TOKEN_SERVICE_GID from id -u and id -g when they are unset. It refuses with a one-line reason and a non-zero exit when docker is missing, docker info fails, the .env of the plugin root is missing, or TOKEN_SERVICE_APP_ID or TOKEN_SERVICE_KEY_FILE is empty there. token-stop takes no argument and runs the same compose form with stop token-service; a service that is not running is no failure. Both register in module.yaml with requires [docker].",
+            "output": "bin/modules/git/token-start.sh and token-stop.sh and two entries in module.yaml. Each prints one line on success, and never the App ID, the key path or the key content.",
+            "pattern": "bin/modules/git/shims.sh: the form of a small git module command",
+            "target": "new"
+          },
+          "why": "The privileged commands stop with service unreachable when no container runs, and today the developer types the compose lines by hand.",
+          "result": "Two documented module commands that start and stop the token-service container.",
+          "done": "app git token-start and app git token-stop are registered, shellcheck is clean and each answers --help; a reader sees that start refuses loudly on a missing precondition and that both call compose with the plugin root as project directory.",
+          "produces": [
+            {
+              "name": "git token-start",
+              "signature": "app git token-start, no arguments, exit 0 started, non-zero with a reason when a precondition is missing"
+            },
+            {
+              "name": "git token-stop",
+              "signature": "app git token-stop, no arguments, exit 0 stopped or not running"
+            }
+          ]
+        },
+        {
+          "id": "T1.2",
+          "title": "Write the session-start hook that calls token-start",
+          "depends": [
+            "T1.1"
+          ],
+          "owner": "hook-author",
+          "inputs": [
+            {
+              "ref": "bin/hooks/session-start/git-shims",
+              "why": "The form of a delegating session-start hook of the plugin: advisory, output none, exit 0 when nothing applies."
+            },
+            {
+              "ref": "D8",
+              "why": "The command refuses loudly, the hook discards it and exits 0."
+            }
+          ],
+          "writes": [
+            {
+              "scope": "bin/hooks",
+              "paths": [
+                "bin/hooks/session-start/token-service"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "test -x bin/hooks/session-start/token-service && bash -n bin/hooks/session-start/token-service && grep -q 'timeout 20' bin/hooks/session-start/token-service && grep -q 'git token-start' bin/hooks/session-start/token-service",
+            "from": "environment fact: the hook file is executable, parses, bounds the call with timeout 20 and calls token-start"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "No arguments. Event key session-start. The hook runs timeout 20 bash ${BU_ROOT}/app git token-start with stdout and stderr discarded and exits 0 whatever it returns, a timeout included. It never starts the service by itself.",
+            "output": "bin/hooks/session-start/token-service, executable, with the header line # aos-hook: output=none advisory=true. Prints nothing on every path.",
+            "pattern": "bin/hooks/session-start/git-shims: the form of a session-start hook that delegates and stays advisory",
+            "target": "new"
+          },
+          "why": "A hook is what runs at session start, and a session must open the same for a developer without Docker or a key.",
+          "result": "A silent hook that starts the service through the module command.",
+          "done": "The file exists, is executable and parses; a reader sees that it calls token-start under timeout 20, discards its output and exits 0.",
+          "consumes": [
+            {
+              "from": "T1.1",
+              "name": "git token-start",
+              "signature": "app git token-start, no arguments, exit 0 started, non-zero with a reason when a precondition is missing"
+            }
+          ],
+          "produces": [
+            {
+              "name": "session-start/token-service",
+              "signature": "hook script bin/hooks/session-start/token-service, event session-start, no arguments"
+            }
+          ]
+        },
+        {
+          "id": "T1.3",
+          "title": "Write the test of the commands and the hook with a stubbed docker",
+          "depends": [
+            "T1.1",
+            "T1.2"
+          ],
+          "owner": "bash-author",
+          "inputs": [
+            {
+              "ref": "tests/token-service/check.sh",
+              "why": "The form of a case script of this suite: ok and FAIL lines, exit 1 on a failed case."
+            },
+            {
+              "ref": "bin/modules/git/token-start.sh",
+              "why": "The command under test."
+            },
+            {
+              "ref": "bin/hooks/session-start/token-service",
+              "why": "The hook under test."
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                "tests/token-service/start-stop.sh"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "bash tests/token-service/start-stop.sh",
+            "from": "environment fact: the test script exits 0 when all its cases hold"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "No arguments and no Docker. The script builds a temp plugin root with a .agentic-os directory and a .env that holds sentinel values for TOKEN_SERVICE_APP_ID and TOKEN_SERVICE_KEY_FILE. As the sibling tests do (tests/git-promote/ff.sh, tests/git-shims/run.sh), it unsets PROJECT_ROOT, AOS_ROOT, SESSION_DIR and AOS_TIER_CHAIN and exports PLUGIN_ROOT and PLUGIN_LIB. It puts a stub docker first on a PATH that holds only the stub and basic tools, the stub records its arguments, and it runs token-start, token-stop and the hook. Cases: start sees compose --project-directory <root> --env-file <root>/.env.defaults --env-file <root>/.env up -d token-service; start from another working directory sees the same arguments; docker info fails, .env missing and key file empty each refuse start with a reason and no compose call, and the .env missing case proves that the temp root is the one read, because the real plugin .env exists; stop sees the same form with stop token-service; the hook prints nothing and exits 0 in the success case and in each refusal case; a stub docker that sleeps longer than 20 seconds makes the hook return within the bound with exit 0 and no output. Every case greps its output for the sentinel App ID and the sentinel key path and fails on a hit.",
+            "output": "One line per case, ok <case> or FAIL <case>; exit 0 when all hold, 1 otherwise.",
+            "pattern": "tests/token-service/check.sh: the form of a case script of this suite",
+            "target": "new"
+          },
+          "why": "The hook runs at every session start and must never block or leak; only a test shows that every refusal is loud for the command and silent for the hook.",
+          "result": "A test of start, stop and the hook that needs no Docker.",
+          "done": "bash tests/token-service/start-stop.sh prints one ok line per case and exits 0.",
+          "consumes": [
+            {
+              "from": "T1.1",
+              "name": "git token-start",
+              "signature": "app git token-start, no arguments, exit 0 started, non-zero with a reason when a precondition is missing"
+            },
+            {
+              "from": "T1.2",
+              "name": "session-start/token-service",
+              "signature": "hook script bin/hooks/session-start/token-service, event session-start, no arguments"
+            }
+          ]
+        },
+        {
+          "id": "T1.4",
+          "title": "Enable the hook in the registry and describe the commands in the manuals",
+          "depends": [
+            "T1.2"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": ".agentic-os/hooks/hooks.json",
+              "why": "The shared list where a project enables a hook by name."
+            },
+            {
+              "ref": "docs/architecture.md",
+              "why": "The table of hook scripts with the row of session-start/git-shims."
+            },
+            {
+              "ref": "docs/command-reference.md",
+              "why": "The section per git command."
+            },
+            {
+              "ref": "docs/github-app-and-token-service.md",
+              "why": "The section Start and stop with the compose lines."
+            },
+            {
+              "ref": "D3",
+              "why": "The stop stays manual; the manual names token-stop for it."
+            },
+            {
+              "ref": "docs/troubleshooting.md",
+              "why": "Line 27 tells the reader to start the token-service service by hand."
+            }
+          ],
+          "writes": [
+            {
+              "scope": ".",
+              "paths": [
+                ".agentic-os/hooks/hooks.json",
+                "docs/architecture.md",
+                "docs/command-reference.md",
+                "docs/github-app-and-token-service.md",
+                "docs/troubleshooting.md"
+              ]
+            }
+          ],
+          "verify": {
+            "run": "jq -e '.shared[] | select(.name == \"session-start/token-service\" and .enabled == true)' .agentic-os/hooks/hooks.json >/dev/null && bash ${BU_ROOT}/app lint hooks && grep -q 'token-start' docs/command-reference.md && grep -q 'token-stop' docs/command-reference.md && grep -q 'session-start/token-service' docs/command-reference.md && grep -q 'token-start' docs/github-app-and-token-service.md && grep -q 'token-stop' docs/github-app-and-token-service.md && grep -q 'session-start/token-service' docs/github-app-and-token-service.md && grep -q 'session-start/token-service' docs/architecture.md && grep -q 'token-start.sh' docs/architecture.md && grep -q 'token-stop.sh' docs/architecture.md && grep -q 'start-stop.sh' docs/architecture.md && grep -q 'token-start' docs/troubleshooting.md && bash ${BU_ROOT}/app lint snapshots",
+            "from": "environment fact: hooks.json lists the hook as enabled, the hook registration and the snapshots lint clean and each of the four docs names what the task wrote there"
+          },
+          "status": "pending",
+          "brief": {
+            "arguments": "Run bash ${BU_ROOT}/app hooks sync, then bash ${BU_ROOT}/app hooks enable session-start token-service and check the entry in .agentic-os/hooks/hooks.json. After the enable, run bash ${BU_ROOT}/app compile all so that the hook inventory snapshot follows, and check that bash ${BU_ROOT}/app lint snapshots is clean. In docs/architecture.md add a row for session-start/token-service to the hook table, rows for token-start.sh and token-stop.sh to the module scripts table, and start-stop.sh to the token-service row of the test suites table. Add the sections token-start and token-stop to docs/command-reference.md; the token-start section names the session-start/token-service hook that calls it. In docs/github-app-and-token-service.md under Start and stop, name token-start, token-stop and the session-start hook, and keep the compose lines as the form without the plugin. In docs/troubleshooting.md at the token service row, say that the session-start hook starts the service and that app git token-start is the manual start.",
+            "output": "An enabled entry in .agentic-os/hooks/hooks.json, one table row, two command sections and an updated Start and stop section.",
+            "pattern": ".agentic-os/hooks/hooks.json: the file the change stays in; the row of session-start/git-shims in docs/architecture.md",
+            "target": "change"
+          },
+          "why": "A hook script only runs once the registry enables it, and a reader of the manuals must learn that the service starts by itself and how to stop it.",
+          "result": "The hook is on in this repository and the manuals describe the commands and the hook.",
+          "done": "hooks.json lists session-start/token-service as enabled, app lint hooks and app lint snapshots exit 0 and each doc names the commands, the hook or the new scripts it was asked to carry.",
+          "consumes": [
+            {
+              "from": "T1.2",
+              "name": "session-start/token-service",
+              "signature": "hook script bin/hooks/session-start/token-service, event session-start, no arguments"
+            }
+          ]
+        },
+        {
+          "id": "T1.5",
+          "title": "Prove the service live with the real container",
+          "depends": [
+            "T1.3",
+            "T1.4"
+          ],
+          "owner": "inline",
+          "inputs": [
+            {
+              "ref": "bin/modules/git/token-start.sh",
+              "why": "The command whose real start is proven."
+            },
+            {
+              "ref": "docs/github-app-and-token-service.md",
+              "why": "The 401 check for a running service."
+            },
+            {
+              "ref": "D12",
+              "why": "The stub tests never start a real container, so one live run closes the gap."
+            }
+          ],
+          "writes": [],
+          "verify": {
+            "run": "bash ${BU_ROOT}/app git token-stop && bash ${BU_ROOT}/app git token-start && sleep 3 && test \"$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:8790/token)\" = 401",
+            "from": "environment fact: the real container stops, starts again through token-start and answers 401 to a request without a token"
+          },
+          "status": "pending",
+          "why": "The stub of the tests proves the compose arguments, not that a container comes up and answers.",
+          "result": "The token-service container was stopped and started again by the two commands and answers on port 8790.",
+          "done": "The verify run exits 0: token-stop, token-start and a request without a token that gets 401."
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "question": "Which projects start the service: only the plugin repository, or every project that has the plugin?",
+      "chosen": "Every project with the plugin.",
+      "reason": "token_fetch in every consuming project asks 127.0.0.1:8790, and one container serves them all.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D2",
+      "question": "Where does the start logic live?",
+      "chosen": "In the hook script itself.",
+      "reason": "One docker compose call with skip checks and no second caller.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "superseded",
+      "superseded_by": "D5"
+    },
+    {
+      "id": "D3",
+      "question": "Is the service stopped when the session ends?",
+      "chosen": "No stop, manual only; the manual stop is a module command (D5).",
+      "reason": "A stop at one session's end would cut off a second open session; the developer stops the container by hand today.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D4",
+      "question": "Which App does the start use, and what if the container of the other App runs?",
+      "chosen": "The App of the .env of the plugin root; a running container is kept.",
+      "reason": "The start stays one simple call; a sandbox check already uses its own project name.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D5",
+      "question": "Should the logic stay in the hook or go to module commands?",
+      "chosen": "The logic goes to module commands: one starts the service and one stops it; the hook only calls the start command.",
+      "reason": "The developer corrected the earlier answer: a command can be run by hand, tested alone and documented in the command listing.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D6",
+      "question": "What are the names of the two module commands?",
+      "chosen": "token-start and token-stop.",
+      "reason": "They sit beside the existing token-service command, which runs the Node service itself.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D7",
+      "question": "Start with or without --build?",
+      "chosen": "Without --build; compose builds only when the image is missing.",
+      "reason": "A build must not slow every session open; a pin change is a manual --build already documented.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D8",
+      "question": "How do the command and the hook react to a missing Docker or setting?",
+      "chosen": "token-start refuses with a one-line reason and a non-zero exit; the hook discards the output and the exit code and exits 0.",
+      "reason": "A developer who runs the command by hand needs the reason; a session start must not fail or print for a developer without a key.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D9",
+      "question": "Where does the compose call of the module commands run, and who is the container user?",
+      "chosen": "Compose runs with --project-directory at the plugin root and absolute env-file paths, so it works from any directory; TOKEN_SERVICE_UID and TOKEN_SERVICE_GID default to id -u and id -g.",
+      "reason": "Every consuming project runs the command from its own root, where docker-compose.yaml and the env files do not exist; the compose file takes the container user from the two variables.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D10",
+      "question": "Does the registry task compile so the snapshot lint stays green?",
+      "chosen": "The registry task runs the compile after enabling the hook and its verify runs app lint snapshots.",
+      "reason": "A hook enabled without a compile leaves the stored hook inventory stale and a later lint all full fails.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D11",
+      "question": "Is the time the hook can hold up a session opening bounded?",
+      "chosen": "The hook runs token-start under timeout 20 and exits 0 on a timeout; the test proves it with a slow stub.",
+      "reason": "A first start with a missing image must not hold every session open; the manual start finishes the build.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "durable",
+      "status": "decided"
+    },
+    {
+      "id": "D12",
+      "question": "Does a task prove the real container, not only the stub?",
+      "chosen": "A last inline task runs token-stop, token-start and a request without a token that must get 401.",
+      "reason": "The stub tests never start a container; the same gap was dismissed for the rules-sync task of the earlier plan.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D13",
+      "question": "Does the registry task's verify prove each manual, not just one?",
+      "chosen": "One grep per file and name: token-start, token-stop and the hook name in the command reference and in the token service manual, the hook name in the architecture table.",
+      "reason": "grep -q over two files passes when only one matches.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D14",
+      "question": "Which doc places does the registry task cover?",
+      "chosen": "The hook table, the module scripts table and the test suites table of architecture.md, the command reference, the token service manual and docs/troubleshooting.md, which joins the writes.",
+      "reason": "The two tables list what the plan adds and troubleshooting.md still tells the reader to start the service by hand.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D15",
+      "question": "How does the test build its throwaway root?",
+      "chosen": "As the sibling tests do: an .agentic-os directory, the framework variables unset, PLUGIN_ROOT and PLUGIN_LIB exported, a case from another directory and a missing .env case that proves the temp root is the one read.",
+      "reason": "Decision D54 of the earlier plan and the sibling tests ff.sh and run.sh need exactly this setup.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "decided"
+    },
+    {
+      "id": "D16",
+      "question": "What does the test assert beyond the compose arguments?",
+      "chosen": "Sentinel App ID and key path in the temp .env must appear in no output, and the PATH holds only the stub and basic tools.",
+      "reason": "No case asserted the output content, and a case could reach the real docker.",
+      "by": "owner",
+      "date": "2026-11-15",
+      "scope": "plan-only",
+      "status": "decided"
+    }
+  ],
+  "review_reports": [
+    {
+      "lens": "order",
+      "path": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin-02/plan-review-order.md"
+    },
+    {
+      "lens": "registrations",
+      "path": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin-02/plan-review-registrations.md"
+    },
+    {
+      "lens": "assumed-code",
+      "path": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin-02/plan-review-assumed-code.md"
+    },
+    {
+      "lens": "precedent",
+      "path": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin-02/plan-review-precedent.md"
+    },
+    {
+      "lens": "proofs",
+      "path": "/home/ohoeft/workspace/edotz.git-workflow/.claude/session/a24bcf21/reports/PLAN-plugin-02/plan-review-proofs.md"
+    }
+  ],
+  "revisions": [
+    {
+      "date": "2026-11-15",
+      "change": "Round 1 of the review: compose runs from the plugin root with the UID and GID set, the hook is bounded by timeout 20, the registry task compiles and lints snapshots, and a last task proves the real container",
+      "affects": [
+        "T1.1",
+        "T1.2",
+        "T1.3",
+        "T1.4",
+        "T1.5",
+        "D9",
+        "D10",
+        "D11",
+        "D12"
+      ],
+      "reason": "The reviewers found a missing working directory, an unbounded hook, a stale snapshot after the enable and no live proof; the developer decided D9 to D12",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-15",
+      "change": "Round 2 of the review: each doc is verified by its own grep, troubleshooting.md and the two architecture tables join the registry task, and the test builds its root like the sibling tests and asserts no secret in any output",
+      "affects": [
+        "T1.3",
+        "T1.4",
+        "D13",
+        "D14",
+        "D15",
+        "D16"
+      ],
+      "reason": "The reviewers found a grep that passes on one of two files, doc places the brief missed and a test setup that could read the real .env; the developer decided D13 to D16",
+      "by": "claude"
+    }
+  ]
+}

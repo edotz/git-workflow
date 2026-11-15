@@ -1,7 +1,10 @@
 ## Now
-- m6-retire-old: only T6.19 is pending (typo3-cms first release and promote baseline after the migration feat merges); next apply the development stage to the live ruleset, then close the P6 gate and the plan
+- m6-retire-old: plan done, PRs 21 to 24 merged; next the sdv.bewerber ^3.0 update, the typo3-cms 2.x and cli/nodejs-project questions, then the nodejs-project first release as a continuation plan
 
 ## Log
+- 2026-11-13 plugin (a24bcf21): merged PRs 22 to 24 (scope templates, stage warning, worktree and changes fixes, one git-cliff run and a tag cache), kept host git in worktree.sh by design
+- 2026-11-13 plugin (a24bcf21): adopted cli, applied the 3.x and legacy rulesets, released php-project and typo3-cms 3.0.0 with 3.x and the legacy freezes, split the children twice, no GitHub Release in monorepos (PR 21), set PLAN-plugin done (T6.19 dropped, D89); PR 22 open
+- 2026-11-12 plugin (a24bcf21): reworked /git:start, commit and stage as dialogs (changes and stage commands), fixed the live-ruleset comparison and the PROJECT_ROOT use, switched the live master ruleset to development; PRs 17 to 20 merged
 - 2026-11-12 plugin (a24bcf21): merged PRs 8 to 16 (squash suffix lint, manuals, start in the checkout, branch-cleanup deletion, loopback token service, git-workflow skill), prepared the typo3-cms and php-project migration branches and the sdv composer.dev setup, found the live ruleset drift (D87, D88)
 - 2026-11-11 plugin (a24bcf21): baselined the ten nodejs-project children and closed their old release PRs, retired the classic protection code, moved git-workflow to rulesets, made version_next count from a range with the feat, fix, perf and breaking filter (D85, D86); PRs 5 to 7 merged
 - 2026-11-11 plugin (a24bcf21): migrated typo3-cms (branch roles, 2.x/1.x) and php-project (children baselined, old release train removed), nodejs-project to pnpm and components, added promote baseline, PR title lint, split skip and the split token set (D79 to D84)
@@ -14,8 +17,4 @@
 - 2026-11-09 plugin (a24bcf21): amended the plan (T4.14 branch settings to GIT_WORKFLOW_ keys, D45 to D48, P3 gate fixed, D41 confirmed), dropped _callable-status-checks.yml, one env bash shebang for ide scripts and templates, compiled; plan amend --dry-run writes the plan
 - 2026-11-05 plugin (a24bcf21): re-ran init (docker scope declared, architecture.md updated), removed workflow.env, its templates, the protection config and the release callables, ignored the planning locks, committed and pushed
 - 2026-11-05 plugin (a24bcf21): linting moved to toolchain.linters of project.yaml (node Biome, shell); the plugin lint module is removed, `app lint all full` replaces `app lint node full`; plan tasks T3.9 to T3.11 still describe the old module
-- 2026-11-04 plugin (a24bcf21): amended P4 with T4.13 for the /git: slash commands, found that a plugin cannot ship a script command, wrote the findings note for the agentic-os check
-- 2026-11-04 plugin (a24bcf21): built the token, version and check libraries, release, promote and node lint, ran the sandbox pilot (v0.1.0, v0.2.0), settled findings, set m1 to m3 done, detailed P4
-- 2026-11-03 plugin (a24bcf21): finished P2 (pins, image, tool.sh), chose the token service hosting, detailed P3, built the token service as a node module and the component library, added the Biome lint task T3.9
-- 2026-11-03 plugin (a24bcf21): checked the GitHub App and tool claims, settled the token service and the component declaration (P1 done), detailed the tool image phase
 

@@ -6,7 +6,7 @@
   "items": [
     "B-1"
   ],
-  "status": "active",
+  "status": "done",
   "mode": "subagents",
   "review_focus": [
     {
@@ -4630,7 +4630,7 @@
             "pattern": ".agentic-os/project/concepts/git-workflow-plugin/notes/migrate-typo3-cms.md",
             "target": "change"
           },
-          "status": "pending"
+          "status": "dropped"
         },
         {
           "id": "T6.20",
@@ -5690,6 +5690,16 @@
       "date": "2026-11-12",
       "scope": "durable",
       "status": "decided"
+    },
+    {
+      "id": "D89",
+      "status": "decided",
+      "question": "What becomes of T6.19, the first release of typo3-cms with the baseline promote of 2.x, now that the migration ships as major releases?",
+      "chosen": "T6.19 is dropped. The migration shipped as major releases (typo3-cms v3.0.0, the eight php-project components 3.0.0) and promote created the absent release branch 3.x at the release tag without a baseline; 1.x and 2.x stay as legacy lines with the tags legacy/1.x-freeze and legacy/2.x-freeze, so the one-time move of 2.x with promote baseline (D81) is not made. D89 replaces only the sentence of D88 that says T6.19 stays; the drop of T6.20 and T6.21 in D88 stands.",
+      "reason": "The verify of T6.19 asks for the tag legacy/pre-promote and a 2.x that sits on a release commit; with 2.x kept as a legacy line and 3.x as the release branch neither can hold, and its note section would describe a move that never happened.",
+      "by": "owner",
+      "date": "2026-11-13",
+      "scope": "durable"
     }
   ],
   "review_reports": [
@@ -6402,6 +6412,18 @@
         "D88"
       ],
       "reason": "Their baseline tags sit on HEAD and no feat, fix, perf or breaking commit follows, so release proposes nothing and promote refuses a baseline tag (D81); the first real change comes with the sdv.bewerber migration; the developer chose to drop them and continue in a later plan and approved the amendment on 2026-11-12",
+      "by": "claude"
+    },
+    {
+      "date": "2026-11-13",
+      "change": "Drop T6.19 and record D89: the migration ships as major releases and promote creates 3.x without a baseline, so the baseline promote of 2.x is not made",
+      "affects": [
+        "P6",
+        "T6.19",
+        "D89",
+        "D88"
+      ],
+      "reason": "The migration shipped as typo3-cms v3.0.0 and php-project 3.0.0; 1.x and 2.x stay legacy lines and 3.x is the release branch, so the verify of T6.19 (legacy/pre-promote, 2.x on a release commit) can never hold; the developer asked to set T6.19 superseded, which the schema holds as dropped",
       "by": "claude"
     }
   ],
